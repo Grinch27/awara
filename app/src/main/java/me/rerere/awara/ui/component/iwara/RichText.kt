@@ -2,11 +2,9 @@ package me.rerere.awara.ui.component.iwara
 
 import android.util.Log
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf
@@ -23,7 +21,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withAnnotation
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.sp
 import me.rerere.awara.ui.theme.info
 import org.intellij.markdown.ast.ASTNode
 import org.intellij.markdown.ast.acceptChildren
@@ -102,7 +99,7 @@ private fun AnnotatedString.Builder.handle(
     text: String,
     theme: RichTextTheme
 ) {
-    Log.i(TAG, "handle: access ${node.type}")
+    // Log.i(TAG, "handle: access ${node.type}")
     when (node.type.toString()) {
         "WHITE_SPACE" -> {
             append(" ")

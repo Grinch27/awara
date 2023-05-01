@@ -7,14 +7,14 @@ import androidx.compose.runtime.produceState
 import androidx.compose.ui.Modifier
 import me.rerere.awara.data.entity.Hitokoto
 import me.rerere.awara.data.source.HitokotoAPI
-import org.koin.androidx.compose.get
+import org.koin.compose.koinInject
 
 @Composable
 fun Hitokoto(
     modifier: Modifier = Modifier,
     type: String = "a",
 ) {
-    val api = get<HitokotoAPI>()
+    val api = koinInject<HitokotoAPI>()
     val hitokoto by produceState<Hitokoto?>(
         initialValue = null,
         producer = {

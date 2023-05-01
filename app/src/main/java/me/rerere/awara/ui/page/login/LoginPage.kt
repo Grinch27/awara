@@ -115,7 +115,7 @@ fun LoginPage(
                 OutlinedTextField(
                     value = username,
                     onValueChange = {
-                        username = it
+                        username = it.replace("\n", "").trim()
                     },
                     label = {
                         Text(text = stringResource(R.string.login_user))
@@ -125,7 +125,7 @@ fun LoginPage(
                 OutlinedTextField(
                     value = password,
                     onValueChange = {
-                        password = it
+                        password = it.replace("\n", "").trim()
                     },
                     label = {
                         Text(text = stringResource(R.string.login_password))
