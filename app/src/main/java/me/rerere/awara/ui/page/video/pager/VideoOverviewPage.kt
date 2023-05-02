@@ -1,5 +1,7 @@
 package me.rerere.awara.ui.page.video.pager
 
+import android.Manifest
+import android.os.Build
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -48,11 +50,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.app.NotificationManagerCompat
 import androidx.work.Data
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.await
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.PermissionStatus
+import com.google.accompanist.permissions.rememberPermissionState
 import kotlinx.coroutines.launch
 import me.rerere.awara.R
 import me.rerere.awara.data.entity.Video
@@ -134,6 +140,7 @@ fun VideoOverviewPage(vm: VideoVM) {
     }
 }
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 private fun VideoInfoCard(video: Video, vm: VideoVM) {
     val (expand, setExpand) = remember { mutableStateOf(false) }
@@ -209,10 +216,32 @@ private fun VideoInfoCard(video: Video, vm: VideoVM) {
             }
 
             Row {
+                val permissionState = rememberPermissionState(
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    Manifest.permission.POST_NOTIFICATIONS
+                } else {
+                    ""
+                })
                 IconButton(
                     onClick = {
                         val workManager = WorkManager.getInstance(context)
                         scope.launch {
+                            // check notification permission
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                if(permissionState.status != PermissionStatus.Granted) {
+                                    message.error {
+                                        Text("Please grant notification permission!")
+                                    }
+                                    permissionState.launchPermissionRequest()
+                                    return@launch
+                                }
+                            }
+
+                            if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) {
+                                message.error { Text("Notification is not enabled") }
+                                return@launch
+                            }
+
                             if (workManager.getWorkInfosByTag(vm.id).await().any { it.state == WorkInfo.State.RUNNING || it.state == WorkInfo.State.ENQUEUED }) {
                                 message.error { Text("Already downloading") }
                                 return@launch
@@ -241,6 +270,10 @@ private fun VideoInfoCard(video: Video, vm: VideoVM) {
                                 )
                                 .addTag(vm.id)
                                 .build()
+
+                            message.info {
+                                Text("Start downloading...")
+                            }
 
                             workManager.enqueue(req)
                         }

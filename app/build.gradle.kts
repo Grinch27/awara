@@ -96,6 +96,7 @@ dependencies {
 
     // Accompanist
     implementation("com.google.accompanist:accompanist-navigation-animation:0.29.2-rc")
+    implementation("com.google.accompanist:accompanist-permissions:0.29.2-rc")
 
     // Splash
     implementation("androidx.core:core-splashscreen:1.0.1")

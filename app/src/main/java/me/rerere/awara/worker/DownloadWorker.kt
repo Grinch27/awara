@@ -7,6 +7,7 @@ import android.os.Environment
 import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
@@ -20,8 +21,10 @@ import me.rerere.awara.util.await
 import me.rerere.awara.util.prettyFileSize
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okio.sink
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import java.io.EOFException
 import java.time.Instant
 
 private const val TAG = "DownloadWorker"
@@ -96,7 +99,7 @@ class DownloadWorker(
 
                     destinationFile.outputStream().use { out ->
                         response.body?.byteStream()?.use { input ->
-                            val buffer = ByteArray(1024 * 8)
+                            val buffer = ByteArray(2048)
                             var len: Int
                             var step = 0
                             while (input.read(buffer).also { len = it } != -1) {
@@ -105,6 +108,8 @@ class DownloadWorker(
                                 if(step++ % 25 == 0 || len != buffer.size){
                                     val percent = (destinationFile.length() * 100 / total).toInt()
                                     val currentSizePretty = prettyFileSize(destinationFile.length())
+
+                                    destinationFile.sink()
 
                                     setForeground(
                                         ForegroundInfo(
@@ -120,6 +125,8 @@ class DownloadWorker(
                                     Log.i(TAG, "doWork: $percent% #$title")
                                 }
                             }
+
+                            out.flush()
                         }
                     }
 
@@ -146,13 +153,28 @@ class DownloadWorker(
             onFailure = {
                 Log.e(TAG, "doWork: 下载失败", it)
                 kotlin.runCatching {  destinationFile.delete() }
-                Result.failure()
+
+                val notificationCompat = NotificationManagerCompat.from(appContext)
+                notificationCompat.notify(
+                    0,
+                    NotificationCompat.Builder(appContext, "download")
+                        .setContentTitle(appContext.getString(R.string.download))
+                        .setStyle(NotificationCompat.BigTextStyle().bigText(it.stackTraceToString()))
+                        .setSmallIcon(R.drawable.baseline_cloud_download_24)
+                        .build()
+                )
+
+                if(it is EOFException) {
+                    Result.retry()
+                } else {
+                    Result.failure()
+                }
             }
         )
     }
 
     companion object {
-        private var notificationIdCounter = 0
+        private var notificationIdCounter = 1
 
         const val KEY_DOWNLOAD_URL = "download_url"
         const val KEY_DOWNLOAD_TITLE = "download_title"
