@@ -59,4 +59,5 @@
     <string name="drawer_history">History</string>
     <string name="drawer_setting">Settings</string>
     <string name="friends">Friends</string>
+    <string name="download">Download</string>
 </resources>

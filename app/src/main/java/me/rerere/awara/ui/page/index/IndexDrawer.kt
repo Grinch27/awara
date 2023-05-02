@@ -226,7 +226,9 @@ fun ColumnScope.IndexDrawer(vm: IndexVM) {
         label = {
             Text(stringResource(R.string.drawer_downloads))
         },
-        onClick = {}
+        onClick = {
+            router.navigate("download")
+        }
     )
 
     DrawerItem(

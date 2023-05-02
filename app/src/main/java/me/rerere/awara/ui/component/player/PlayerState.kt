@@ -70,7 +70,7 @@ fun rememberPlayerState(
 
             override fun onVideoSizeChanged(videoSize: VideoSize) {
                 super.onVideoSizeChanged(videoSize)
-                state.videoSize = videoSize
+                state.videoSize = PlayerState.VideoSize.from(videoSize)
                 state.duration = state.player.duration
             }
         }
@@ -85,7 +85,7 @@ fun rememberPlayerState(
                 Log.w(TAG, "onPlaybackStateChanged: unknown state ${state.player.playbackState}")
             }
         }
-        state.videoSize = state.player.videoSize
+        state.videoSize = PlayerState.VideoSize.from(state.player.videoSize)
         state.duration = state.player.duration
         Log.i(TAG, "rememberPlayerState: Init")
         onDispose {
@@ -171,12 +171,22 @@ class PlayerState(val player: Player) {
         ENDED
     }
 
-    enum class ContentScale {
-
-    }
-
     data class PlayerItem(
         val quality: String,
         val mediaItem: MediaItem,
     )
+
+    data class VideoSize(
+        val width: Int,
+        val height: Int,
+    ) {
+        companion object {
+            val UNKNOWN = VideoSize(0, 0)
+
+            fun from(videoSize: androidx.media3.common.VideoSize) = VideoSize(
+                videoSize.width,
+                videoSize.height,
+            )
+        }
+    }
 }

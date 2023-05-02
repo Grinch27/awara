@@ -4,6 +4,7 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".App"
@@ -31,11 +32,6 @@
 
         <activity
             android:name=".ui.ErrorActivity"
-            android:theme="@style/Theme.Awara"
-            />
-
-        <service
-            android:name=".service.DownloadService"
-            android:foregroundServiceType="dataSync" />
+            android:theme="@style/Theme.Awara" />
     </application>
 </manifest>

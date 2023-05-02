@@ -58,4 +58,5 @@
     <string name="drawer_history">歷史</string>
     <string name="drawer_setting">設置</string>
     <string name="friends">朋友</string>
+    <string name="download">下载</string>
 </resources>

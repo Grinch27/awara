@@ -1,5 +1,6 @@
 package me.rerere.awara.di
 
+import me.rerere.awara.ui.page.download.DownloadVM
 import me.rerere.awara.ui.page.favorites.FavoritesVM
 import me.rerere.awara.ui.page.follow.FollowVM
 import me.rerere.awara.ui.page.history.HistoryVM
@@ -26,4 +27,5 @@ val viewModelModule = module {
     viewModelOf(::FavoritesVM)
     viewModelOf(::FollowVM)
     viewModelOf(::SearchVM)
+    viewModelOf(::DownloadVM)
 }

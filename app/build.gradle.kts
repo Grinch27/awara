@@ -81,6 +81,9 @@ dependencies {
     implementation("androidx.media3:media3-session:1.0.1")
     implementation("androidx.media3:media3-ui:1.0.1")
 
+    // WorkManager
+    implementation("androidx.work:work-runtime-ktx:2.8.1")
+
     // Room
     implementation("androidx.room:room-runtime:2.5.1")
     implementation("androidx.room:room-paging:2.5.1")

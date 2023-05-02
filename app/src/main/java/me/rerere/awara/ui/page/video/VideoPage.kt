@@ -26,7 +26,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.media3.common.MediaItem
-import androidx.media3.common.VideoSize
 import androidx.media3.ui.AspectRatioFrameLayout
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -103,7 +102,7 @@ fun  VideoPage(vm: VideoVM = koinViewModel()) {
     // Full Screen
     var fullscreen by remember { mutableStateOf(false) }
     fun enterFullScreen() {
-        if(state.videoSize == VideoSize.UNKNOWN) return
+        if(state.videoSize == PlayerState.VideoSize.UNKNOWN) return
         if(state.videoSize.width > state.videoSize.height) {
             fullscreen = true
             requestOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE

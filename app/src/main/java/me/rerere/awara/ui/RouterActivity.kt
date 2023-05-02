@@ -27,6 +27,7 @@ import com.google.accompanist.navigation.animation.composable
 import com.google.accompanist.navigation.animation.rememberAnimatedNavController
 import me.rerere.awara.ui.component.common.DialogProvider
 import me.rerere.awara.ui.component.common.MessageProvider
+import me.rerere.awara.ui.page.download.DownloadPage
 import me.rerere.awara.ui.page.favorites.FavoritesPage
 import me.rerere.awara.ui.page.follow.FollowPage
 import me.rerere.awara.ui.page.history.HistoryPage
@@ -45,6 +46,7 @@ import me.rerere.awara.ui.stores.UserStoreProvider
 import me.rerere.awara.ui.stores.collectAsState
 import me.rerere.awara.ui.theme.AwaraTheme
 
+private const val TAG = "RouterActivity"
 
 class RouterActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -198,6 +200,10 @@ class RouterActivity : ComponentActivity() {
 
                 composable("history") {
                     HistoryPage()
+                }
+
+                composable("download") {
+                    DownloadPage()
                 }
 
                 composable("lab") {

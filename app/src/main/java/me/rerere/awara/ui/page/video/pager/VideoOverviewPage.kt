@@ -39,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,8 +48,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.work.Data
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
+import androidx.work.await
+import kotlinx.coroutines.launch
 import me.rerere.awara.R
 import me.rerere.awara.data.entity.Video
+import me.rerere.awara.data.entity.fixUrl
+import me.rerere.awara.data.entity.thumbnailUrl
+import me.rerere.awara.ui.LocalMessageProvider
 import me.rerere.awara.ui.component.common.Button
 import me.rerere.awara.ui.component.common.ButtonType
 import me.rerere.awara.ui.component.common.Spin
@@ -62,11 +72,12 @@ import me.rerere.awara.ui.page.video.VideoVM
 import me.rerere.awara.util.openUrl
 import me.rerere.awara.util.shareLink
 import me.rerere.awara.util.toLocalDateTimeString
+import me.rerere.awara.worker.DownloadWorker
 
 @Composable
 fun VideoOverviewPage(vm: VideoVM) {
     val state = vm.state
-    if(state.private) {
+    if (state.private) {
         Column(
             modifier = Modifier.padding(8.dp)
         ) {
@@ -127,6 +138,8 @@ fun VideoOverviewPage(vm: VideoVM) {
 private fun VideoInfoCard(video: Video, vm: VideoVM) {
     val (expand, setExpand) = remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val message = LocalMessageProvider.current
+    val scope = rememberCoroutineScope()
     Card(
         modifier = Modifier
             .animateContentSize()
@@ -196,7 +209,43 @@ private fun VideoInfoCard(video: Video, vm: VideoVM) {
             }
 
             Row {
-                IconButton(onClick = { /*TODO*/ }) {
+                IconButton(
+                    onClick = {
+                        val workManager = WorkManager.getInstance(context)
+                        scope.launch {
+                            if (workManager.getWorkInfosByTag(vm.id).await().any { it.state == WorkInfo.State.RUNNING || it.state == WorkInfo.State.ENQUEUED }) {
+                                message.error { Text("Already downloading") }
+                                return@launch
+                            }
+
+                            if(vm.isVideoExists()) {
+                                message.error { Text("Already downloaded") }
+                                return@launch
+                            }
+
+                            val req = OneTimeWorkRequestBuilder<DownloadWorker>()
+                                .setInputData(
+                                    Data.Builder()
+                                        .putString(DownloadWorker.KEY_DOWNLOAD_TITLE, video.title)
+                                        .putString(
+                                            DownloadWorker.KEY_DOWNLOAD_URL,
+                                            vm.state.urls.last().src.download.fixUrl()
+                                        )
+                                        .putString(DownloadWorker.KEY_DOWNLOAD_RESOURCE_ID, vm.id)
+                                        .putString(DownloadWorker.KEY_DOWNLOAD_TYPE, "VIDEO")
+                                        .putString(
+                                            DownloadWorker.KEY_DOWNLOAD_THUMBNAIL,
+                                            video.thumbnailUrl()
+                                        )
+                                        .build()
+                                )
+                                .addTag(vm.id)
+                                .build()
+
+                            workManager.enqueue(req)
+                        }
+                    }
+                ) {
                     Icon(Icons.Outlined.Download, null)
                 }
 
@@ -222,10 +271,10 @@ private fun VideoInfoCard(video: Video, vm: VideoVM) {
                 ) {
                     Icon(Icons.Outlined.PlaylistAdd, null)
                 }
-                if(showPlaylistSheet) {
+                if (showPlaylistSheet) {
                     PlaylistSheet(
                         vm = vm,
-                        onDismissRequest = {showPlaylistSheet = false}
+                        onDismissRequest = { showPlaylistSheet = false }
                     )
                 }
 
