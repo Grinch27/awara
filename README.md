@@ -6,7 +6,9 @@
 [English](doc/README.en.md) | [日本語説明](doc/README.ja.md) | [한국어 설명](doc/README.ko.md)
 
 下一代I站客户端，使用Material You设计，使用Jetpack Compose构建UI。   
-Discord群: [Discord Server](https://discord.gg/G22sSzJbzh)
+
+## 下载
+https://github.com/awara-app/awara/releases
 
 ## 注意事项 （必读)
 * 本项目仅供学习交流，不得用于盈利或商业用途，不得公开传播本项目。
