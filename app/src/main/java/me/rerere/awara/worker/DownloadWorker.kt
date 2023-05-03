@@ -21,7 +21,6 @@ import me.rerere.awara.util.await
 import me.rerere.awara.util.prettyFileSize
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okio.sink
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.io.EOFException
@@ -41,6 +40,7 @@ class DownloadWorker(
         .setSmallIcon(R.drawable.baseline_cloud_download_24)
         .setOngoing(true)
         .setSilent(true)
+        .setOnlyAlertOnce(true)
 
     override suspend fun doWork(): Result {
         if (ActivityCompat.checkSelfPermission(
@@ -51,6 +51,7 @@ class DownloadWorker(
             return Result.failure()
         }
 
+        val notificationCompat = NotificationManagerCompat.from(appContext)
         setForeground(ForegroundInfo(notificationId, notification.build()))
 
         val url = inputData.getString(KEY_DOWNLOAD_URL) ?: return Result.failure()
@@ -77,13 +78,15 @@ class DownloadWorker(
         }
 
         Log.i(TAG, "doWork: 开始下载: $url => ${destinationFile.absolutePath}")
-        setForeground(ForegroundInfo(
-            notificationId,
-            notification
-                .setContentText(title)
-                .setProgress(100, 0, true)
-                .build()
-        ))
+        setForeground(
+            ForegroundInfo(
+                notificationId,
+                notification
+                    .setContentText(title)
+                    .setProgress(100, 0, true)
+                    .build()
+            )
+        )
 
         return withContext(Dispatchers.IO) {
             kotlin.runCatching {
@@ -105,21 +108,16 @@ class DownloadWorker(
                             while (input.read(buffer).also { len = it } != -1) {
                                 out.write(buffer, 0, len)
 
-                                if(step++ % 25 == 0 || len != buffer.size){
+                                if (step++ % 25 == 0 || len != buffer.size) {
                                     val percent = (destinationFile.length() * 100 / total).toInt()
                                     val currentSizePretty = prettyFileSize(destinationFile.length())
-
-                                    destinationFile.sink()
-
-                                    setForeground(
-                                        ForegroundInfo(
-                                            notificationId,
-                                            notification
-                                                .setContentTitle(title)
-                                                .setContentText("$percent% ($currentSizePretty / $fileSizePretty)")
-                                                .setProgress(100, percent, false)
-                                                .build()
-                                        )
+                                    notificationCompat.notify(
+                                        notificationId,
+                                        notification
+                                            .setContentTitle(title)
+                                            .setContentText("$percent% ($currentSizePretty / $fileSizePretty)")
+                                            .setProgress(100, percent, false)
+                                            .build()
                                     )
 
                                     Log.i(TAG, "doWork: $percent% #$title")
@@ -130,16 +128,21 @@ class DownloadWorker(
                         }
                     }
 
-                    Log.i(TAG, "doWork: 下载成功！当前文件大小: ${destinationFile.length()} 路径: ${destinationFile.absolutePath}")
+                    Log.i(
+                        TAG,
+                        "doWork: 下载成功！当前文件大小: ${destinationFile.length()} 路径: ${destinationFile.absolutePath}"
+                    )
 
-                    appDatabase.downloadDao().insertDownloadItem(DownloadItem(
-                        title = title,
-                        thumbnail = thumbnail,
-                        type = DownloadType.valueOf(type),
-                        resourceId = resourceId,
-                        path = destinationFile.absolutePath,
-                        time = Instant.now()
-                    ))
+                    appDatabase.downloadDao().insertDownloadItem(
+                        DownloadItem(
+                            title = title,
+                            thumbnail = thumbnail,
+                            type = DownloadType.valueOf(type),
+                            resourceId = resourceId,
+                            path = destinationFile.absolutePath,
+                            time = Instant.now()
+                        )
+                    )
 
                     Log.i(TAG, "doWork: 已插入数据库")
                 } else {
@@ -148,23 +151,33 @@ class DownloadWorker(
             }
         }.fold(
             onSuccess = {
-                Result.success()
-            },
-            onFailure = {
-                Log.e(TAG, "doWork: 下载失败", it)
-                kotlin.runCatching {  destinationFile.delete() }
-
-                val notificationCompat = NotificationManagerCompat.from(appContext)
                 notificationCompat.notify(
                     0,
                     NotificationCompat.Builder(appContext, "download")
                         .setContentTitle(appContext.getString(R.string.download))
-                        .setStyle(NotificationCompat.BigTextStyle().bigText(it.stackTraceToString()))
+                        .setContentText(appContext.getString(R.string.download_success, title))
                         .setSmallIcon(R.drawable.baseline_cloud_download_24)
                         .build()
                 )
 
-                if(it is EOFException) {
+                Result.success()
+            },
+            onFailure = {
+                Log.e(TAG, "doWork: 下载失败", it)
+                kotlin.runCatching { destinationFile.delete() }
+
+                notificationCompat.notify(
+                    0,
+                    NotificationCompat.Builder(appContext, "download")
+                        .setContentTitle(appContext.getString(R.string.download))
+                        .setStyle(
+                            NotificationCompat.BigTextStyle().bigText(it.stackTraceToString())
+                        )
+                        .setSmallIcon(R.drawable.baseline_cloud_download_24)
+                        .build()
+                )
+
+                if (it is EOFException) {
                     Result.retry()
                 } else {
                     Result.failure()

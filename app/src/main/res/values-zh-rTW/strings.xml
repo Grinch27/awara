@@ -1,5 +1,4 @@
 <resources>
-    <string name="app_name" translatable="false">Awara</string>
     <string name="login_title">登錄</string>
     <string name="login_button">登錄</string>
     <string name="login_user">用戶名或電子郵件</string>
@@ -65,4 +64,5 @@
     <string name="already_downloading">Already downloading</string>
     <string name="already_downloaded">Already downloaded</string>
     <string name="start_downloading">Start downloading…</string>
+    <string name="download_success">下载成功: %1$s</string>
 </resources>

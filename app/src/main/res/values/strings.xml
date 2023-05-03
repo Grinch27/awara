@@ -64,5 +64,6 @@
     <string name="notification_is_not_enabled">Notification is not enabled</string>
     <string name="already_downloading">Already downloading</string>
     <string name="already_downloaded">Already downloaded</string>
-    <string name="start_downloading">Start downloading...</string>
+    <string name="start_downloading">Start downloading…</string>
+    <string name="download_success">Download Success: %1$s</string>
 </resources>
