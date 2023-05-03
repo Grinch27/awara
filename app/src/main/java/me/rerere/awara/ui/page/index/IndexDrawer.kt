@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import me.rerere.awara.R
 import me.rerere.awara.ui.LocalMessageProvider
 import me.rerere.awara.ui.LocalRouterProvider
+import me.rerere.awara.ui.component.hitokoto.Hitokoto
 import me.rerere.awara.ui.component.iwara.Avatar
 import me.rerere.awara.ui.component.iwara.RequireLoginVisible
 import me.rerere.awara.ui.stores.LocalUserStore
@@ -71,7 +72,8 @@ fun ColumnScope.IndexDrawer(vm: IndexVM) {
             user = userState.user,
             onClick = {
                 router.navigate("login")
-            }
+            },
+            showOnlineStatus = false
         )
         Column {
             // User nick name
@@ -254,6 +256,16 @@ fun ColumnScope.IndexDrawer(vm: IndexVM) {
             router.navigate("setting")
         }
     )
+
+    Spacer(modifier = Modifier.weight(1f))
+
+    Card(
+        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+    ) {
+        Hitokoto(
+            modifier = Modifier.padding(8.dp).fillMaxWidth()
+        )
+    }
 }
 
 @Composable

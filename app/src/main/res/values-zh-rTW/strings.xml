@@ -39,7 +39,7 @@
     <string name="update_title">新版本可用：%s</string>
     <string name="update_confirm">更新</string>
     <string name="follow_title">關注和追隨者</string>
-    <string name="following">下列的</string>
+    <string name="following">關注的</string>
     <string name="follower">追隨者</string>
     <string name="online">在線的</string>
     <string name="offline">離線</string>
