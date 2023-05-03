@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.material3.DropdownMenu
@@ -18,7 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import me.rerere.awara.ui.component.common.Spin
+import me.rerere.awara.ui.component.common.UiStateBox
 import me.rerere.awara.ui.component.ext.DynamicStaggeredGridCells
 import me.rerere.awara.ui.component.iwara.MediaCard
 import me.rerere.awara.ui.component.iwara.PaginationBar
@@ -29,10 +30,15 @@ import me.rerere.awara.ui.page.index.IndexVM
 fun IndexSubscriptionPage(
     vm: IndexVM
 ) {
-    Column {
-        Spin(
-            show = vm.state.subscriptionLoading,
-            modifier = Modifier.weight(1f),
+    Column(
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        UiStateBox(
+            state = vm.state.subscriptionState,
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            onErrorRetry = {
+                vm.loadSubscriptions()
+            }
         ) {
             LazyVerticalStaggeredGrid(
                 modifier = Modifier.fillMaxSize(),

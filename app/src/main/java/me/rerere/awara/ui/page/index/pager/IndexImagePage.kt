@@ -9,7 +9,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import me.rerere.awara.ui.component.common.Spin
+import me.rerere.awara.ui.component.common.UiStateBox
 import me.rerere.awara.ui.component.ext.DynamicStaggeredGridCells
 import me.rerere.awara.ui.component.iwara.MediaCard
 import me.rerere.awara.ui.component.iwara.PaginationBar
@@ -21,11 +21,14 @@ import me.rerere.awara.ui.page.index.IndexVM
 fun IndexImagePage(vm: IndexVM) {
     val state = vm.state
     Column {
-        Spin(
-            show = state.imageLoading,
+        UiStateBox(
+            state = state.imageState,
             modifier = Modifier
                 .weight(1f)
-                .fillMaxWidth()
+                .fillMaxWidth(),
+            onErrorRetry = {
+                vm.loadImageList()
+            }
         ) {
             LazyVerticalStaggeredGrid(
                 columns = DynamicStaggeredGridCells(150.dp, 2, 4),

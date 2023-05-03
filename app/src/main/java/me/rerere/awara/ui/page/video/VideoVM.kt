@@ -54,7 +54,7 @@ class VideoVM(
         loadPlaylistForVideo()
     }
 
-    suspend fun isVideoExists() = appDatabase.downloadDao().getDownloadItem(resourceId = id) != null
+    suspend fun isVideoAlreadyDownloaded() = appDatabase.downloadDao().getDownloadItem(resourceId = id) != null
 
     private fun writeHistory() {
         viewModelScope.launch {

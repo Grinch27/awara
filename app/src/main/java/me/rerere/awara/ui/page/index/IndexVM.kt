@@ -1,6 +1,7 @@
 package me.rerere.awara.ui.page.index
 
 import android.util.Log
+import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -18,6 +19,8 @@ import me.rerere.awara.data.source.onError
 import me.rerere.awara.data.source.onException
 import me.rerere.awara.data.source.onSuccess
 import me.rerere.awara.data.source.runAPICatching
+import me.rerere.awara.data.source.stringResource
+import me.rerere.awara.ui.component.common.UiState
 import me.rerere.awara.ui.component.iwara.param.FilterValue
 import me.rerere.awara.ui.component.iwara.param.sort.MediaSortOptions
 import me.rerere.awara.ui.component.iwara.param.toParams
@@ -57,26 +60,36 @@ class IndexVM(
         }
     }
 
-    private fun loadSubscriptions() {
+    fun loadSubscriptions() {
         viewModelScope.launch {
-            state = state.copy(subscriptionLoading = true)
+            state = state.copy(subscriptionState = UiState.Loading)
             runAPICatching {
                 val param = mapOf(
                     "subscribed" to "true",
                     "limit" to "24",
                     "page" to (state.subscriptionPage - 1).toString()
                 )
-                when(state.subscriptionType){
+                when (state.subscriptionType) {
                     SubscriptionType.VIDEO -> mediaRepo.getVideoList(param)
                     SubscriptionType.IMAGE -> mediaRepo.getImageList(param)
                 }
             }.onSuccess {
                 state = state.copy(
                     subscriptions = it.results,
-                    subscriptionTotal = it.count
+                    subscriptionTotal = it.count,
+                    subscriptionState = if (it.results.isNotEmpty()) UiState.Success else UiState.Empty,
                 )
+            }.onError {
+                state = state.copy(subscriptionState = UiState.Error(
+                    message = {
+                        Text(stringResource(error = it))
+                    }
+                ))
+            }.onException {
+                state = state.copy(subscriptionState = UiState.Error(message = {
+                    Text(it.exception.localizedMessage ?: "Unknown Error")
+                }))
             }
-            state = state.copy(subscriptionLoading = false)
         }
     }
 
@@ -123,8 +136,8 @@ class IndexVM(
         }
     }
 
-    fun jumpToSubscriptionPage(page: Int){
-        if(page == state.subscriptionPage || page < 1) return
+    fun jumpToSubscriptionPage(page: Int) {
+        if (page == state.subscriptionPage || page < 1) return
         state = state.copy(subscriptionPage = page)
         loadSubscriptions()
     }
@@ -136,7 +149,7 @@ class IndexVM(
 
     fun loadVideoList() {
         viewModelScope.launch {
-            state = state.copy(videoLoading = true)
+            state = state.copy(videoState = UiState.Loading)
             runAPICatching {
                 mediaRepo.getVideoList(
                     mapOf(
@@ -148,16 +161,26 @@ class IndexVM(
             }.onSuccess {
                 state = state.copy(
                     videoList = it.results,
-                    videoCount = it.count
+                    videoCount = it.count,
+                    videoState = if (it.results.isNotEmpty()) UiState.Success else UiState.Empty,
                 )
+            }.onError {
+                state = state.copy(subscriptionState = UiState.Error(
+                    message = {
+                        Text(stringResource(error = it))
+                    }
+                ))
+            }.onException {
+                state = state.copy(subscriptionState = UiState.Error(message = {
+                    Text(it.exception.localizedMessage ?: "Unknown Error")
+                }))
             }
-            state = state.copy(videoLoading = false)
         }
     }
 
     fun loadImageList() {
         viewModelScope.launch {
-            state = state.copy(imageLoading = true)
+            state = state.copy(imageState = UiState.Loading)
             runAPICatching {
                 mediaRepo.getImageList(
                     mapOf(
@@ -169,20 +192,30 @@ class IndexVM(
             }.onSuccess {
                 state = state.copy(
                     imageList = it.results,
-                    imageCount = it.count
+                    imageCount = it.count,
+                    imageState = if (it.results.isNotEmpty()) UiState.Success else UiState.Empty,
                 )
+            }.onError {
+                state = state.copy(subscriptionState = UiState.Error(
+                    message = {
+                        Text(stringResource(error = it))
+                    }
+                ))
+            }.onException {
+                state = state.copy(subscriptionState = UiState.Error(message = {
+                    Text(it.exception.localizedMessage ?: "Unknown Error")
+                }))
             }
-            state = state.copy(imageLoading = false)
         }
     }
 
-    fun updateVideoSort(sort: String){
+    fun updateVideoSort(sort: String) {
         videoSort = sort
         loadVideoList()
     }
 
     fun updateVideoPage(it: Int) {
-        if(it == state.videoPage || it < 1) return
+        if (it == state.videoPage || it < 1) return
         state = state.copy(videoPage = it)
         loadVideoList()
     }
@@ -195,13 +228,13 @@ class IndexVM(
         videoFilters.remove(filterValue)
     }
 
-    fun updateImageSort(sort: String){
+    fun updateImageSort(sort: String) {
         imageSort = sort
         loadImageList()
     }
 
     fun updateImagePage(it: Int) {
-        if(it == state.imagePage || it < 1) return
+        if (it == state.imagePage || it < 1) return
         state = state.copy(imagePage = it)
         loadImageList()
     }
@@ -223,16 +256,16 @@ class IndexVM(
     }
 
     data class IndexState(
-        val subscriptionLoading: Boolean = false,
+        val subscriptionState: UiState = UiState.Initial,
         val subscriptionPage: Int = 1,
         val subscriptionTotal: Int = 0,
-        val subscriptionType : SubscriptionType = SubscriptionType.VIDEO,
+        val subscriptionType: SubscriptionType = SubscriptionType.VIDEO,
         val subscriptions: List<Media> = emptyList(),
-        val videoLoading: Boolean = false,
+        val videoState: UiState = UiState.Initial,
         val videoPage: Int = 1,
         val videoCount: Int = 0,
         val videoList: List<Media> = emptyList(),
-        val imageLoading: Boolean = false,
+        val imageState: UiState = UiState.Initial,
         val imagePage: Int = 1,
         val imageCount: Int = 0,
         val imageList: List<Media> = emptyList(),
@@ -250,7 +283,8 @@ class IndexVM(
     }
 
     sealed class IndexEvent {
-        data class ShowUpdateDialog(val code: Int, val version: String, val changes: String) : IndexEvent()
+        data class ShowUpdateDialog(val code: Int, val version: String, val changes: String) :
+            IndexEvent()
     }
 }
 

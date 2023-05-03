@@ -8,6 +8,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Lens
 import androidx.compose.material.icons.outlined.Message
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
@@ -94,6 +95,10 @@ fun IndexPagePhoneLayout(vm: IndexVM) {
 
                         IconButton(onClick = { /*TODO*/ }) {
                             Icon(Icons.Outlined.Message, null)
+                        }
+
+                        IconButton(onClick = { /*TODO*/ }) {
+                            Icon(Icons.Outlined.Notifications, null)
                         }
 
                         IconButton(

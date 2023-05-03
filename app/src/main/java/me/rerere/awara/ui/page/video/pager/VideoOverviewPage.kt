@@ -247,7 +247,7 @@ private fun VideoInfoCard(video: Video, vm: VideoVM) {
                                 return@launch
                             }
 
-                            if(vm.isVideoExists()) {
+                            if(vm.isVideoAlreadyDownloaded()) {
                                 message.error { Text(stringResource(R.string.already_downloaded)) }
                                 return@launch
                             }

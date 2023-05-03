@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.ui.AspectRatioFrameLayout
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -123,7 +124,14 @@ fun  VideoPage(vm: VideoVM = koinViewModel()) {
             urls.map {
                 PlayerState.PlayerItem(
                     quality = it.name,
-                    mediaItem = MediaItem.fromUri(it.src.view.fixUrl())
+                    mediaItem = MediaItem.Builder()
+                        .setUri(it.src.view.fixUrl())
+                        .setMediaMetadata(
+                            MediaMetadata.Builder()
+                                .setTitle(vm.state.video?.title)
+                                .build()
+                        )
+                        .build()
                 )
             }
         )
