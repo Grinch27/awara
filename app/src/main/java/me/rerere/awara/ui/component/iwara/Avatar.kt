@@ -2,8 +2,6 @@ package me.rerere.awara.ui.component.iwara
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -22,10 +20,8 @@ fun Avatar(
     showOnlineStatus: Boolean = true,
     onClick: () -> Unit = {}
 ) {
-    val online by remember {
-        derivedStateOf {
-            Instant.now().epochSecond - (user?.seenAt?.epochSecond ?: 0) < 60 * 5
-        }
+    val online = remember(user) {
+        Instant.now().epochSecond - (user?.seenAt?.epochSecond ?: 0) < 60 * 10
     }
     val onlineColor = if (online) {
         MaterialTheme.colorScheme.success
