@@ -28,6 +28,16 @@ import java.time.Instant
 
 private const val TAG = "DownloadWorker"
 
+/**
+ * 下载任务Worker
+ *
+ * 启动参数:
+ * - KEY_DOWNLOAD_URL 下载链接
+ * - KEY_DOWNLOAD_TITLE 标题
+ * - KEY_DOWNLOAD_THUMBNAIL 缩略图
+ * - KEY_DOWNLOAD_TYPE 下载类型
+ * - KEY_DOWNLOAD_RESOURCE_ID 资源ID
+ */
 class DownloadWorker(
     private val appContext: Context,
     params: WorkerParameters

@@ -55,7 +55,7 @@ fun SettingPage() {
             item {
                 SettingItemCategory(
                     title = {
-                        Text("外观设置")
+                        Text(stringResource(R.string.setting_look))
                     }
                 ) {
                     val darkMode = rememberIntPreference(
@@ -76,31 +76,31 @@ fun SettingPage() {
                         itemLabel = { mode ->
                             Text(
                                 text = when (mode) {
-                                    0 -> "跟随系统"
-                                    1 -> "浅色模式"
-                                    2 -> "深色模式"
-                                    else -> "未知"
+                                    0 -> stringResource(R.string.setting_look_darkmode_follow)
+                                    1 -> stringResource(R.string.setting_look_darkmode_light_mode)
+                                    2 -> stringResource(R.string.setting_look_darkmode_dark_mode)
+                                    else -> "?"
                                 }
                             )
                         },
                         title = {
-                            Text("颜色模式")
+                            Text(stringResource(R.string.setting_look_darkmode_title))
                         },
                         icon = {
                             Icon(Icons.Outlined.LightMode, "Light/Dark Mode")
                         },
                         text = {
-                            Text("设置应用的颜色模式")
+                            Text(stringResource(R.string.setting_look_darkmode_text))
                         }
                     )
 
                     SettingBooleanItem(
                         state = dynamicColor,
                         title = {
-                            Text("动态颜色")
+                            Text(stringResource(R.string.setting_look_dynamic_color_title))
                         },
                         text = {
-                            Text("是否根据视频封面动态调整颜色")
+                            Text(stringResource(R.string.setting_look_dynamic_color_text))
                         },
                         icon = {
                             Icon(Icons.Outlined.ColorLens,  null)
@@ -110,10 +110,10 @@ fun SettingPage() {
                     SettingBooleanItem(
                         state = workMode,
                         title = {
-                            Text("工作模式")
+                            Text(stringResource(R.string.setting_look_work_mode_title))
                         },
                         text = {
-                            Text("工作模式下，将会模糊视频封面")
+                            Text(stringResource(R.string.setting_look_work_mode_text))
                         },
                         icon = {
                             Icon(Icons.Outlined.HomeWork,  null)
@@ -131,14 +131,14 @@ fun SettingPage() {
                     key = "setting.loop_play",
                     default = false
                 )
-                SettingItemCategory(title = { Text("播放器设置") }) {
+                SettingItemCategory(title = { Text(stringResource(R.string.setting_player)) }) {
                     SettingBooleanItem(
                         state = autoPlay,
                         title = {
-                            Text("自动播放")
+                            Text(stringResource(R.string.setting_player_auto_play_title))
                         },
                         text = {
-                            Text("进入视频页面自动开始缓冲并播放视频")
+                            Text(stringResource(R.string.setting_player_auto_play_text))
                         },
                         icon = {
                             Icon(Icons.Outlined.AutoMode,  null)
@@ -148,10 +148,10 @@ fun SettingPage() {
                     SettingBooleanItem(
                         state = loopPlay,
                         title = {
-                            Text("循环播放")
+                            Text(stringResource(R.string.setting_player_loop_title))
                         },
                         text = {
-                            Text("自动循环播放视频")
+                            Text(stringResource(R.string.setting_player_loop_text))
                         },
                         icon = {
                             Icon(Icons.Outlined.Replay,  null)
@@ -163,15 +163,15 @@ fun SettingPage() {
             item {
                 SettingItemCategory(
                     title = {
-                        Text("关于")
+                        Text(stringResource(R.string.setting_about))
                     }
                 ) {
                     SettingLinkItem(
                         title = {
-                            Text("源码")
+                            Text(stringResource(R.string.setting_about_source_title))
                         },
                         text = {
-                            Text("Github")
+                            Text(stringResource(R.string.setting_about_source_text))
                         },
                         icon = {
                             Icon(Icons.Outlined.Source, null)

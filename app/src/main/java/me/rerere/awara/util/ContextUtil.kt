@@ -9,6 +9,11 @@ import android.util.Log
 
 private const val TAG = "ContextUtil"
 
+/**
+ * 获取当前应用程序的版本代码。
+ *
+ * @return 当前应用程序的版本代码。
+ */
 val Context.versionCode: Int
     get() = packageManager.getPackageInfo(packageName, 0).versionCode
 
@@ -42,12 +47,23 @@ fun Context.findActivity(): Activity = when (this) {
     else -> throw IllegalStateException("Context is not an Activity")
 }
 
+/**
+ * 将文本复制到剪贴板。
+ *
+ * @param label 剪贴板条目的标签。
+ * @param text 要复制到剪贴板的文本。
+ */
 fun Context.writeToClipboard(label: String, text: String) {
     val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
     val clip = android.content.ClipData.newPlainText(label, text)
     clipboard.setPrimaryClip(clip)
 }
 
+/**
+ * 分享链接
+ *
+ * @param url 需要分享的链接
+ */
 fun Context.shareLink(url: String) {
     val intent = Intent(Intent.ACTION_SEND)
     intent.putExtra(Intent.EXTRA_TEXT, url)

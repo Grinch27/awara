@@ -87,7 +87,7 @@ val indexNavigations = listOf(
     IndexNavigation(
         name = "subscription",
         title = {
-            Text(stringResource(R.string.index_nav_subscription))
+            Text(stringResource(R.string.index_nav_subscription), maxLines = 1)
         },
         icon = {
             Icon(Icons.Outlined.Subscriptions, "Subscription")
@@ -97,7 +97,7 @@ val indexNavigations = listOf(
     IndexNavigation(
         name = "video",
         title = {
-            Text(stringResource(R.string.index_nav_video))
+            Text(stringResource(R.string.index_nav_video), maxLines = 1)
         },
         icon = {
             Icon(Icons.Outlined.VideoLabel, "Videos")
@@ -106,7 +106,7 @@ val indexNavigations = listOf(
     IndexNavigation(
         name = "image",
         title = {
-            Text(stringResource(R.string.index_nav_image))
+            Text(stringResource(R.string.index_nav_image), maxLines = 1)
         },
         icon = {
             Icon(Icons.Outlined.Image, "Images")
@@ -115,7 +115,7 @@ val indexNavigations = listOf(
     IndexNavigation(
         name = "forum",
         title = {
-            Text(stringResource(R.string.index_nav_forum))
+            Text(stringResource(R.string.index_nav_forum), maxLines = 1)
         },
         icon = {
             Icon(Icons.Outlined.Forum, "Forum")
