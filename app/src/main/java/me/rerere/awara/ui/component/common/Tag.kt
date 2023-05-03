@@ -31,7 +31,7 @@ fun Tag(
     Surface(
         modifier = modifier,
         shape = MaterialTheme.shapes.small,
-        color = surfaceColor,
+        color = surfaceColor.copy(alpha = 0.9f),
         contentColor = surfaceColor.bestTextColor
     ) {
         ProvideTextStyle(MaterialTheme.typography.labelSmall) {

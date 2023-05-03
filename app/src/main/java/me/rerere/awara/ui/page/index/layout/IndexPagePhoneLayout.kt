@@ -78,7 +78,8 @@ fun IndexPagePhoneLayout(vm: IndexVM) {
                             onClick = {
                                 scope.launch { drawerState.open() }
                             },
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(32.dp),
+                            showOnlineStatus = false
                         )
                     },
                     actions = {
