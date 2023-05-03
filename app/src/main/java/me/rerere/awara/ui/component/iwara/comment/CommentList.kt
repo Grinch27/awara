@@ -191,6 +191,7 @@ fun CommentList(
                                         body = body,
                                         parentId = replyTo?.id,
                                     ))
+                                    body = ""
                                 }
                             )
                         )
@@ -201,6 +202,7 @@ fun CommentList(
                                     body = body,
                                     parentId = replyTo?.id,
                                 ))
+                                body = ""
                             }
                         ) {
                             Icon(Icons.Outlined.Send, null)
