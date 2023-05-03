@@ -1,6 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
-
+    <string name="app_name" translatable="false">Awara</string>
     <string name="login_title">登录</string>
     <string name="login_button">登录</string>
     <string name="login_user">用户名或邮箱</string>
@@ -61,4 +60,9 @@
     <string name="drawer_setting">设置</string>
     <string name="friends">好友</string>
     <string name="download">下载</string>
+    <string name="please_grant_notification_permission">Please grant notification permission!</string>
+    <string name="notification_is_not_enabled">Notification is not enabled</string>
+    <string name="already_downloading">已经在下载中。</string>
+    <string name="already_downloaded">已下载</string>
+    <string name="start_downloading">开始下载…</string>
 </resources>

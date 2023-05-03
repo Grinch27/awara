@@ -230,7 +230,7 @@ private fun VideoInfoCard(video: Video, vm: VideoVM) {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                 if(permissionState.status != PermissionStatus.Granted) {
                                     message.error {
-                                        Text("Please grant notification permission!")
+                                        Text(stringResource(R.string.please_grant_notification_permission))
                                     }
                                     permissionState.launchPermissionRequest()
                                     return@launch
@@ -238,17 +238,17 @@ private fun VideoInfoCard(video: Video, vm: VideoVM) {
                             }
 
                             if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) {
-                                message.error { Text("Notification is not enabled") }
+                                message.error { Text(stringResource(R.string.notification_is_not_enabled)) }
                                 return@launch
                             }
 
                             if (workManager.getWorkInfosByTag(vm.id).await().any { it.state == WorkInfo.State.RUNNING || it.state == WorkInfo.State.ENQUEUED }) {
-                                message.error { Text("Already downloading") }
+                                message.error { Text(stringResource(R.string.already_downloading)) }
                                 return@launch
                             }
 
                             if(vm.isVideoExists()) {
-                                message.error { Text("Already downloaded") }
+                                message.error { Text(stringResource(R.string.already_downloaded)) }
                                 return@launch
                             }
 
@@ -272,7 +272,7 @@ private fun VideoInfoCard(video: Video, vm: VideoVM) {
                                 .build()
 
                             message.info {
-                                Text("Start downloading...")
+                                Text(stringResource(R.string.start_downloading))
                             }
 
                             workManager.enqueue(req)

@@ -60,4 +60,9 @@
     <string name="drawer_setting">Settings</string>
     <string name="friends">Friends</string>
     <string name="download">Download</string>
+    <string name="please_grant_notification_permission">Please grant notification permission!</string>
+    <string name="notification_is_not_enabled">Notification is not enabled</string>
+    <string name="already_downloading">Already downloading</string>
+    <string name="already_downloaded">Already downloaded</string>
+    <string name="start_downloading">Start downloading...</string>
 </resources>
