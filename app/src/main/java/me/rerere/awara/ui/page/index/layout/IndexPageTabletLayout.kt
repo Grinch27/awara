@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Message
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material3.Badge
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -24,6 +25,7 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -99,12 +101,40 @@ fun IndexPageTabletLayout(vm: IndexVM) {
                             )
                         },
                         actions = {
-                            IconButton(onClick = { navController.navigate("message") }) {
-                                Icon(Icons.Outlined.Message, null)
+                            Box {
+                                IconButton(
+                                    onClick = {
+                                        navController.navigate("message")
+                                    }
+                                ) {
+                                    Icon(Icons.Outlined.Message, null)
+                                }
+
+                                if(vm.state.notificationCounts.messages > 0) {
+                                    Badge(
+                                        modifier = Modifier
+                                            .align(Alignment.TopEnd)
+                                            .padding(4.dp)
+                                    ) {
+                                        Text(vm.state.notificationCounts.messages.toString())
+                                    }
+                                }
                             }
 
-                            IconButton(onClick = { /*TODO*/ }) {
-                                Icon(Icons.Outlined.Notifications, null)
+                            Box {
+                                IconButton(onClick = { /*TODO*/ }) {
+                                    Icon(Icons.Outlined.Notifications, null)
+                                }
+
+                                if(vm.state.notificationCounts.notifications > 0) {
+                                    Badge(
+                                        modifier = Modifier
+                                            .align(Alignment.TopEnd)
+                                            .padding(4.dp)
+                                    ) {
+                                        Text(vm.state.notificationCounts.notifications.toString())
+                                    }
+                                }
                             }
 
                             IconButton(
