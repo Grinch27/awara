@@ -20,13 +20,17 @@ fun Avatar(
     showOnlineStatus: Boolean = true,
     onClick: () -> Unit = {}
 ) {
-    val online = remember(user) {
-        Instant.now().epochSecond - (user?.seenAt?.epochSecond ?: 0) < 60 * 10
+    val onlineType = remember(user) {
+        when(Instant.now().epochSecond - (user?.seenAt?.epochSecond ?: 0)) {
+            in 0..60 * 10 -> OnlineType.ONLINE
+            in 0..60 * 60 * 12 -> OnlineType.RECENTLY
+            else -> OnlineType.OFFLINE
+        }
     }
-    val onlineColor = if (online) {
-        MaterialTheme.colorScheme.success
-    } else {
-        MaterialTheme.colorScheme.warning
+    val onlineColor = when(onlineType) {
+        OnlineType.ONLINE -> MaterialTheme.colorScheme.success
+        OnlineType.RECENTLY -> MaterialTheme.colorScheme.warning
+        OnlineType.OFFLINE -> MaterialTheme.colorScheme.error
     }
     me.rerere.awara.ui.component.common.Avatar(
         model = (user?.avatar).toAvatarUrl(),
@@ -47,4 +51,10 @@ fun Avatar(
         },
         onClick = onClick
     )
+}
+
+enum class OnlineType {
+    ONLINE, // 在线 (10分钟内)
+    RECENTLY, // 最近在线 (12小时内)
+    OFFLINE // 离线
 }
