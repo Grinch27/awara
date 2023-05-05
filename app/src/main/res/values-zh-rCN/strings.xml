@@ -83,4 +83,6 @@
     <string name="setting_about">关于</string>
     <string name="setting_about_source_title">源代码</string>
     <string name="setting_about_source_text">Github</string>
+    <string name="author_profile">开发者主页</string>
+    <string name="click_to_view_my_iwara_profile">点击查看作者主页</string>
 </resources>

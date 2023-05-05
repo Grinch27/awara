@@ -83,4 +83,6 @@
     <string name="setting_about">だいたい</string>
     <string name="setting_about_source_title">ソースコード</string>
     <string name="setting_about_source_text">Github</string>
+    <string name="author_profile">開発者のホームページ</string>
+    <string name="click_to_view_my_iwara_profile">クリックすると作者のホームページが表示されます</string>
 </resources>

@@ -1,6 +1,7 @@
 package me.rerere.awara.ui.page.setting
 
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoMode
@@ -19,7 +20,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import me.rerere.awara.R
+import me.rerere.awara.ui.LocalRouterProvider
+import me.rerere.awara.ui.component.common.Avatar
 import me.rerere.awara.ui.component.common.BackButton
 import me.rerere.awara.util.openUrl
 import me.rerere.compose_setting.components.SettingItemCategory
@@ -33,6 +37,7 @@ import me.rerere.compose_setting.preference.rememberIntPreference
 fun SettingPage() {
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val router = LocalRouterProvider.current
     Scaffold(
         topBar = {
             LargeTopAppBar(
@@ -166,6 +171,24 @@ fun SettingPage() {
                         Text(stringResource(R.string.setting_about))
                     }
                 ) {
+                    SettingLinkItem(
+                        title = {
+                            Text(stringResource(R.string.author_profile))
+                        },
+                        text = {
+                            Text(stringResource(R.string.click_to_view_my_iwara_profile))
+                        },
+                        icon = {
+                            Avatar(
+                                model = "https://i.iwara.tv/image/avatar/a90cf846-fb84-4965-adbd-131c411abc93/picture-294150-1628430683.jpg",
+                                modifier = Modifier.size(32.dp)
+                            )
+                        },
+                        onClick = {
+                            router.navigate("user/user294150")
+                        }
+                    )
+
                     SettingLinkItem(
                         title = {
                             Text(stringResource(R.string.setting_about_source_title))
