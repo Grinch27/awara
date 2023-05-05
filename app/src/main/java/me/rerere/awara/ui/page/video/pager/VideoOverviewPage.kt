@@ -166,7 +166,7 @@ private fun VideoInfoCard(video: Video, vm: VideoVM) {
                     Text(
                         text = video.title,
                         style = MaterialTheme.typography.titleLarge,
-                        maxLines = 1,
+                        maxLines = if (expand) Int.MAX_VALUE else 1,
                         modifier = Modifier.weight(1f)
                     )
                     Icon(
