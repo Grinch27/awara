@@ -85,4 +85,10 @@
     <string name="setting_about_source_text">Github</string>
     <string name="author_profile">开发者主頁</string>
     <string name="click_to_view_my_iwara_profile">點擊查看作者的主頁</string>
+    <string name="accept">同意</string>
+    <string name="reject">拒絕</string>
+    <string name="cancel_request">取消請求</string>
+    <string name="friend_requests">好友請求</string>
+    <string name="friends_pending">等待同意</string>
+    <string name="friends_friends">已是朋友</string>
 </resources>

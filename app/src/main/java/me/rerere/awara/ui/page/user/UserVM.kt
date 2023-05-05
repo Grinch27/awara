@@ -7,6 +7,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
+import me.rerere.awara.data.dto.FriendStatus
 import me.rerere.awara.data.dto.ProfileDto
 import me.rerere.awara.data.entity.Image
 import me.rerere.awara.data.entity.Video
@@ -29,14 +30,23 @@ class UserVM(
 
     private fun loadUser() {
         viewModelScope.launch {
-            state = state.copy(loading = true)
+            state = state.copy(loading = true, friendLoading = true)
             runAPICatching {
                 state = state.copy(profile = userRepo.getProfile(id))
             }.onSuccess {
                 loadVideoList()
                 loadImageList()
+                loadFriendsStatus()
             }
-            state = state.copy(loading = false)
+            state = state.copy(loading = false, friendLoading = false)
+        }
+    }
+
+    private suspend fun loadFriendsStatus() {
+        runAPICatching {
+            userRepo.getFriendsStatus(state.profile?.user?.id ?: "")
+        }.onSuccess {
+            state = state.copy(friendStatus = FriendStatus.parse(it.status))
         }
     }
 
@@ -68,12 +78,14 @@ class UserVM(
         viewModelScope.launch {
             state = state.copy(videoLoading = true)
             runAPICatching {
-                val result = mediaRepo.getVideoList(mapOf(
-                    "page" to (state.videoPage - 1).toString(),
-                    "sort" to "date",
-                    "user" to (state.profile?.user?.id ?: ""),
-                    "limit" to "32"
-                ))
+                val result = mediaRepo.getVideoList(
+                    mapOf(
+                        "page" to (state.videoPage - 1).toString(),
+                        "sort" to "date",
+                        "user" to (state.profile?.user?.id ?: ""),
+                        "limit" to "32"
+                    )
+                )
                 state = state.copy(
                     videoCount = result.count,
                     videoList = result.results
@@ -92,12 +104,14 @@ class UserVM(
         viewModelScope.launch {
             state = state.copy(imageLoading = true)
             runAPICatching {
-                val result = mediaRepo.getImageList(mapOf(
-                    "page" to (state.imagePage - 1).toString(),
-                    "sort" to "date",
-                    "user" to (state.profile?.user?.id ?: ""),
-                    "limit" to "32",
-                ))
+                val result = mediaRepo.getImageList(
+                    mapOf(
+                        "page" to (state.imagePage - 1).toString(),
+                        "sort" to "date",
+                        "user" to (state.profile?.user?.id ?: ""),
+                        "limit" to "32",
+                    )
+                )
                 state = state.copy(
                     imageCount = result.count,
                     imageList = result.results
@@ -107,10 +121,27 @@ class UserVM(
         }
     }
 
+    fun addOrRemoveFriend() {
+        viewModelScope.launch {
+            state = state.copy(friendLoading = true)
+            runAPICatching {
+                if (state.friendStatus == FriendStatus.NONE) {
+                    userRepo.addFriend(state.profile?.user?.id ?: "")
+                } else {
+                    userRepo.removeFriend(state.profile?.user?.id ?: "")
+                }
+                loadFriendsStatus()
+            }
+            state = state.copy(friendLoading = false)
+        }
+    }
+
     data class UserVMState(
         val loading: Boolean = false,
         val followLoading: Boolean = false,
         val profile: ProfileDto? = null,
+        val friendStatus: FriendStatus = FriendStatus.NONE,
+        val friendLoading: Boolean = false,
         val videoPage: Int = 1,
         val videoCount: Int = 0,
         val videoLoading: Boolean = false,

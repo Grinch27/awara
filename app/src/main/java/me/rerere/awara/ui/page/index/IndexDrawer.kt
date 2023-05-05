@@ -159,7 +159,10 @@ fun ColumnScope.IndexDrawer(vm: IndexVM) {
 
 
             Card(
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onClick = {
+                    router.navigate("friends/${userState.user?.id}?self=true")
+                }
             ) {
                 Box {
                     Column(
@@ -177,13 +180,13 @@ fun ColumnScope.IndexDrawer(vm: IndexVM) {
                         )
                     }
 
-                    if(vm.state.friendRequestsCount > 0) {
+                    if (vm.state.notificationCounts.friendRequests > 0) {
                         Badge(
                             modifier = Modifier
                                 .padding(8.dp)
                                 .align(Alignment.TopEnd)
                         ) {
-                            Text(vm.state.friendRequestsCount.toString())
+                            Text(vm.state.notificationCounts.friendRequests.toString())
                         }
                     }
                 }
@@ -263,7 +266,9 @@ fun ColumnScope.IndexDrawer(vm: IndexVM) {
         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Hitokoto(
-            modifier = Modifier.padding(8.dp).fillMaxWidth()
+            modifier = Modifier
+                .padding(8.dp)
+                .fillMaxWidth()
         )
     }
 }

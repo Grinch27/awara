@@ -11,6 +11,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import me.rerere.awara.R
+import me.rerere.awara.data.dto.Notification
 import me.rerere.awara.data.entity.Media
 import me.rerere.awara.data.repo.MediaRepo
 import me.rerere.awara.data.repo.UserRepo
@@ -128,9 +129,9 @@ class IndexVM(
 
             launch {
                 runAPICatching {
-                    userRepo.getFriendRequestCount(userId = userId)
+                    userRepo.getNotificationCounts()
                 }.onSuccess {
-                    state = state.copy(friendRequestsCount = it)
+                    state = state.copy(notificationCounts = it)
                 }
             }
         }
@@ -272,7 +273,7 @@ class IndexVM(
         val followingCount: Int = 0,
         val followerCount: Int = 0,
         val friendsCount: Int = 0,
-        val friendRequestsCount: Int = 0,
+        val notificationCounts: Notification = Notification()
     )
 
     enum class SubscriptionType(

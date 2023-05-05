@@ -47,7 +47,19 @@ class UserRepo(private val iwaraAPI: IwaraAPI) {
         "limit" to "1"
     )).count
 
-    suspend fun getFriendRequestCount(userId: String) = iwaraAPI.getUserFriendRequests(userId, mapOf(
-        "limit" to "1"
-    )).count
+    suspend fun getFriendsStatus(userId: String) = iwaraAPI.getFriendStatus(userId)
+
+    suspend fun addFriend(userId: String) = iwaraAPI.addFriend(userId)
+
+    suspend fun removeFriend(userId: String) = iwaraAPI.removeFriend(userId)
+
+    suspend fun getUserFriends(userId: String, page: Int) = iwaraAPI.getUserFriends(userId, mapOf(
+        "page" to page.toString(),
+    ))
+
+    suspend fun getFriendRequests(userId: String, page: Int) = iwaraAPI.getUserFriendRequests(userId, mapOf(
+        "page" to page.toString(),
+    ))
+
+    suspend fun getNotificationCounts() = iwaraAPI.getNotificationCount()
 }

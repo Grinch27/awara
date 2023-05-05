@@ -86,4 +86,10 @@
     <string name="setting_about_source_text">Github</string>
     <string name="author_profile">Author Profile</string>
     <string name="click_to_view_my_iwara_profile">Click to view my iwara profile</string>
+    <string name="accept">Accept</string>
+    <string name="reject">Reject</string>
+    <string name="cancel_request">Cancel Request</string>
+    <string name="friend_requests">Requests</string>
+    <string name="friends_pending">Pending</string>
+    <string name="friends_friends">Friends Already</string>
 </resources>
