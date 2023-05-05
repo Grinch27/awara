@@ -99,7 +99,7 @@ fun IndexPageTabletLayout(vm: IndexVM) {
                             )
                         },
                         actions = {
-                            IconButton(onClick = { /*TODO*/ }) {
+                            IconButton(onClick = { navController.navigate("message") }) {
                                 Icon(Icons.Outlined.Message, null)
                             }
 

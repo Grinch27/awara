@@ -30,11 +30,13 @@ import me.rerere.awara.ui.component.common.MessageProvider
 import me.rerere.awara.ui.page.download.DownloadPage
 import me.rerere.awara.ui.page.favorites.FavoritesPage
 import me.rerere.awara.ui.page.follow.FollowPage
+import me.rerere.awara.ui.page.friends.FriendsPage
 import me.rerere.awara.ui.page.history.HistoryPage
 import me.rerere.awara.ui.page.image.ImagePage
 import me.rerere.awara.ui.page.index.IndexPage
 import me.rerere.awara.ui.page.lab.LabPage
 import me.rerere.awara.ui.page.login.LoginPage
+import me.rerere.awara.ui.page.message.MessagePage
 import me.rerere.awara.ui.page.playlist.PlaylistDetailPage
 import me.rerere.awara.ui.page.playlist.PlaylistsPage
 import me.rerere.awara.ui.page.search.SearchPage
@@ -204,6 +206,22 @@ class RouterActivity : ComponentActivity() {
 
                 composable("download") {
                     DownloadPage()
+                }
+
+                composable("friends/{userId}?self={self}", arguments = listOf(
+                    navArgument("userId") {
+                        type = NavType.StringType
+                    },
+                    navArgument("self") {
+                        type = NavType.BoolType
+                        defaultValue = false
+                    }
+                )) {
+                    FriendsPage()
+                }
+
+                composable("message") {
+                    MessagePage()
                 }
 
                 composable("lab") {

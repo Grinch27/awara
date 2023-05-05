@@ -1,8 +1,11 @@
 package me.rerere.awara.data.source
 
 import me.rerere.awara.data.dto.AccessTokenRes
+import me.rerere.awara.data.dto.FriendRequestDto
+import me.rerere.awara.data.dto.FriendStatusDto
 import me.rerere.awara.data.dto.LoginReq
 import me.rerere.awara.data.dto.LoginRes
+import me.rerere.awara.data.dto.Notification
 import me.rerere.awara.data.dto.ProfileDto
 import me.rerere.awara.data.dto.Self
 import me.rerere.awara.data.entity.Comment
@@ -149,6 +152,9 @@ interface IwaraAPI {
         @Body dto: PlaylistCreationDto
     ): Playlist
 
+    @GET("/user/counts")
+    suspend fun getNotificationCount(): Notification
+
     @GET("/user/{userId}/followers")
     suspend fun getUserFollowers(
         @Path("userId") userId: String,
@@ -171,7 +177,22 @@ interface IwaraAPI {
     suspend fun getUserFriendRequests(
         @Path("userId") userId: String,
         @QueryMap queryMap: Map<String, String>
-    ): Pager<User>
+    ): Pager<FriendRequestDto>
+
+    @POST("/user/{userId}/friends")
+    suspend fun addFriend(
+        @Path("userId") userId: String
+    ): Response<Unit>
+
+    @DELETE("/user/{userId}/friends")
+    suspend fun removeFriend(
+        @Path("userId") userId: String
+    ): Response<Unit>
+
+    @GET("/user/{userId}/friends/status")
+    suspend fun getFriendStatus(
+        @Path("userId") userId: String
+    ): FriendStatusDto
 
     @GET("/favorites/videos")
     suspend fun getFavoriteVideos(
