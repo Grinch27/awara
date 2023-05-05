@@ -11,17 +11,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.media3.common.MediaItem
-import androidx.media3.common.Player
-import androidx.media3.common.VideoSize
-import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
-import androidx.media3.ui.AspectRatioFrameLayout
+import com.google.android.exoplayer2.ExoPlayer
+import com.google.android.exoplayer2.MediaItem
+import com.google.android.exoplayer2.Player
+import com.google.android.exoplayer2.source.DefaultMediaSourceFactory
+import com.google.android.exoplayer2.ui.AspectRatioFrameLayout
+import com.google.android.exoplayer2.video.VideoSize
 import me.rerere.compose_setting.preference.mmkvPreference
 
 private const val TAG = "PlayerState"
 
-@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
 fun rememberPlayerState(
     builder: (Context) -> ExoPlayer = {
@@ -183,7 +182,7 @@ class PlayerState(val player: Player) {
         companion object {
             val UNKNOWN = VideoSize(0, 0)
 
-            fun from(videoSize: androidx.media3.common.VideoSize) = VideoSize(
+            fun from(videoSize: com.google.android.exoplayer2.video.VideoSize) = VideoSize(
                 videoSize.width,
                 videoSize.height,
             )

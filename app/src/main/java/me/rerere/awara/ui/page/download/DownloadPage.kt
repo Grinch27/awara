@@ -41,12 +41,12 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.media3.common.MediaItem
-import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.items
 import coil.compose.AsyncImage
+import com.google.android.exoplayer2.ExoPlayer
+import com.google.android.exoplayer2.MediaItem
+import com.google.android.exoplayer2.ui.AspectRatioFrameLayout
 import me.rerere.awara.R
 import me.rerere.awara.data.entity.DownloadItem
 import me.rerere.awara.ui.component.common.BackButton
@@ -59,7 +59,6 @@ import me.rerere.awara.ui.hooks.rememberRequestedScreenOrientation
 import me.rerere.awara.util.toLocalDateTimeString
 import org.koin.androidx.compose.koinViewModel
 
-@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
 fun DownloadPage(vm: DownloadVM = koinViewModel()) {
     val items = vm.downloadedItems.collectAsLazyPagingItems()

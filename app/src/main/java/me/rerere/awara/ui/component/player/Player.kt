@@ -144,7 +144,8 @@ private fun PlayerController(
         AnimatedVisibility(
             visible = visible,
             enter = fadeIn(),
-            exit = fadeOut()
+            exit = fadeOut(),
+            modifier = Modifier.fillMaxSize(),
         ) {
             Column(
                 modifier = modifier
@@ -162,14 +163,13 @@ private fun PlayerController(
                             ?: "Player",
                         maxLines = 1,
                         style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.weight(1f)
                     )
-
-                    Spacer(modifier = Modifier.weight(1f))
 
                     actions()
                 }
 
-                Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.weight(1f).fillMaxWidth())
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,

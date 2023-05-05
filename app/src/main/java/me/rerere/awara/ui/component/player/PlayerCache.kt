@@ -3,11 +3,11 @@ package me.rerere.awara.ui.component.player
 import android.content.Context
 import android.os.storage.StorageManager
 import android.util.Log
-import androidx.media3.database.StandaloneDatabaseProvider
-import androidx.media3.datasource.DefaultHttpDataSource
-import androidx.media3.datasource.cache.CacheDataSource
-import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
-import androidx.media3.datasource.cache.SimpleCache
+import com.google.android.exoplayer2.database.StandaloneDatabaseProvider
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
+import com.google.android.exoplayer2.upstream.cache.CacheDataSource
+import com.google.android.exoplayer2.upstream.cache.LeastRecentlyUsedCacheEvictor
+import com.google.android.exoplayer2.upstream.cache.SimpleCache
 import java.io.File
 
 private const val TAG = "PlayerCache"
@@ -15,7 +15,6 @@ private const val TAG = "PlayerCache"
 object PlayerCache {
     private lateinit var cacheFactory: CacheDataSource.Factory
 
-    @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
     fun get(context: Context): CacheDataSource.Factory {
         if (!::cacheFactory.isInitialized) {
             val cacheFolder = File(context.cacheDir, "player_cache")

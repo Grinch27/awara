@@ -20,6 +20,12 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+        ndk {
+            abiFilters.addAll(listOf(
+                "arm64-v8a",
+                "x86_64",
+            ))
+        }
     }
 
     buildTypes {
@@ -62,8 +68,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
     implementation("androidx.activity:activity-compose:1.7.1")
 
-    // MDC
-    implementation("com.google.android.material:material:1.8.0")
+    // MDC (仅用于提供动态取色算法，用于在视频页面动态取色)
+    implementation("com.google.android.material:material:1.9.0")
 
     // Compose
     // implementation(platform("androidx.compose:compose-bom:2023.01.00"))
@@ -76,10 +82,7 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended:1.4.2")
 
     // Media
-    implementation("androidx.media3:media3-exoplayer:1.0.1")
-    implementation("androidx.media3:media3-cast:1.0.1")
-    implementation("androidx.media3:media3-session:1.0.1")
-    implementation("androidx.media3:media3-ui:1.0.1")
+    implementation("com.google.android.exoplayer:exoplayer:2.18.6")
 
     // WorkManager
     implementation("androidx.work:work-runtime-ktx:2.8.1")
