@@ -8,6 +8,8 @@ import me.rerere.awara.ui.page.history.HistoryVM
 import me.rerere.awara.ui.page.image.ImageVM
 import me.rerere.awara.ui.page.index.IndexVM
 import me.rerere.awara.ui.page.login.LoginVM
+import me.rerere.awara.ui.page.message.ConversationsVM
+import me.rerere.awara.ui.page.message.MessageVM
 import me.rerere.awara.ui.page.playlist.PlaylistDetailVM
 import me.rerere.awara.ui.page.playlist.PlaylistsVM
 import me.rerere.awara.ui.page.search.SearchVM
@@ -30,4 +32,6 @@ val viewModelModule = module {
     viewModelOf(::SearchVM)
     viewModelOf(::DownloadVM)
     viewModelOf(::FriendsVM)
+    viewModelOf(::MessageVM)
+    viewModelOf(::ConversationsVM)
 }

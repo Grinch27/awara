@@ -104,7 +104,7 @@ fun IndexPageTabletLayout(vm: IndexVM) {
                             Box {
                                 IconButton(
                                     onClick = {
-                                        navController.navigate("message")
+                                        navController.navigate("conversations")
                                     }
                                 ) {
                                     Icon(Icons.Outlined.Message, null)

@@ -36,6 +36,7 @@ import me.rerere.awara.ui.page.image.ImagePage
 import me.rerere.awara.ui.page.index.IndexPage
 import me.rerere.awara.ui.page.lab.LabPage
 import me.rerere.awara.ui.page.login.LoginPage
+import me.rerere.awara.ui.page.message.ConversationsPage
 import me.rerere.awara.ui.page.message.MessagePage
 import me.rerere.awara.ui.page.playlist.PlaylistDetailPage
 import me.rerere.awara.ui.page.playlist.PlaylistsPage
@@ -61,7 +62,7 @@ class RouterActivity : ComponentActivity() {
                     UserStoreProvider {
                         val userState = LocalUserStore.current.collectAsState()
                         LaunchedEffect(userState.refreshing) {
-                            splashScreen.setKeepOnScreenCondition{ userState.refreshing }
+                            splashScreen.setKeepOnScreenCondition { userState.refreshing }
                         }
                         Box(
                             modifier = Modifier
@@ -220,7 +221,16 @@ class RouterActivity : ComponentActivity() {
                     FriendsPage()
                 }
 
-                composable("message") {
+                composable("conversations") {
+                    ConversationsPage()
+                }
+
+                composable(
+                    "message/{id}", arguments = listOf(
+                        navArgument("id") {
+                            type = NavType.StringType
+                        })
+                ) {
                     MessagePage()
                 }
 
