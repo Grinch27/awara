@@ -13,19 +13,19 @@ val Color.bestTextColor: Color
 
 val ColorScheme.warning: Color
     @Composable
-    get() = if (!isSystemInDarkTheme()) Color(0xFFFF7D00) else Color(0xFFFF9626)
+    get() = if (!LocalDarkMode.current) Color(0xFFFF7D00) else Color(0xFFFF9626)
 
 val ColorScheme.info: Color
     @Composable
-    get() = if (!isSystemInDarkTheme()) Color(0xFF165DFF) else Color(0xFF3C7EFF)
+    get() = if (!LocalDarkMode.current) Color(0xFF165DFF) else Color(0xFF3C7EFF)
 
 val ColorScheme.success: Color
     @Composable
-    get() = if (!isSystemInDarkTheme()) Color(0xFF00C853) else Color(0xFF00E676)
+    get() = if (!LocalDarkMode.current) Color(0xFF00C853) else Color(0xFF00E676)
 
 val ColorScheme.skeleton: SkeletonColor
     @Composable
-    get() = if (!isSystemInDarkTheme()) {
+    get() = if (!LocalDarkMode.current) {
         SkeletonColor(
             startColor = Color(0xFFE0E0E0),
             endColor = Color(0xFFD0D0D0)

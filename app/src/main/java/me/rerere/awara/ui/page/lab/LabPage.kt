@@ -4,6 +4,7 @@ import android.content.pm.ActivityInfo
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
@@ -23,6 +24,8 @@ import me.rerere.awara.ui.LocalMessageProvider
 import me.rerere.awara.ui.LocalRouterProvider
 import me.rerere.awara.ui.component.common.BackButton
 import me.rerere.awara.ui.component.common.Button
+import me.rerere.awara.ui.component.common.Tag
+import me.rerere.awara.ui.component.common.TagType
 import me.rerere.awara.ui.component.ext.plus
 import me.rerere.awara.ui.component.iwara.RichText
 import me.rerere.awara.ui.component.iwara.param.FilterValue
@@ -56,6 +59,32 @@ fun LabPage() {
             contentPadding = it + PaddingValues(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            item {
+                LabItem {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Tag(
+                            type = TagType.Success
+                        ) {
+                            Text("Test")
+                        }
+
+                        Tag(
+                            type = TagType.Warning
+                        ) {
+                            Text("Test")
+                        }
+
+                        Tag(
+                            type = TagType.Info
+                        ) {
+                            Text("Test")
+                        }
+                    }
+                }
+            }
+
             item {
                 LabItem {
                     Column {
