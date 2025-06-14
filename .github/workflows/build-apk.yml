@@ -40,7 +40,7 @@ jobs:
         uses: gradle/gradle-build-action@main
 
       - name: Update Gradle Wrapper to latest version
-        run: ./gradlew wrapper --gradle-version=latest
+        run: ./gradlew wrapper --gradle-version=8.14
 
       - name: Cache Gradle packages
         uses: actions/cache@main
