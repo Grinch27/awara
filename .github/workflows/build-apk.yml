@@ -30,12 +30,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@main
 
-      - name: Set up JDK
-        uses: actions/setup-java@main
-        with:
-          java-version: "21"
-          distribution: "temurin"
-
       - name: Complete Gradle Cleanup
         run: |
           echo "开始完全清理Gradle..."
@@ -57,6 +51,12 @@ jobs:
           unset GRADLE_HOME || true
           unset GRADLE_USER_HOME || true
           echo "Gradle清理完成"
+
+      - name: Set up JDK
+        uses: actions/setup-java@main
+        with:
+          java-version: "21"
+          distribution: "temurin"
 
       - name: Setup Gradle
         uses: gradle/gradle-build-action@main
