@@ -41,11 +41,15 @@ jobs:
           echo "开始完全清理Gradle..."
           # 停止所有Gradle守护进程
           pkill -f gradle || true
-          # 删除Gradle相关目录和缓存
+          # 删除所有Gradle相关目录和缓存
           sudo rm -rf ~/.gradle || true
           sudo rm -rf ~/.m2/repository/org/gradle || true
           sudo rm -rf /opt/gradle* || true
           sudo rm -rf /usr/local/gradle* || true
+          # 清理项目中的Gradle缓存
+          rm -rf .gradle || true
+          rm -rf build || true
+          rm -rf app/build || true
           # 清理可能的Gradle安装
           sudo apt-get remove --purge gradle -y || true
           sudo apt-get autoremove -y || true
@@ -59,15 +63,11 @@ jobs:
         with:
           gradle-version: "current"
 
-      - name: Cache Gradle packages
-        uses: actions/cache@main
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+      - name: Remove existing cache
+        run: |
+          # 删除可能存在的旧缓存目录
+          rm -rf ~/.gradle/caches || true
+          rm -rf ~/.gradle/wrapper || true
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
