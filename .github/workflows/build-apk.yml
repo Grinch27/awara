@@ -36,6 +36,24 @@ jobs:
           java-version: "21"
           distribution: "temurin"
 
+      - name: Complete Gradle Cleanup
+        run: |
+          echo "开始完全清理Gradle..."
+          # 停止所有Gradle守护进程
+          pkill -f gradle || true
+          # 删除Gradle相关目录和缓存
+          sudo rm -rf ~/.gradle || true
+          sudo rm -rf ~/.m2/repository/org/gradle || true
+          sudo rm -rf /opt/gradle* || true
+          sudo rm -rf /usr/local/gradle* || true
+          # 清理可能的Gradle安装
+          sudo apt-get remove --purge gradle -y || true
+          sudo apt-get autoremove -y || true
+          # 清理环境变量
+          unset GRADLE_HOME || true
+          unset GRADLE_USER_HOME || true
+          echo "Gradle清理完成"
+
       - name: Setup Gradle
         uses: gradle/gradle-build-action@main
         with:
