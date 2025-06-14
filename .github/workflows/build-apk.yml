@@ -36,6 +36,12 @@ jobs:
           java-version: "21"
           distribution: "temurin"
 
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@main
+
+      - name: Update Gradle Wrapper to latest version
+        run: ./gradlew wrapper --gradle-version=latest
+
       - name: Cache Gradle packages
         uses: actions/cache@main
         with:
