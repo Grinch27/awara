@@ -1,10 +1,19 @@
 name: Build APK
 
+# on:
+#   push:
+#     branches: [main, develop]
+#   pull_request:
+#     branches: [main]
+
+# run-name: Build APK
+
 on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main]
+  # schedule:
+  #   # Run every day at 20:00 UTC
+  #   - cron: "0 20 * * *"
+  repository_dispatch:
+  workflow_dispatch:
 
 jobs:
   build:
