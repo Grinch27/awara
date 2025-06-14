@@ -12,6 +12,10 @@ on:
   # schedule:
   #   # Run every day at 20:00 UTC
   #   - cron: "0 20 * * *"
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
   repository_dispatch:
   workflow_dispatch:
 
