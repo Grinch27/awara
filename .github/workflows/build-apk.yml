@@ -57,3 +57,5 @@ jobs:
         with:
           name: app-${{ matrix.build_type }}
           path: app/build/outputs/apk/${{ matrix.build_type }}/*.apk
+          compression-level: 9 # maximum compression
+          retention-days: 1
