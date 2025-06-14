@@ -30,53 +30,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@main
 
-      - name: Complete Gradle Cleanup
-        run: |
-          echo "开始完全清理Gradle..."
-          # 停止所有Gradle守护进程
-          pkill -f gradle || true
-          # 删除所有Gradle相关目录和缓存
-          sudo rm -rf ~/.gradle || true
-          sudo rm -rf ~/.m2/repository/org/gradle || true
-          sudo rm -rf /opt/gradle* || true
-          sudo rm -rf /usr/local/gradle* || true
-          # 清理项目中的Gradle缓存
-          rm -rf .gradle || true
-          rm -rf build || true
-          rm -rf app/build || true
-          # 清理可能的Gradle安装
-          sudo apt-get remove --purge gradle -y || true
-          sudo apt-get autoremove -y || true
-          # 清理环境变量
-          unset GRADLE_HOME || true
-          unset GRADLE_USER_HOME || true
-          echo "Gradle清理完成"
-
-      - name: Set up JDK
+      - name: Setup JDK
         uses: actions/setup-java@main
         with:
           java-version: "21"
           distribution: "temurin"
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@main
+        uses: gradle/actions/setup-gradle@main
         with:
           gradle-version: "current"
+          cache-cleanup: on-success
 
-      - name: Remove existing cache
-        run: |
-          # 删除可能存在的旧缓存目录
-          rm -rf ~/.gradle/caches || true
-          rm -rf ~/.gradle/wrapper || true
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@main
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Force Update Gradle Wrapper
+      - name: Update gradle/wrapper/gradle-wrapper.properties
         run: |
-          # 使用 Gradle 官方 API 获取当前版本
           echo "获取 Gradle 当前版本..."
-
+          # 使用 Gradle 官方 API 获取当前版本
           # 方法1: 使用 jq 解析 JSON (推荐)
           if command -v jq &> /dev/null; then
             LATEST_GRADLE=$(curl -s https://services.gradle.org/versions/current | jq -r '.version')
@@ -84,14 +59,7 @@ jobs:
           else
             LATEST_GRADLE=$(curl -s https://services.gradle.org/versions/current | grep -o '"version" : "[^"]*"' | sed 's/.*"\([^"]*\)".*/\1/')
           fi
-
           echo "Gradle 当前版本: $LATEST_GRADLE"
-
-          # 如果获取失败，使用备用版本
-          if [ -z "$LATEST_GRADLE" ] || [ "$LATEST_GRADLE" = "null" ]; then
-            echo "获取当前版本失败，使用备用版本 8.14.2"
-            LATEST_GRADLE="8.14.2"
-          fi
 
           # 显示当前版本
           echo "当前 gradle-wrapper.properties 内容:"
@@ -99,7 +67,6 @@ jobs:
 
           # 使用 sed 动态替换版本号
           sed -i "s|gradle-[0-9]\+\.[0-9]\+.*-bin\.zip|gradle-${LATEST_GRADLE}-bin.zip|g" gradle/wrapper/gradle-wrapper.properties
-
           echo "已更新 Gradle Wrapper 到版本: $LATEST_GRADLE"
 
           # 验证更新后的配置文件
@@ -107,7 +74,8 @@ jobs:
           cat gradle/wrapper/gradle-wrapper.properties
 
       - name: Build APK
-        run: ./gradlew assemble${{ matrix.build_type == 'debug' && 'Debug' || 'Release' }}
+        run: |
+          ./gradlew assemble${{ matrix.build_type == 'debug' && 'Debug' || 'Release' }} --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@main
