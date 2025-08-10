@@ -76,7 +76,7 @@ jobs:
 
       - name: Build APK
         run: |
-          ./gradlew assemble${{ matrix.build_type == 'debug' && 'Debug' || 'Release' }} --no-daemon --stacktrace
+          ./gradlew assemble${{ matrix.build_type == 'debug' && 'Debug' || 'Release' }} --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@main
