@@ -49,25 +49,26 @@ jobs:
         run: chmod +x gradlew
 
       - name: Update gradle/wrapper/gradle-wrapper.properties
+        id: update
+        env:
+          VERSION: ${{ '8' }}
         run: |
-          echo "获取 Gradle 当前版本..."
-          # 使用 Gradle 官方 API 获取当前版本
           # 方法1: 使用 jq 解析 JSON (推荐)
           if command -v jq &> /dev/null; then
-            LATEST_GRADLE=$(curl -s https://services.gradle.org/versions/current | jq -r '.version')
+            GRADLE_VERSION=$(curl -s https://services.gradle.org/versions/${{ env.VERSION }} | jq -r '.[0].version')
           # 方法2: 使用 grep 和 sed 解析
           else
-            LATEST_GRADLE=$(curl -s https://services.gradle.org/versions/current | grep -o '"version" : "[^"]*"' | sed 's/.*"\([^"]*\)".*/\1/')
+            GRADLE_VERSION=$(curl -s https://services.gradle.org/versions/${{ env.VERSION }} | grep -o '"version" : "[^"]*"' | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
           fi
-          echo "Gradle 当前版本: $LATEST_GRADLE"
+          echo "Gradle ${{ env.VERSION }}.x 系列最新版本: $GRADLE_VERSION"
 
           # 显示当前版本
           echo "当前 gradle-wrapper.properties 内容:"
           cat gradle/wrapper/gradle-wrapper.properties
 
           # 使用 sed 动态替换版本号
-          sed -i "s|gradle-[0-9]\+\.[0-9]\+.*-bin\.zip|gradle-${LATEST_GRADLE}-bin.zip|g" gradle/wrapper/gradle-wrapper.properties
-          echo "已更新 Gradle Wrapper 到版本: $LATEST_GRADLE"
+          sed -i "s|gradle-[0-9]\+\.[0-9]\+.*-bin\.zip|gradle-${GRADLE_VERSION}-bin.zip|g" gradle/wrapper/gradle-wrapper.properties
+          echo "已更新 Gradle Wrapper 到版本: $GRADLE_VERSION"
 
           # 验证更新后的配置文件
           echo "更新后的 gradle-wrapper.properties 内容:"
