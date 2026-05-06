@@ -70,6 +70,8 @@ kotlin {
 }
 
 dependencies {
+    val roomVersion = "2.8.4"
+
     // Android KTX
     implementation("androidx.core:core-ktx:1.10.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
@@ -95,10 +97,10 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.8.1")
 
     // Room
-    implementation("androidx.room:room-runtime:2.5.1")
-    implementation("androidx.room:room-paging:2.5.1")
-    implementation("androidx.room:room-ktx:2.5.1")
-    ksp("androidx.room:room-compiler:2.5.1")
+    implementation("androidx.room:room-runtime:$roomVersion")
+    implementation("androidx.room:room-paging:$roomVersion")
+    implementation("androidx.room:room-ktx:$roomVersion")
+    ksp("androidx.room:room-compiler:$roomVersion")
 
     // Paging3
     implementation("androidx.paging:paging-runtime:3.1.1")
