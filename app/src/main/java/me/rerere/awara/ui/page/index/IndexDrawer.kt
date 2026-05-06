@@ -60,6 +60,16 @@ fun ColumnScope.IndexDrawer(vm: IndexVM) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
+            .padding(16.dp)
+            .height(IntrinsicSize.Min),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Avatar(
+            modifier = Modifier
+                .fillMaxHeight()
+                .aspectRatio(1f),
+            user = userState.user,
+            onClick = {
                 router.navigate("login")
             },
             showOnlineStatus = false
