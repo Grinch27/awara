@@ -1,5 +1,10 @@
 package me.rerere.awara.di
 
+// Privacy guardrails:
+// 1. Keep Iwara auth headers on a dedicated client only.
+// 2. Optional follow-up: make hitokoto/update checks user-toggleable to fully disable third-party traffic.
+
+import me.rerere.awara.BuildConfig
 import me.rerere.awara.data.source.HitokotoAPI
 import me.rerere.awara.data.source.IwaraAPI
 import me.rerere.awara.data.source.UpdateAPI
@@ -7,14 +12,36 @@ import me.rerere.awara.util.SerializationConverterFactory
 import me.rerere.compose_setting.preference.mmkvPreference
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import retrofit2.Retrofit
 
-private const val TAG = "NetworkModule"
 private const val UA = "Mozilla/5.0 (Linux; Android 12; Pixel 6 Build/SD1A.210817.023; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/94.0.4606.71 Mobile Safari/537.36"
 
+private const val PUBLIC_HTTP_CLIENT = "publicHttpClient"
+private const val IWARA_HTTP_CLIENT = "iwaraHttpClient"
+
+private fun createLoggingInterceptor() = HttpLoggingInterceptor().apply {
+    level = if (BuildConfig.DEBUG) {
+        HttpLoggingInterceptor.Level.BODY
+    } else {
+        HttpLoggingInterceptor.Level.NONE
+    }
+}
+
 val networkModule = module {
-    single {
+    single(named(PUBLIC_HTTP_CLIENT)) {
+        OkHttpClient.Builder()
+            .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+            .addInterceptor(createLoggingInterceptor())
+            .build()
+    }
+
+    single<OkHttpClient> {
+        get(named(PUBLIC_HTTP_CLIENT))
+    }
+
+    single(named(IWARA_HTTP_CLIENT)) {
         OkHttpClient.Builder()
             .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
             .addInterceptor {
@@ -48,11 +75,7 @@ val networkModule = module {
                     .build()
                 it.proceed(newRequest)
             }
-            .addInterceptor(
-                HttpLoggingInterceptor().apply {
-                    setLevel(HttpLoggingInterceptor.Level.BODY)
-                }
-            )
+            .addInterceptor(createLoggingInterceptor())
 //            .addInterceptor {
 //                val request = it.request()
 //                val url = request.url
@@ -77,7 +100,7 @@ val networkModule = module {
 
     single {
         Retrofit.Builder()
-            .client(get())
+            .client(get(named(IWARA_HTTP_CLIENT)))
             .baseUrl("https://api.iwara.tv")
             .addConverterFactory(SerializationConverterFactory.create())
             .build()
@@ -86,7 +109,7 @@ val networkModule = module {
 
     single {
         Retrofit.Builder()
-            .client(get())
+            .client(get(named(PUBLIC_HTTP_CLIENT)))
             .baseUrl("https://v1.hitokoto.cn")
             .addConverterFactory(SerializationConverterFactory.create())
             .build()
@@ -95,7 +118,7 @@ val networkModule = module {
 
     single {
         Retrofit.Builder()
-            .client(get())
+            .client(get(named(PUBLIC_HTTP_CLIENT)))
             .baseUrl("https://33jltt4ir7m3j2jst7g3kurrbu0qfqrt.lambda-url.ap-southeast-2.on.aws")
             .addConverterFactory(SerializationConverterFactory.create())
             .build()
