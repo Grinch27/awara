@@ -50,17 +50,14 @@ jobs:
 
       - name: Update gradle/wrapper/gradle-wrapper.properties
         id: update
-        env:
-          VERSION: ${{ '8' }}
         run: |
-          # 方法1: 使用 jq 解析 JSON (推荐)
+          # 使用 current 端点获取当前稳定版 Gradle，避免手工钉死主版本。
           if command -v jq &> /dev/null; then
-            GRADLE_VERSION=$(curl -s https://services.gradle.org/versions/${{ env.VERSION }} | jq -r '.[0].version')
-          # 方法2: 使用 grep 和 sed 解析
+            GRADLE_VERSION=$(curl -s https://services.gradle.org/versions/current | jq -r '.version')
           else
-            GRADLE_VERSION=$(curl -s https://services.gradle.org/versions/${{ env.VERSION }} | grep -o '"version" : "[^"]*"' | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
+            GRADLE_VERSION=$(curl -s https://services.gradle.org/versions/current | grep -o '"version" : "[^"]*"' | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
           fi
-          echo "Gradle ${{ env.VERSION }}.x 系列最新版本: $GRADLE_VERSION"
+          echo "当前稳定版 Gradle: $GRADLE_VERSION"
 
           # 显示当前版本
           echo "当前 gradle-wrapper.properties 内容:"

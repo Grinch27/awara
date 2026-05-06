@@ -2,10 +2,9 @@ package me.rerere.awara.di
 
 // Privacy guardrails:
 // 1. Keep Iwara auth headers on a dedicated client only.
-// 2. Optional follow-up: make hitokoto/update checks user-toggleable to fully disable third-party traffic.
+// 2. Optional follow-up: make update checks user-toggleable to fully disable third-party traffic.
 
 import me.rerere.awara.BuildConfig
-import me.rerere.awara.data.source.HitokotoAPI
 import me.rerere.awara.data.source.IwaraAPI
 import me.rerere.awara.data.source.UpdateAPI
 import me.rerere.awara.util.SerializationConverterFactory
@@ -105,15 +104,6 @@ val networkModule = module {
             .addConverterFactory(SerializationConverterFactory.create())
             .build()
             .create(IwaraAPI::class.java)
-    }
-
-    single {
-        Retrofit.Builder()
-            .client(get(named(PUBLIC_HTTP_CLIENT)))
-            .baseUrl("https://v1.hitokoto.cn")
-            .addConverterFactory(SerializationConverterFactory.create())
-            .build()
-            .create(HitokotoAPI::class.java)
     }
 
     single {
