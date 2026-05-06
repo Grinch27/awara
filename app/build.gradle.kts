@@ -1,7 +1,6 @@
 // TODO: If the Gradle 9 build still fails after this pass, the next likely upgrade surface is the Compose/Accompanist dependency set rather than app business code.
 plugins {
     id("com.android.application")
-    kotlin("android")
     kotlin("plugin.serialization")
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.devtools.ksp")
@@ -44,12 +43,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-    kotlin {
-        jvmToolchain(17)
-    }
     buildFeatures {
         compose = true
         buildConfig = true
@@ -58,6 +51,21 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+    }
+}
+
+kotlin {
+    jvmToolchain(17)
+    compilerOptions {
+        optIn.addAll(
+            "androidx.compose.material3.ExperimentalMaterial3Api",
+            "androidx.compose.material.ExperimentalMaterialApi",
+            "androidx.compose.animation.ExperimentalAnimationApi",
+            "androidx.compose.foundation.ExperimentalFoundationApi",
+            "com.google.accompanist.pager.ExperimentalPagerApi",
+            "coil.annotation.ExperimentalCoilApi",
+            "androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi"
+        )
     }
 }
 
@@ -148,20 +156,6 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
 
-tasks {
-    withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions {
-            freeCompilerArgs += "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api"
-            freeCompilerArgs += "-opt-in=androidx.compose.material.ExperimentalMaterialApi"
-            freeCompilerArgs += "-opt-in=androidx.compose.animation.ExperimentalAnimationApi"
-            freeCompilerArgs += "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi"
-            freeCompilerArgs += "-opt-in=com.google.accompanist.pager.ExperimentalPagerApi"
-            freeCompilerArgs += "-opt-in=coil.annotation.ExperimentalCoilApi"
-            freeCompilerArgs += "-opt-in=androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi"
-        }
-    }
-}
-
 ksp {
-    arg("room.schemaLocation", "$projectDir/schemas".toString())
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
