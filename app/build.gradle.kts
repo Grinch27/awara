@@ -8,7 +8,7 @@ plugins {
 
 android {
     namespace = "me.rerere.awara"
-    compileSdk = 33
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "me.rerere.awara"
