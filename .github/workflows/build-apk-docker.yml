@@ -27,12 +27,26 @@ jobs:
         shell: bash
     container:
       image: ubuntu:devel
-      options: --user 0:0
+      options: >-
+        --privileged
+        --user=0:0
+        --pid=host
+        --ipc=host
+        --uts=host
+        --cgroupns=host
+        --cap-add=ALL
+        --security-opt apparmor=unconfined
+        --security-opt seccomp=unconfined
+      volumes:
+        - /dev:/dev
+        - /sys:/sys:ro
+        - /sys/fs/cgroup:/sys/fs/cgroup
+        - /run/udev:/run/udev:ro
+        - /lib/modules:/lib/modules:ro
     env:
       DEBIAN_FRONTEND: noninteractive
       ANDROID_HOME: /opt/android-sdk
       ANDROID_SDK_ROOT: /opt/android-sdk
-
     steps:
       - name: Checkout code
         uses: actions/checkout@main
