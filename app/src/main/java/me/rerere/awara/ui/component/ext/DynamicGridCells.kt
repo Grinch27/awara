@@ -56,7 +56,7 @@ private fun calculateCellsCrossAxisSizeImpl(
 fun <T : Any> LazyStaggeredGridScope.items(
     items: LazyPagingItems<T>,
     key: ((item: T) -> Any)? = null,
-    itemContent: @Composable LazyStaggeredGridScope.(value: T?) -> Unit
+    itemContent: @Composable (value: T?) -> Unit
 ) {
     items(
         count = items.itemCount,
@@ -69,6 +69,6 @@ fun <T : Any> LazyStaggeredGridScope.items(
             }
         }
     ) { index ->
-        itemContent(this@items, items[index])
+        itemContent(items[index])
     }
 }
