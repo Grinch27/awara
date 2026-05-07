@@ -59,7 +59,12 @@ jobs:
           unzip -q /tmp/android-cmdline-tools.zip -d "${ANDROID_SDK_ROOT}/cmdline-tools"
           mv "${ANDROID_SDK_ROOT}/cmdline-tools/cmdline-tools" "${ANDROID_SDK_ROOT}/cmdline-tools/latest"
           export PATH="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin:${ANDROID_SDK_ROOT}/platform-tools:${PATH}"
+
+          # sdkmanager exits as soon as it has enough answers, which would otherwise trip pipefail via yes(1).
+          set +o pipefail
           yes | sdkmanager --licenses >/dev/null
+          set -o pipefail
+
           sdkmanager \
             "build-tools;34.0.0" \
             "platform-tools" \
