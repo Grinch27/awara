@@ -3,11 +3,6 @@ package me.rerere.awara.ui
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,9 +17,9 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
-import com.google.accompanist.navigation.animation.AnimatedNavHost
-import com.google.accompanist.navigation.animation.composable
-import com.google.accompanist.navigation.animation.rememberAnimatedNavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import me.rerere.awara.ui.component.common.DialogProvider
 import me.rerere.awara.ui.component.common.MessageProvider
 import me.rerere.awara.ui.page.download.DownloadPage
@@ -95,41 +90,19 @@ class RouterActivity : ComponentActivity() {
 
     @Composable
     private fun Routes() {
-        val navController = rememberAnimatedNavController()
+        val navController = rememberNavController()
         CompositionLocalProvider(
             LocalRouterProvider provides navController
         ) {
-            AnimatedNavHost(
+            NavHost(
                 modifier = Modifier
                     .fillMaxSize()
                     // 防止夜间模式下切换页面闪白屏
                     .background(MaterialTheme.colorScheme.background),
                 navController = navController,
-                startDestination = "index",
-                enterTransition = {
-                    slideInVertically(
-                        initialOffsetY = { 1000 },
-                        animationSpec = tween(300)
-                    ) + fadeIn(animationSpec = tween(300))
-                },
-                exitTransition = {
-                    fadeOut(animationSpec = tween(300))
-                },
-                popEnterTransition = {
-                    fadeIn(animationSpec = tween(300))
-                },
-                popExitTransition = {
-                    slideOutVertically(
-                        targetOffsetY = { 1000 },
-                        animationSpec = tween(300)
-                    ) + fadeOut(animationSpec = tween(100))
-                }
+                startDestination = "index"
             ) {
-                composable(
-                    route = "index",
-                    enterTransition = { null },
-                    exitTransition = { null },
-                ) {
+                composable(route = "index") {
                     IndexPage()
                 }
 
