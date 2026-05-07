@@ -81,6 +81,11 @@
     <string name="setting_player_auto_play_text">Automatically start buffering and playing the video</string>
     <string name="setting_player_loop_title">Loop Playback</string>
     <string name="setting_player_loop_text">Automatically restart playback after playback ends</string>
+    <string name="setting_network">Network</string>
+    <string name="setting_network_builtin_doh_title">Built-in DoH</string>
+    <string name="setting_network_builtin_doh_text">Use the app&#39;s built-in DNS over HTTPS for API and image requests</string>
+    <string name="setting_network_doh_endpoint_title">DoH Endpoint</string>
+    <string name="setting_network_doh_upstream_title">Upstream DoH Resolver</string>
     <string name="setting_about">About</string>
     <string name="setting_about_source_title">Source Code</string>
     <string name="setting_about_source_text">Github</string>

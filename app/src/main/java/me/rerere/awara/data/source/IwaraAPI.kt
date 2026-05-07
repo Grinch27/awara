@@ -204,23 +204,20 @@ interface IwaraAPI {
         @Query("page") page: Int
     ): Pager<FavoriteImage>
 
-    @GET("/search")
+    @GET("/videos")
     suspend fun searchVideo(
-        @Query("type") type: String,
         @Query("query") query: String,
         @Query("page") page: Int
     ): Pager<Video>
 
-    @GET("/search")
+    @GET("/images")
     suspend fun searchImage(
-        @Query("type") type: String,
         @Query("query") query: String,
         @Query("page") page: Int
     ): Pager<Image>
 
-    @GET("/search")
+    @GET("/profiles")
     suspend fun searchUser(
-        @Query("type") type: String,
         @Query("query") query: String,
         @Query("page") page: Int
     ): Pager<User>

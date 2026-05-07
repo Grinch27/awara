@@ -80,6 +80,11 @@
     <string name="setting_player_auto_play_text">自动开始缓冲和播放视频</string>
     <string name="setting_player_loop_title">循环播放</string>
     <string name="setting_player_loop_text">播放结束后自动重新开始播放</string>
+    <string name="setting_network">网络</string>
+    <string name="setting_network_builtin_doh_title">内置 DoH</string>
+    <string name="setting_network_builtin_doh_text">为 API 和图片请求启用应用内 DNS over HTTPS</string>
+    <string name="setting_network_doh_endpoint_title">DoH 地址</string>
+    <string name="setting_network_doh_upstream_title">上游 DoH 解析器</string>
     <string name="setting_about">关于</string>
     <string name="setting_about_source_title">源代码</string>
     <string name="setting_about_source_text">Github</string>

@@ -24,10 +24,13 @@ import me.rerere.awara.data.source.onException
 import me.rerere.awara.data.source.onSuccess
 import me.rerere.awara.data.source.runAPICatching
 import me.rerere.awara.data.source.stringResource
+import me.rerere.awara.domain.feed.FeedQuery
+import me.rerere.awara.domain.feed.FeedScope
+import me.rerere.awara.domain.feed.toApiParams
+import me.rerere.awara.domain.feed.toFeedFilters
 import me.rerere.awara.ui.component.common.UiState
 import me.rerere.awara.ui.component.iwara.param.FilterValue
 import me.rerere.awara.ui.component.iwara.param.sort.MediaSortOptions
-import me.rerere.awara.ui.component.iwara.param.toParams
 
 private const val TAG = "IndexVM"
 
@@ -50,15 +53,42 @@ class IndexVM(
         loadImageList()
     }
 
+    private fun buildSubscriptionQuery(): FeedQuery {
+        return FeedQuery(
+            scope = when (state.subscriptionType) {
+                SubscriptionType.VIDEO -> FeedScope.SUBSCRIPTION_VIDEO
+                SubscriptionType.IMAGE -> FeedScope.SUBSCRIPTION_IMAGE
+            },
+            page = state.subscriptionPage - 1,
+            pageSize = 24,
+        )
+    }
+
+    private fun buildVideoQuery(): FeedQuery {
+        return FeedQuery(
+            scope = FeedScope.HOME_VIDEO,
+            sort = videoSort,
+            filters = videoFilters.toFeedFilters(),
+            page = state.videoPage - 1,
+            pageSize = 24,
+        )
+    }
+
+    private fun buildImageQuery(): FeedQuery {
+        return FeedQuery(
+            scope = FeedScope.HOME_IMAGE,
+            sort = imageSort,
+            filters = imageFilters.toFeedFilters(),
+            page = state.imagePage - 1,
+            pageSize = 24,
+        )
+    }
+
     fun loadSubscriptions() {
         viewModelScope.launch {
             state = state.copy(subscriptionState = UiState.Loading)
             runAPICatching {
-                val param = mapOf(
-                    "subscribed" to "true",
-                    "limit" to "24",
-                    "page" to (state.subscriptionPage - 1).toString()
-                )
+                val param = buildSubscriptionQuery().toApiParams()
                 when (state.subscriptionType) {
                     SubscriptionType.VIDEO -> mediaRepo.getVideoList(param)
                     SubscriptionType.IMAGE -> mediaRepo.getImageList(param)
@@ -141,13 +171,7 @@ class IndexVM(
         viewModelScope.launch {
             state = state.copy(videoState = UiState.Loading)
             runAPICatching {
-                mediaRepo.getVideoList(
-                    mapOf(
-                        "limit" to "24",
-                        "page" to (state.videoPage - 1).toString(),
-                        "sort" to videoSort,
-                    ) + videoFilters.toParams()
-                )
+                mediaRepo.getVideoList(buildVideoQuery().toApiParams())
             }.onSuccess {
                 state = state.copy(
                     videoList = it.results,
@@ -172,13 +196,7 @@ class IndexVM(
         viewModelScope.launch {
             state = state.copy(imageState = UiState.Loading)
             runAPICatching {
-                mediaRepo.getImageList(
-                    mapOf(
-                        "limit" to "24",
-                        "page" to (state.imagePage - 1).toString(),
-                        "sort" to imageSort,
-                    ) + imageFilters.toParams()
-                )
+                mediaRepo.getImageList(buildImageQuery().toApiParams())
             }.onSuccess {
                 state = state.copy(
                     imageList = it.results,

@@ -6,6 +6,7 @@ package me.rerere.awara.di
 
 import me.rerere.awara.BuildConfig
 import me.rerere.awara.data.source.IwaraAPI
+import me.rerere.awara.util.ConfigurableDohDns
 import me.rerere.awara.util.SerializationConverterFactory
 import me.rerere.compose_setting.preference.mmkvPreference
 import okhttp3.OkHttpClient
@@ -28,8 +29,13 @@ private fun createLoggingInterceptor() = HttpLoggingInterceptor().apply {
 }
 
 val networkModule = module {
+    single {
+        ConfigurableDohDns()
+    }
+
     single(named(PUBLIC_HTTP_CLIENT)) {
         OkHttpClient.Builder()
+            .dns(get<ConfigurableDohDns>())
             .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
             .addInterceptor(createLoggingInterceptor())
             .build()
@@ -41,6 +47,7 @@ val networkModule = module {
 
     single(named(IWARA_HTTP_CLIENT)) {
         OkHttpClient.Builder()
+            .dns(get<ConfigurableDohDns>())
             .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
             .addInterceptor {
                 val request = it.request()

@@ -22,9 +22,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import me.rerere.awara.R
+import me.rerere.awara.ui.LocalDialogProvider
 import me.rerere.awara.ui.LocalRouterProvider
 import me.rerere.awara.ui.component.common.Avatar
 import me.rerere.awara.ui.component.common.BackButton
+import me.rerere.awara.util.DEFAULT_NETWORK_DOH_ENDPOINT
+import me.rerere.awara.util.DEFAULT_NETWORK_DOH_UPSTREAM
+import me.rerere.awara.util.SETTING_NETWORK_DOH_ENABLED
+import me.rerere.awara.util.SETTING_NETWORK_DOH_ENDPOINT
+import me.rerere.awara.util.SETTING_NETWORK_DOH_UPSTREAM
 import me.rerere.awara.util.openUrl
 import me.rerere.compose_setting.components.SettingItemCategory
 import me.rerere.compose_setting.components.types.SettingBooleanItem
@@ -32,10 +38,12 @@ import me.rerere.compose_setting.components.types.SettingLinkItem
 import me.rerere.compose_setting.components.types.SettingPickerItem
 import me.rerere.compose_setting.preference.rememberBooleanPreference
 import me.rerere.compose_setting.preference.rememberIntPreference
+import me.rerere.compose_setting.preference.rememberStringPreference
 
 @Composable
 fun SettingPage() {
     val context = LocalContext.current
+    val dialog = LocalDialogProvider.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val router = LocalRouterProvider.current
     Scaffold(
@@ -160,6 +168,87 @@ fun SettingPage() {
                         },
                         icon = {
                             Icon(Icons.Outlined.Replay,  null)
+                        }
+                    )
+                }
+            }
+
+            item {
+                var builtInDohEnabled by rememberBooleanPreference(
+                    key = SETTING_NETWORK_DOH_ENABLED,
+                    default = true
+                )
+                var builtInDohEndpoint by rememberStringPreference(
+                    key = SETTING_NETWORK_DOH_ENDPOINT,
+                    default = DEFAULT_NETWORK_DOH_ENDPOINT
+                )
+                var builtInDohUpstream by rememberStringPreference(
+                    key = SETTING_NETWORK_DOH_UPSTREAM,
+                    default = DEFAULT_NETWORK_DOH_UPSTREAM
+                )
+
+                SettingItemCategory(title = { Text(stringResource(R.string.setting_network)) }) {
+                    SettingBooleanItem(
+                        state = rememberBooleanPreference(
+                            key = SETTING_NETWORK_DOH_ENABLED,
+                            default = true
+                        ),
+                        title = {
+                            Text(stringResource(R.string.setting_network_builtin_doh_title))
+                        },
+                        text = {
+                            Text(stringResource(R.string.setting_network_builtin_doh_text))
+                        },
+                        icon = {
+                            Icon(Icons.Outlined.Source, null)
+                        }
+                    )
+
+                    SettingLinkItem(
+                        title = {
+                            Text(stringResource(R.string.setting_network_doh_endpoint_title))
+                        },
+                        text = {
+                            Text(builtInDohEndpoint)
+                        },
+                        icon = {
+                            Icon(Icons.Outlined.Source, null)
+                        },
+                        onClick = {
+                            dialog.input(
+                                title = {
+                                    Text(stringResource(R.string.setting_network_doh_endpoint_title))
+                                },
+                                initialValue = builtInDohEndpoint,
+                            ) { value ->
+                                builtInDohEndpoint = value.trim().ifBlank {
+                                    DEFAULT_NETWORK_DOH_ENDPOINT
+                                }
+                            }
+                        }
+                    )
+
+                    SettingLinkItem(
+                        title = {
+                            Text(stringResource(R.string.setting_network_doh_upstream_title))
+                        },
+                        text = {
+                            Text(builtInDohUpstream)
+                        },
+                        icon = {
+                            Icon(Icons.Outlined.Replay, null)
+                        },
+                        onClick = {
+                            dialog.input(
+                                title = {
+                                    Text(stringResource(R.string.setting_network_doh_upstream_title))
+                                },
+                                initialValue = builtInDohUpstream,
+                            ) { value ->
+                                builtInDohUpstream = value.trim().ifBlank {
+                                    DEFAULT_NETWORK_DOH_UPSTREAM
+                                }
+                            }
                         }
                     )
                 }

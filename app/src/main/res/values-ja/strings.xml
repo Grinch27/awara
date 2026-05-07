@@ -80,6 +80,11 @@
     <string name="setting_player_auto_play_text">動画の読み込みと自動再生を開始する</string>
     <string name="setting_player_loop_title">ループ</string>
     <string name="setting_player_loop_text">再生終了後、自動再生する</string>
+    <string name="setting_network">ネットワーク</string>
+    <string name="setting_network_builtin_doh_title">内蔵 DoH</string>
+    <string name="setting_network_builtin_doh_text">API と画像リクエストにアプリ内 DNS over HTTPS を使用する</string>
+    <string name="setting_network_doh_endpoint_title">DoH エンドポイント</string>
+    <string name="setting_network_doh_upstream_title">上流 DoH リゾルバー</string>
     <string name="setting_about">アプリについて</string>
     <string name="setting_about_source_title">ソースコード</string>
     <string name="setting_about_source_text">GitHub</string>

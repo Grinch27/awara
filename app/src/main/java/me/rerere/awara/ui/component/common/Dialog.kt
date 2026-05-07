@@ -92,12 +92,13 @@ class DialogHolder {
 
     fun input(
         title: (@Composable () -> Unit)? = null,
+        initialValue: String = "",
         confirm: (String) -> Unit,
     ) {
         dialogs.add(
             DialogRequest { dismiss ->
                 var content by remember {
-                    mutableStateOf("")
+                    mutableStateOf(initialValue)
                 }
                 AlertDialog(
                     onDismissRequest = {
