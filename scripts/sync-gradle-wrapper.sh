@@ -6,8 +6,10 @@
 
 set -euo pipefail
 
-readonly SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-readonly REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+readonly SCRIPT_DIR
+readonly REPO_ROOT
 readonly WRAPPER_PROPERTIES="${REPO_ROOT}/gradle/wrapper/gradle-wrapper.properties"
 readonly GRADLE_VERSIONS_URL="https://services.gradle.org/versions/current"
 readonly MINIMUM_GRADLE_MAJOR="9"
@@ -43,7 +45,8 @@ updated = re.sub(
 )
 
 if updated == content:
-    raise SystemExit(f"Failed to update {path}")
+  print(content, end="")
+  raise SystemExit(0)
 
 path.write_text(updated, encoding="utf-8")
 print(updated, end="")
