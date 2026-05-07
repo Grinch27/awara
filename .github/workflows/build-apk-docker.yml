@@ -45,6 +45,7 @@ jobs:
             ca-certificates \
             curl \
             git \
+            openjdk-17-jdk-headless \
             openjdk-21-jdk-headless \
             python3 \
             unzip
