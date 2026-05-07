@@ -1,4 +1,5 @@
 // TODO: If the Gradle 9 build still fails after this pass, the next likely upgrade surface is the Compose/Accompanist dependency set rather than app business code.
+// TODO: If memory leak analysis is needed again later, prefer an explicit opt-in debug flavor over shipping LeakCanary in the default debug install.
 plugins {
     id("com.android.application")
     kotlin("plugin.serialization")
@@ -144,9 +145,6 @@ dependencies {
 
     // Profile Installer
     implementation("androidx.profileinstaller:profileinstaller:1.3.0")
-
-    // Leak Canary
-    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.10")
 
     // Test
     testImplementation("junit:junit:4.13.2")
