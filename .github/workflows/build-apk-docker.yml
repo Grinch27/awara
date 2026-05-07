@@ -94,7 +94,7 @@ jobs:
       - name: Build debug APK
         env:
           JAVA_HOME: /usr/lib/jvm/java-21-openjdk-amd64
-          PATH: /opt/android-sdk/cmdline-tools/latest/bin:/opt/android-sdk/platform-tools:/usr/lib/jvm/java-21-openjdk-amd64/bin:${{ env.PATH }}
+          PATH: /opt/android-sdk/cmdline-tools/latest/bin:/opt/android-sdk/platform-tools:/usr/lib/jvm/java-21-openjdk-amd64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
         run: |
           set -euo pipefail
           ./gradlew --version
