@@ -21,10 +21,10 @@
 基于当前仓库实现，可以先把问题归纳成两类：
 
 1. 结构过于集中。
-当前只有一个 [settings.gradle.kts](../settings.gradle.kts) 中声明的 `:app` 模块，而仓库里已经同时承载了网络、数据库、下载、播放器、搜索、首页、消息、用户和设置等职责。
+   当前只有一个 [settings.gradle.kts](../settings.gradle.kts) 中声明的 `:app` 模块，而仓库里已经同时承载了网络、数据库、下载、播放器、搜索、首页、消息、用户和设置等职责。
 
 2. 订阅筛选模型过于轻量。
-当前筛选核心只有 [app/src/main/java/me/rerere/awara/ui/component/iwara/param/Filter.kt](../app/src/main/java/me/rerere/awara/ui/component/iwara/param/Filter.kt) 里的 `FilterValue(key, value)`，并由 [app/src/main/java/me/rerere/awara/ui/page/index/IndexVM.kt](../app/src/main/java/me/rerere/awara/ui/page/index/IndexVM.kt) 在内存里分别维护 `videoFilters` 和 `imageFilters`。这能工作，但不利于保存视图、跨页面复用、导入导出与后续扩展。
+   当前筛选核心只有 [app/src/main/java/me/rerere/awara/ui/component/iwara/param/Filter.kt](../app/src/main/java/me/rerere/awara/ui/component/iwara/param/Filter.kt) 里的 `FilterValue(key, value)`，并由 [app/src/main/java/me/rerere/awara/ui/page/index/IndexVM.kt](../app/src/main/java/me/rerere/awara/ui/page/index/IndexVM.kt) 在内存里分别维护 `videoFilters` 和 `imageFilters`。这能工作，但不利于保存视图、跨页面复用、导入导出与后续扩展。
 
 ## 2. 第一阶段目标
 
@@ -41,47 +41,47 @@
 ### 3.1 第一批必须模块
 
 1. `:app`
-只保留 Application、导航装配、顶层依赖注入入口和发布配置。
+   只保留 Application、导航装配、顶层依赖注入入口和发布配置。
 
 2. `:build-logic`
-放 Android application/library、Compose、Kotlin、KSP、Lint、Detekt 或 Ktlint 约定插件。这个方向直接参考 EhViewer 的 `build-logic`。
+   放 Android application/library、Compose、Kotlin、KSP、Lint、Detekt 或 Ktlint 约定插件。这个方向直接参考 EhViewer 的 `build-logic`。
 
 3. `:core:model`
-放通用 entity、dto、分页模型、错误模型、排序和筛选领域对象。
+   放通用 entity、dto、分页模型、错误模型、排序和筛选领域对象。
 
 4. `:core:network`
-放 `IwaraAPI`、OkHttp、Retrofit、拦截器和序列化工厂，把当前 [app/src/main/java/me/rerere/awara/di/NetworkModule.kt](../app/src/main/java/me/rerere/awara/di/NetworkModule.kt) 中的网络配置迁出去。
+   放 `IwaraAPI`、OkHttp、Retrofit、拦截器和序列化工厂，把当前 [app/src/main/java/me/rerere/awara/di/NetworkModule.kt](../app/src/main/java/me/rerere/awara/di/NetworkModule.kt) 中的网络配置迁出去。
 
 5. `:core:database`
-放 Room 数据库、DAO、实体映射和本地查询定义。
+   放 Room 数据库、DAO、实体映射和本地查询定义。
 
 6. `:data`
-放 `MediaRepo`、`UserRepo`、`CommentRepo` 等仓储实现，作为 network/database 的组合层。当前 [app/src/main/java/me/rerere/awara/data/repo/MediaRepo.kt](../app/src/main/java/me/rerere/awara/data/repo/MediaRepo.kt) 已经是很直接的拆分起点。
+   放 `MediaRepo`、`UserRepo`、`CommentRepo` 等仓储实现，作为 network/database 的组合层。当前 [app/src/main/java/me/rerere/awara/data/repo/MediaRepo.kt](../app/src/main/java/me/rerere/awara/data/repo/MediaRepo.kt) 已经是很直接的拆分起点。
 
 7. `:ui`
-放通用 Compose 组件、主题、公共状态组件、分页组件、筛选弹窗组件。
+   放通用 Compose 组件、主题、公共状态组件、分页组件、筛选弹窗组件。
 
 ### 3.2 第二批 feature 模块
 
 第一批稳定后，再拆这几个 feature：
 
 1. `:feature:home`
-首页、推荐、订阅流、首页筛选。
+   首页、推荐、订阅流、首页筛选。
 
 2. `:feature:search`
-搜索、搜索结果、搜索筛选。
+   搜索、搜索结果、搜索筛选。
 
 3. `:feature:player`
-播放器、播放页、相关视频、播放偏好。
+   播放器、播放页、相关视频、播放偏好。
 
 4. `:feature:download`
-下载页、下载任务、下载通知、下载数据库映射。
+   下载页、下载任务、下载通知、下载数据库映射。
 
 5. `:feature:user`
-登录、用户页、关注、好友、消息。
+   登录、用户页、关注、好友、消息。
 
 6. `:feature:library`
-收藏、历史、播放列表、稍后看。
+   收藏、历史、播放列表、稍后看。
 
 ## 4. 模块拆分顺序
 
@@ -99,13 +99,13 @@
 ### 阶段 B：先拆高收益 feature
 
 1. 先拆 `:feature:player`
-播放器依赖最重，且单独拆出后最利于后续升级媒体栈和缓存策略。
+   播放器依赖最重，且单独拆出后最利于后续升级媒体栈和缓存策略。
 
 2. 再拆 `:feature:download`
-下载链路天然适合隔离，因为它已经有 `DownloadVM`、`DownloadWorker` 和本地数据库查询。
+   下载链路天然适合隔离，因为它已经有 `DownloadVM`、`DownloadWorker` 和本地数据库查询。
 
 3. 然后拆 `:feature:home` 与 `:feature:search`
-这两块和筛选体系耦合最深，适合在订阅视图设计稳定后一起迁移。
+   这两块和筛选体系耦合最深，适合在订阅视图设计稳定后一起迁移。
 
 ## 5. 订阅筛选体系改造方案
 
@@ -114,16 +114,16 @@
 当前实现的主要问题有四个：
 
 1. 筛选对象无类型。
-`FilterValue` 只有字符串键值，缺少日期区间、标签逻辑、评分区间、媒体类型、已读状态等语义。
+   `FilterValue` 只有字符串键值，缺少日期区间、标签逻辑、评分区间、媒体类型、已读状态等语义。
 
 2. 页面之间不能复用。
-首页筛选、搜索筛选、收藏筛选未来都会走类似查询，但当前每个页面更像自己拼参数。
+   首页筛选、搜索筛选、收藏筛选未来都会走类似查询，但当前每个页面更像自己拼参数。
 
 3. 筛选不可持久化。
-`IndexVM` 的 `videoFilters`、`imageFilters` 都只活在当前 ViewModel 生命周期内，不能保存为“订阅视图”。
+   `IndexVM` 的 `videoFilters`、`imageFilters` 都只活在当前 ViewModel 生命周期内，不能保存为“订阅视图”。
 
 4. 参数转换散落在页面层。
-当前由 `toParams()` 直接把 UI 层对象转换成 API 查询参数，不利于扩展到本地数据库筛选与导出导入。
+   当前由 `toParams()` 直接把 UI 层对象转换成 API 查询参数，不利于扩展到本地数据库筛选与导出导入。
 
 ## 5.2 目标模型
 
@@ -132,30 +132,30 @@
 ### 核心领域对象
 
 1. `FeedScope`
-表示查询作用域，例如首页视频、首页图片、订阅视频、订阅图片、搜索结果、收藏、历史。
+   表示查询作用域，例如首页视频、首页图片、订阅视频、订阅图片、搜索结果、收藏、历史。
 
 2. `FeedSort`
-替代当前裸字符串排序值，统一首页和搜索页排序定义。
+   替代当前裸字符串排序值，统一首页和搜索页排序定义。
 
 3. `FeedFilter`
-使用密封类表达不同筛选语义，例如：
-标签、日期范围、评分范围、时长范围、作者、是否订阅、是否已下载、是否已观看、是否 NSFW。
+   使用密封类表达不同筛选语义，例如：
+   标签、日期范围、评分范围、时长范围、作者、是否订阅、是否已下载、是否已观看、是否 NSFW。
 
 4. `FeedQuery`
-一个完整查询对象，包含 `scope`、`keyword`、`sort`、`filters`、`page`、`pageSize`。
+   一个完整查询对象，包含 `scope`、`keyword`、`sort`、`filters`、`page`、`pageSize`。
 
 5. `SavedFeedView`
-表示“保存的订阅视图”，包含名称、描述、图标、默认排序、筛选集和是否固定到首页。
+   表示“保存的订阅视图”，包含名称、描述、图标、默认排序、筛选集和是否固定到首页。
 
 ## 5.3 数据层设计
 
 建议在 Room 里新增两张表：
 
 1. `saved_feed_view`
-保存视图基本信息，如 `id`、`name`、`scope`、`sort`、`pinned`、`createdAt`、`updatedAt`。
+   保存视图基本信息，如 `id`、`name`、`scope`、`sort`、`pinned`、`createdAt`、`updatedAt`。
 
 2. `saved_feed_filter`
-保存视图下的筛选条目，如 `viewId`、`type`、`operator`、`value`、`extraValue`。
+   保存视图下的筛选条目，如 `viewId`、`type`、`operator`、`value`、`extraValue`。
 
 这样做有两个好处：
 
@@ -181,13 +181,13 @@
 ### 建议的 ViewModel 责任划分
 
 1. `HomeFeedVM`
-只负责首页推荐、订阅、图片、视频等首页分区的视图状态。
+   只负责首页推荐、订阅、图片、视频等首页分区的视图状态。
 
 2. `FeedFilterVM`
-只负责筛选、排序、保存视图、恢复视图。
+   只负责筛选、排序、保存视图、恢复视图。
 
 3. `SearchVM`
-只负责搜索输入和结果分页，但查询模型与首页共用 `FeedQuery`。
+   只负责搜索输入和结果分页，但查询模型与首页共用 `FeedQuery`。
 
 当前 [app/src/main/java/me/rerere/awara/ui/page/search/SearchVM.kt](../app/src/main/java/me/rerere/awara/ui/page/search/SearchVM.kt) 与 [app/src/main/java/me/rerere/awara/ui/page/index/IndexVM.kt](../app/src/main/java/me/rerere/awara/ui/page/index/IndexVM.kt) 都是自己拼接查询条件，后面应该改为共同依赖 `FeedQueryUseCase`。
 
