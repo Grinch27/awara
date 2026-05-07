@@ -3,7 +3,7 @@
 # proguardFiles setting in build.gradle.
 #
 # For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+#   https://developer.android.com/guide/developing/tools/proguard.html
 
 -keepattributes SourceFile,LineNumberTable,Signature,*Annotation*
 -dontobfuscate

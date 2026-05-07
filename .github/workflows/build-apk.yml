@@ -1,7 +1,7 @@
 name: Build APK
 
 # TODO(user): Decide whether release builds should keep running on every manual dispatch or move to tagged releases only.
-# TODO(agent): If the latest stable Gradle moves ahead of AGP support, compare that failure against the pinned 9.1.0 wrapper baseline first.
+# TODO(agent): If the latest stable Gradle moves ahead of AGP support, disable wrapper auto-sync before changing app code.
 # TODO(agent): If compilation fails after the toolchain phase, the next research surface is the Compose and Accompanist dependency set.
 
 permissions:
@@ -31,45 +31,29 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@main
 
       - name: Setup JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@main
         with:
           java-version: "21"
           distribution: "temurin"
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@main
         with:
           cache-cleanup: on-success
 
       - name: Validate Gradle wrapper
-        uses: gradle/actions/wrapper-validation@v4
+        uses: gradle/actions/wrapper-validation@main
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Resolve latest stable Gradle
-        id: gradle-version
+      - name: Sync Gradle wrapper to latest stable
         run: |
           set -euo pipefail
-          gradle_version="$(python3 -c 'import json, urllib.request; print(json.load(urllib.request.urlopen("https://services.gradle.org/versions/current"))["version"])')"
-          echo "version=${gradle_version}" >> "$GITHUB_OUTPUT"
-          echo "Latest stable Gradle: ${gradle_version}"
-
-          if [[ "${gradle_version%%.*}" -lt 9 ]]; then
-            echo "Expected Gradle 9 or newer, got ${gradle_version}" >&2
-            exit 1
-          fi
-
-      - name: Update Gradle wrapper to latest stable
-        run: |
-          set -euo pipefail
-          gradle_version='${{ steps.gradle-version.outputs.version }}'
-          sed -i -E "s|gradle-[0-9]+(\.[0-9]+)*-[a-z]+\.zip|gradle-${gradle_version}-bin.zip|" gradle/wrapper/gradle-wrapper.properties
-          echo "Updated gradle-wrapper.properties to ${gradle_version}"
-          cat gradle/wrapper/gradle-wrapper.properties
+          bash ./scripts/sync-gradle-wrapper.sh
 
       - name: Build APK
         run: |
@@ -78,7 +62,7 @@ jobs:
           ./gradlew assemble${{ matrix.build_type == 'debug' && 'Debug' || 'Release' }} --stacktrace
 
       - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@main
         with:
           name: app-${{ matrix.build_type }}
           path: app/build/outputs/apk/${{ matrix.build_type }}/*.apk
