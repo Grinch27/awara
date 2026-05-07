@@ -174,25 +174,22 @@ fun SettingPage() {
             }
 
             item {
-                var builtInDohEnabled by rememberBooleanPreference(
+                val builtInDohEnabled = rememberBooleanPreference(
                     key = SETTING_NETWORK_DOH_ENABLED,
                     default = true
                 )
-                var builtInDohEndpoint by rememberStringPreference(
+                val builtInDohEndpoint = rememberStringPreference(
                     key = SETTING_NETWORK_DOH_ENDPOINT,
                     default = DEFAULT_NETWORK_DOH_ENDPOINT
                 )
-                var builtInDohUpstream by rememberStringPreference(
+                val builtInDohUpstream = rememberStringPreference(
                     key = SETTING_NETWORK_DOH_UPSTREAM,
                     default = DEFAULT_NETWORK_DOH_UPSTREAM
                 )
 
                 SettingItemCategory(title = { Text(stringResource(R.string.setting_network)) }) {
                     SettingBooleanItem(
-                        state = rememberBooleanPreference(
-                            key = SETTING_NETWORK_DOH_ENABLED,
-                            default = true
-                        ),
+                        state = builtInDohEnabled,
                         title = {
                             Text(stringResource(R.string.setting_network_builtin_doh_title))
                         },
@@ -209,7 +206,7 @@ fun SettingPage() {
                             Text(stringResource(R.string.setting_network_doh_endpoint_title))
                         },
                         text = {
-                            Text(builtInDohEndpoint)
+                            Text(builtInDohEndpoint.value)
                         },
                         icon = {
                             Icon(Icons.Outlined.Source, null)
@@ -219,9 +216,9 @@ fun SettingPage() {
                                 title = {
                                     Text(stringResource(R.string.setting_network_doh_endpoint_title))
                                 },
-                                initialValue = builtInDohEndpoint,
+                                initialValue = builtInDohEndpoint.value,
                             ) { value ->
-                                builtInDohEndpoint = value.trim().ifBlank {
+                                builtInDohEndpoint.value = value.trim().ifBlank {
                                     DEFAULT_NETWORK_DOH_ENDPOINT
                                 }
                             }
@@ -233,7 +230,7 @@ fun SettingPage() {
                             Text(stringResource(R.string.setting_network_doh_upstream_title))
                         },
                         text = {
-                            Text(builtInDohUpstream)
+                            Text(builtInDohUpstream.value)
                         },
                         icon = {
                             Icon(Icons.Outlined.Replay, null)
@@ -243,9 +240,9 @@ fun SettingPage() {
                                 title = {
                                     Text(stringResource(R.string.setting_network_doh_upstream_title))
                                 },
-                                initialValue = builtInDohUpstream,
+                                initialValue = builtInDohUpstream.value,
                             ) { value ->
-                                builtInDohUpstream = value.trim().ifBlank {
+                                builtInDohUpstream.value = value.trim().ifBlank {
                                     DEFAULT_NETWORK_DOH_UPSTREAM
                                 }
                             }
