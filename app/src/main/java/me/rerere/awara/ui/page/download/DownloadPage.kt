@@ -42,7 +42,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.collectAsLazyPagingItems
-import androidx.paging.compose.items
 import coil.compose.AsyncImage
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
@@ -151,7 +150,8 @@ fun DownloadPage(vm: DownloadVM = koinViewModel()) {
                     .nestedScroll(appBarScrollBehavior.nestedScrollConnection),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                items(items) { item ->
+                items(count = items.itemCount) { index ->
+                    val item = items[index]
                     if (item != null) {
                         DownloadItem(
                             item = item,

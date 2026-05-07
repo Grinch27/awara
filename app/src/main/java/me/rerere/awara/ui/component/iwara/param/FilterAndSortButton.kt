@@ -51,7 +51,7 @@ fun FilterAndSort(
     var showFilter by remember {
         mutableStateOf(false)
     }
-    val pagerState = rememberPagerState()
+    val pagerState = rememberPagerState(pageCount = { 3 })
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -127,7 +127,6 @@ fun FilterAndSort(
                 }
 
                 HorizontalPager(
-                    pageCount = 3,
                     state = pagerState,
                     modifier = Modifier.height(500.dp)
                 ) {

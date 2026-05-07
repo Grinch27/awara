@@ -188,9 +188,8 @@ fun ImagePage(vm: ImageVM = koinViewModel()) {
                     .fillMaxSize(),
                 show = state.loading
             ) {
-                val pagerState = rememberPagerState()
+                val pagerState = rememberPagerState(pageCount = { state.state?.files?.size ?: 0 })
                 HorizontalPager(
-                    pageCount = state.state?.files?.size ?: 0,
                     state = pagerState
                 ) {
                     AsyncImage(

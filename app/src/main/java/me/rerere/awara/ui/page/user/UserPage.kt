@@ -134,7 +134,7 @@ fun UserPage(
             )
 
             Column {
-                val pagerState = rememberPagerState()
+                val pagerState = rememberPagerState(pageCount = { 3 })
                 BetterTabBar(selectedTabIndex = pagerState.currentPage) {
                     Tab(
                         selected = pagerState.currentPage == 0,
@@ -161,7 +161,6 @@ fun UserPage(
 
                 HorizontalPager(
                     state = pagerState,
-                    pageCount = 4,
                     modifier = Modifier.fillMaxSize()
                 ) { page ->
                     when (page) {

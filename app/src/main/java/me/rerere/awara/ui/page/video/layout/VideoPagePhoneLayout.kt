@@ -43,7 +43,7 @@ import me.rerere.awara.ui.page.video.pager.VideoOverviewPage
 
 @Composable
 fun VideoPagePhoneLayout(vm: VideoVM, state: PlayerState, player: @Composable () -> Unit) {
-    val pagerState = rememberPagerState()
+    val pagerState = rememberPagerState(pageCount = { 2 })
     val scope = rememberCoroutineScope()
     var offset by remember { mutableStateOf(0f) }
     val nestedScrollConnection = remember {
@@ -126,7 +126,6 @@ fun VideoPagePhoneLayout(vm: VideoVM, state: PlayerState, player: @Composable ()
                 )
             }
             HorizontalPager(
-                pageCount = 2,
                 modifier = Modifier
                     .nestedScroll(nestedScrollConnection)
                     .weight(1f)

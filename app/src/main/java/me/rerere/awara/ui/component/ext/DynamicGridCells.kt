@@ -25,7 +25,7 @@ class DynamicStaggeredGridCells(
     override fun Density.calculateCrossAxisCellSizes(
         availableSize: Int,
         spacing: Int
-    ): List<Int> {
+    ): IntArray {
         val count = maxOf((availableSize + spacing) / (minSize.roundToPx() + spacing), 1)
         val countClamped = count.coerceIn(min, max)
         return calculateCellsCrossAxisSizeImpl(availableSize, countClamped, spacing)
@@ -44,11 +44,11 @@ private fun calculateCellsCrossAxisSizeImpl(
     gridSize: Int,
     slotCount: Int,
     spacing: Int
-): List<Int> {
+): IntArray {
     val gridSizeWithoutSpacing = gridSize - spacing * (slotCount - 1)
     val slotSize = gridSizeWithoutSpacing / slotCount
     val remainingPixels = gridSizeWithoutSpacing % slotCount
-    return List(slotCount) {
+    return IntArray(slotCount) {
         slotSize + if (it < remainingPixels) 1 else 0
     }
 }
@@ -69,6 +69,6 @@ fun <T : Any> LazyStaggeredGridScope.items(
             }
         }
     ) { index ->
-        itemContent(items[index])
+        itemContent(this@items, items[index])
     }
 }

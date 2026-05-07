@@ -35,7 +35,7 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun FavoritesPage(vm: FavoritesVM = koinViewModel()) {
     val appbarBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val pagerState = rememberPagerState()
+    val pagerState = rememberPagerState(pageCount = { 2 })
     val scope = rememberCoroutineScope()
     Scaffold(
         topBar = {
@@ -74,7 +74,6 @@ fun FavoritesPage(vm: FavoritesVM = koinViewModel()) {
             }
 
             HorizontalPager(
-                pageCount = 2,
                 state = pagerState,
                 modifier = Modifier
                     .fillMaxWidth()

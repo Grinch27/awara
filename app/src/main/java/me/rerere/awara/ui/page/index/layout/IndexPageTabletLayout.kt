@@ -49,14 +49,14 @@ fun IndexPageTabletLayout(vm: IndexVM) {
     val userStore = LocalUserStore.current
     val userState = userStore.collectAsState()
     val navController = LocalRouterProvider.current
-    val pagerState = rememberPagerState()
-    val scope = rememberCoroutineScope()
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val navigations = remember(userState.user) {
         indexNavigations.filter {
             !it.needLogin || userState.user != null
         }
     }
+    val pagerState = rememberPagerState(pageCount = { navigations.size })
+    val scope = rememberCoroutineScope()
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     ModalNavigationDrawer(
         drawerContent = {
             ModalDrawerSheet {

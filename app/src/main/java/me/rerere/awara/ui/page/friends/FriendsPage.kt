@@ -66,7 +66,7 @@ fun FriendsPage(vm: FriendsVM = koinViewModel()) {
                 .padding(innerPadding.excludeBottom())
                 .fillMaxSize()
         ) {
-            val pagerState = rememberPagerState()
+            val pagerState = rememberPagerState(pageCount = { if (vm.self) 2 else 1 })
             val scope = rememberCoroutineScope()
             if (vm.self) {
                 BetterTabBar(selectedTabIndex = pagerState.currentPage) {
@@ -97,7 +97,6 @@ fun FriendsPage(vm: FriendsVM = koinViewModel()) {
             }
 
             HorizontalPager(
-                pageCount = if (vm.self) 2 else 1,
                 modifier = Modifier.fillMaxSize(),
                 state = pagerState
             ) { page ->
