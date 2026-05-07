@@ -11,7 +11,7 @@
     <string name="errors_unknown">Unknown error %s</string>
     <string name="errors_validation_error">Your input is invalid</string>
     <string name="errors_invalid_login">Invalid username or password</string>
-    <string name="pagination_current">Page %d/%d</string>
+    <string name="pagination_current">Page %1$d/%2$d</string>
     <string name="confirm">Confirm</string>
     <string name="cancel">Cancel</string>
     <string name="index_nav_subscription">Subscription</string>
@@ -83,7 +83,7 @@
     <string name="setting_player_loop_text">Automatically restart playback after playback ends</string>
     <string name="setting_network">Network</string>
     <string name="setting_network_builtin_doh_title">Built-in DoH</string>
-    <string name="setting_network_builtin_doh_text">Use the app&#39;s built-in DNS over HTTPS for API and image requests</string>
+    <string name="setting_network_builtin_doh_text">Use built-in DNS over HTTPS for API and image requests</string>
     <string name="setting_network_doh_endpoint_title">DoH Endpoint</string>
     <string name="setting_network_doh_upstream_title">Upstream DoH Resolver</string>
     <string name="setting_about">About</string>
