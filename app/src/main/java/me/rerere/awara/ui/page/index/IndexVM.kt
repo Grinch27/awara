@@ -1,5 +1,9 @@
 package me.rerere.awara.ui.page.index
 
+// Privacy note:
+// 1. Home feed initialization intentionally avoids any third-party update check.
+// 2. If update prompts are needed later, decide whether they should come from GitHub Releases or an Iwara-owned endpoint.
+
 import android.util.Log
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
@@ -15,7 +19,6 @@ import me.rerere.awara.data.dto.Notification
 import me.rerere.awara.data.entity.Media
 import me.rerere.awara.data.repo.MediaRepo
 import me.rerere.awara.data.repo.UserRepo
-import me.rerere.awara.data.source.UpdateAPI
 import me.rerere.awara.data.source.onError
 import me.rerere.awara.data.source.onException
 import me.rerere.awara.data.source.onSuccess
@@ -30,8 +33,7 @@ private const val TAG = "IndexVM"
 
 class IndexVM(
     private val userRepo: UserRepo,
-    private val mediaRepo: MediaRepo,
-    private val updateChecker: UpdateAPI
+    private val mediaRepo: MediaRepo
 ) : ViewModel() {
     var state by mutableStateOf(IndexState())
         private set
@@ -46,19 +48,6 @@ class IndexVM(
         loadSubscriptions()
         loadVideoList()
         loadImageList()
-        checkUpdate()
-    }
-
-    private fun checkUpdate() {
-        viewModelScope.launch {
-            kotlin.runCatching {
-                val (code, name, changes) = updateChecker.checkUpdate()
-                events.emit(IndexEvent.ShowUpdateDialog(code, name, changes))
-                Log.i(TAG, "checkUpdate: $code $name $changes")
-            }.onFailure {
-                Log.e(TAG, "checkUpdate: ", it)
-            }
-        }
     }
 
     fun loadSubscriptions() {

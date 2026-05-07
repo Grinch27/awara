@@ -2,11 +2,10 @@ package me.rerere.awara.di
 
 // Privacy guardrails:
 // 1. Keep Iwara auth headers on a dedicated client only.
-// 2. Optional follow-up: make update checks user-toggleable to fully disable third-party traffic.
+// 2. If release metadata is needed again later, prefer a first-party endpoint or GitHub Releases instead of a standalone third-party API.
 
 import me.rerere.awara.BuildConfig
 import me.rerere.awara.data.source.IwaraAPI
-import me.rerere.awara.data.source.UpdateAPI
 import me.rerere.awara.util.SerializationConverterFactory
 import me.rerere.compose_setting.preference.mmkvPreference
 import okhttp3.OkHttpClient
@@ -104,14 +103,5 @@ val networkModule = module {
             .addConverterFactory(SerializationConverterFactory.create())
             .build()
             .create(IwaraAPI::class.java)
-    }
-
-    single {
-        Retrofit.Builder()
-            .client(get(named(PUBLIC_HTTP_CLIENT)))
-            .baseUrl("https://33jltt4ir7m3j2jst7g3kurrbu0qfqrt.lambda-url.ap-southeast-2.on.aws")
-            .addConverterFactory(SerializationConverterFactory.create())
-            .build()
-            .create(UpdateAPI::class.java)
     }
 }

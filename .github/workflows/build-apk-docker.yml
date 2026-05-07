@@ -1,0 +1,100 @@
+name: Build APK (Docker)
+
+# TODO(user): Decide whether this containerized workflow should replace the default runner build or stay as a compatibility lane.
+# TODO(agent): If Android SDK installation starts failing, first inspect the command line tools package URL and accepted license flow.
+# TODO(agent): If the toolchain succeeds but compilation still fails, compare the result against build-apk.yml before changing app code.
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-apk-docker-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  repository_dispatch:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    container:
+      image: ubuntu:devel
+      options: --user 0:0
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      ANDROID_HOME: /opt/android-sdk
+      ANDROID_SDK_ROOT: /opt/android-sdk
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install system packages
+        run: |
+          set -euo pipefail
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            ca-certificates \
+            curl \
+            git \
+            openjdk-21-jdk-headless \
+            python3 \
+            unzip
+
+      - name: Install Android SDK command line tools
+        run: |
+          set -euo pipefail
+          mkdir -p "${ANDROID_SDK_ROOT}/cmdline-tools"
+          curl -fsSL \
+            https://dl.google.com/android/repository/commandlinetools-linux-13114758_latest.zip \
+            -o /tmp/android-cmdline-tools.zip
+          unzip -q /tmp/android-cmdline-tools.zip -d "${ANDROID_SDK_ROOT}/cmdline-tools"
+          mv "${ANDROID_SDK_ROOT}/cmdline-tools/cmdline-tools" "${ANDROID_SDK_ROOT}/cmdline-tools/latest"
+          export PATH="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin:${ANDROID_SDK_ROOT}/platform-tools:${PATH}"
+          yes | sdkmanager --licenses >/dev/null
+          sdkmanager \
+            "build-tools;34.0.0" \
+            "platform-tools" \
+            "platforms;android-34"
+
+      - name: Resolve latest stable Gradle
+        id: gradle-version
+        run: |
+          set -euo pipefail
+          gradle_version="$(python3 -c 'import json, urllib.request; print(json.load(urllib.request.urlopen("https://services.gradle.org/versions/current"))["version"])')"
+          echo "version=${gradle_version}" >> "$GITHUB_OUTPUT"
+          echo "Latest stable Gradle: ${gradle_version}"
+
+          if [[ "${gradle_version%%.*}" -lt 9 ]]; then
+            echo "Expected Gradle 9 or newer, got ${gradle_version}" >&2
+            exit 1
+          fi
+
+      - name: Update Gradle wrapper to latest stable
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          gradle_version='${{ steps.gradle-version.outputs.version }}'
+          sed -i -E "s|gradle-[0-9]+(\.[0-9]+)*-[a-z]+\.zip|gradle-${gradle_version}-bin.zip|" gradle/wrapper/gradle-wrapper.properties
+          cat gradle/wrapper/gradle-wrapper.properties
+
+      - name: Build debug APK
+        env:
+          JAVA_HOME: /usr/lib/jvm/java-21-openjdk-amd64
+          PATH: /opt/android-sdk/cmdline-tools/latest/bin:/opt/android-sdk/platform-tools:/usr/lib/jvm/java-21-openjdk-amd64/bin:${{ env.PATH }}
+        run: |
+          set -euo pipefail
+          ./gradlew --version
+          ./gradlew assembleDebug --stacktrace --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-docker
+          path: app/build/outputs/apk/debug/*.apk
+          compression-level: 9
+          retention-days: 1

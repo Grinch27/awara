@@ -1,17 +1,17 @@
 name: Build APK
 
-# on:
-#   push:
-#     branches: [main, develop]
-#   pull_request:
-#     branches: [main]
+# TODO(user): Decide whether release builds should keep running on every manual dispatch or move to tagged releases only.
+# TODO(agent): If the latest stable Gradle moves ahead of AGP support, compare that failure against the pinned 9.1.0 wrapper baseline first.
+# TODO(agent): If compilation fails after the toolchain phase, the next research surface is the Compose and Accompanist dependency set.
 
-# run-name: Build APK
+permissions:
+  contents: read
+
+concurrency:
+  group: build-apk-${{ github.ref }}
+  cancel-in-progress: true
 
 on:
-  # schedule:
-  #   # Run every day at 20:00 UTC
-  #   - cron: "0 20 * * *"
   push:
     branches: [main]
   pull_request:
@@ -22,61 +22,63 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
     strategy:
       matrix:
         build_type: [debug, release]
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@main
+        uses: actions/checkout@v4
 
       - name: Setup JDK
-        uses: actions/setup-java@main
+        uses: actions/setup-java@v4
         with:
           java-version: "21"
           distribution: "temurin"
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@main
+        uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: "current"
           cache-cleanup: on-success
 
       - name: Validate Gradle wrapper
-        uses: gradle/actions/wrapper-validation@main
+        uses: gradle/actions/wrapper-validation@v4
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Update gradle/wrapper/gradle-wrapper.properties
-        id: update
+      - name: Resolve latest stable Gradle
+        id: gradle-version
         run: |
-          # 使用 current 端点获取当前稳定版 Gradle，避免手工钉死主版本。
-          if command -v jq &> /dev/null; then
-            GRADLE_VERSION=$(curl -s https://services.gradle.org/versions/current | jq -r '.version')
-          else
-            GRADLE_VERSION=$(curl -s https://services.gradle.org/versions/current | grep -o '"version" : "[^"]*"' | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
+          set -euo pipefail
+          gradle_version="$(python3 -c 'import json, urllib.request; print(json.load(urllib.request.urlopen("https://services.gradle.org/versions/current"))["version"])')"
+          echo "version=${gradle_version}" >> "$GITHUB_OUTPUT"
+          echo "Latest stable Gradle: ${gradle_version}"
+
+          if [[ "${gradle_version%%.*}" -lt 9 ]]; then
+            echo "Expected Gradle 9 or newer, got ${gradle_version}" >&2
+            exit 1
           fi
-          echo "当前稳定版 Gradle: $GRADLE_VERSION"
 
-          # 显示当前版本
-          echo "当前 gradle-wrapper.properties 内容:"
-          cat gradle/wrapper/gradle-wrapper.properties
-
-          # 使用 sed 动态替换版本号
-          sed -i "s|gradle-[0-9]\+\.[0-9]\+.*-bin\.zip|gradle-${GRADLE_VERSION}-bin.zip|g" gradle/wrapper/gradle-wrapper.properties
-          echo "已更新 Gradle Wrapper 到版本: $GRADLE_VERSION"
-
-          # 验证更新后的配置文件
-          echo "更新后的 gradle-wrapper.properties 内容:"
+      - name: Update Gradle wrapper to latest stable
+        run: |
+          set -euo pipefail
+          gradle_version='${{ steps.gradle-version.outputs.version }}'
+          sed -i -E "s|gradle-[0-9]+(\.[0-9]+)*-[a-z]+\.zip|gradle-${gradle_version}-bin.zip|" gradle/wrapper/gradle-wrapper.properties
+          echo "Updated gradle-wrapper.properties to ${gradle_version}"
           cat gradle/wrapper/gradle-wrapper.properties
 
       - name: Build APK
         run: |
+          set -euo pipefail
+          ./gradlew --version
           ./gradlew assemble${{ matrix.build_type == 'debug' && 'Debug' || 'Release' }} --stacktrace
 
       - name: Upload APK
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@v4
         with:
           name: app-${{ matrix.build_type }}
           path: app/build/outputs/apk/${{ matrix.build_type }}/*.apk
