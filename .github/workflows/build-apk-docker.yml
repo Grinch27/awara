@@ -12,6 +12,10 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  push:
+    branches:
+      - main
+      - ci/**
   repository_dispatch:
   workflow_dispatch:
 
