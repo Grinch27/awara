@@ -97,6 +97,19 @@ dependencies {
     // Room
     implementation("androidx.room:room-runtime:$roomVersion")
     implementation("androidx.room:room-paging:$roomVersion")
+    implementation("androidx.room:room-ktx:$roomVersion")
+    ksp("androidx.room:room-compiler:$roomVersion")
+
+    // Paging3
+    implementation("androidx.paging:paging-runtime:3.1.1")
+    implementation("androidx.paging:paging-compose:1.0.0-alpha18")
+
+    // Accompanist
+    implementation("com.google.accompanist:accompanist-navigation-animation:0.29.2-rc")
+    implementation("com.google.accompanist:accompanist-permissions:0.29.2-rc")
+
+    // Splash
+    implementation("androidx.core:core-splashscreen:1.0.1")
 
     // MMUPnP
     implementation("net.mm2d.mmupnp:mmupnp:3.1.6")
