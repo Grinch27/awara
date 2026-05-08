@@ -7,23 +7,9 @@ plugins {
 }
 
 android {
-    namespace = "me.rerere.awara.core.model"
-    compileSdk = 34
+    id("awara.android.library")
+    id("awara.kotlin.serialization")
 
     defaultConfig {
         minSdk = 26
     }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-}
-
-kotlin {
-    jvmToolchain(17)
-}
-
-dependencies {
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0")
-}

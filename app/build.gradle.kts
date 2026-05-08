@@ -1,27 +1,21 @@
 // TODO: If the Gradle 9 build still fails after this pass, the next likely upgrade surface is the Compose/Accompanist dependency set rather than app business code.
 // TODO: If memory leak analysis is needed again later, prefer an explicit opt-in debug flavor over shipping LeakCanary in the default debug install.
 plugins {
-    id("com.android.application")
-    kotlin("plugin.serialization")
-    id("org.jetbrains.kotlin.plugin.compose")
-    id("com.google.devtools.ksp")
+    id("awara.android.application")
+    id("awara.android.compose")
+    id("awara.android.room")
+    id("awara.kotlin.serialization")
 }
 
 android {
     namespace = "me.rerere.awara"
-    compileSdk = 34
 
     defaultConfig {
         applicationId = "me.rerere.awara"
-        minSdk = 26
-        targetSdk = 33
         versionCode = 9
         versionName = "1.0.8"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        vectorDrawables {
-            useSupportLibrary = true
-        }
         ndk {
             abiFilters.addAll(listOf(
                 "arm64-v8a",
@@ -103,23 +97,9 @@ dependencies {
     // Room
     implementation("androidx.room:room-runtime:$roomVersion")
     implementation("androidx.room:room-paging:$roomVersion")
-    implementation("androidx.room:room-ktx:$roomVersion")
-    ksp("androidx.room:room-compiler:$roomVersion")
-
-    // Paging3
-    implementation("androidx.paging:paging-runtime:3.1.1")
-    implementation("androidx.paging:paging-compose:1.0.0-alpha18")
-
-    // Accompanist
-    implementation("com.google.accompanist:accompanist-navigation-animation:0.29.2-rc")
-    implementation("com.google.accompanist:accompanist-permissions:0.29.2-rc")
-
-    // Splash
-    implementation("androidx.core:core-splashscreen:1.0.1")
 
     // MMUPnP
     implementation("net.mm2d.mmupnp:mmupnp:3.1.6")
-
     // Setting
     implementation("com.github.re-ovo:compose-setting:1.1")
 
@@ -158,8 +138,4 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
-}
-
-ksp {
-    arg("room.schemaLocation", "$projectDir/schemas")
 }

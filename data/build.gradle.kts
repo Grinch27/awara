@@ -2,25 +2,11 @@
 // TODO(agent): If more shared mapping logic lands here, add dedicated tests instead of relying only on app-level workflow builds.
 
 plugins {
-    id("com.android.library")
+    id("awara.android.library")
 }
 
 android {
     namespace = "me.rerere.awara.data.module"
-    compileSdk = 34
-
-    defaultConfig {
-        minSdk = 26
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-}
-
-kotlin {
-    jvmToolchain(17)
 }
 
 dependencies {
