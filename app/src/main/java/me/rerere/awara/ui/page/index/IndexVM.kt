@@ -29,6 +29,7 @@ import me.rerere.awara.data.source.stringResource
 import me.rerere.awara.domain.feed.FeedQuery
 import me.rerere.awara.domain.feed.FeedScope
 import me.rerere.awara.domain.feed.SavedFeedView
+import me.rerere.awara.domain.feed.toLegacyFilterValues
 import me.rerere.awara.domain.feed.toFeedFilters
 import me.rerere.awara.ui.component.common.UiState
 import me.rerere.awara.ui.component.iwara.param.FilterValue
