@@ -2,14 +2,14 @@
 // TODO(agent): If more shared domain code lands here, extract common Android library conventions into build-logic instead of copying them per module.
 
 plugins {
-    id("com.android.library")
-    kotlin("plugin.serialization")
+    id("awara.android.library")
+    id("awara.kotlin.serialization")
 }
 
 android {
-    id("awara.android.library")
-    id("awara.kotlin.serialization")
+    namespace = "me.rerere.awara.core.model"
+}
 
-    defaultConfig {
-        minSdk = 26
-    }
+dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0")
+}
