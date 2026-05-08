@@ -217,12 +217,12 @@ private fun FriendRequestCard(
                 Avatar(user = friendRequestDto.user, modifier = Modifier.size(48.dp))
 
                 Text(
-                    text = friendRequestDto.user.name,
+                    text = friendRequestDto.user.displayName,
                     style = MaterialTheme.typography.titleMedium,
                 )
 
                 Text(
-                    text = "@" + friendRequestDto.user.username,
+                    text = friendRequestDto.user.displayHandle,
                     style = MaterialTheme.typography.labelMedium,
                 )
 
@@ -250,12 +250,12 @@ private fun FriendRequestCard(
                 Avatar(user = friendRequestDto.target, modifier = Modifier.size(48.dp))
 
                 Text(
-                    text = friendRequestDto.target.name,
+                    text = friendRequestDto.target.displayName,
                     style = MaterialTheme.typography.titleMedium,
                 )
 
                 Text(
-                    text = "@" + friendRequestDto.target.username,
+                    text = friendRequestDto.target.displayHandle,
                     style = MaterialTheme.typography.labelMedium,
                 )
 

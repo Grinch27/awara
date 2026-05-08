@@ -31,7 +31,9 @@ fun AuthorCard(
     if (user != null) {
         Card(
             onClick = {
-                router.navigate("user/${user.username}")
+                if (user.hasNavigableProfile) {
+                    router.navigate("user/${user.username}")
+                }
             }
         ) {
             Row(
@@ -52,7 +54,9 @@ fun AuthorCard(
                                 .fillMaxHeight()
                                 .aspectRatio(1f),
                             onClick = {
-                                router.navigate("user/${user.username}")
+                                if (user.hasNavigableProfile) {
+                                    router.navigate("user/${user.username}")
+                                }
                             }
                         )
 
@@ -60,7 +64,7 @@ fun AuthorCard(
                             modifier = Modifier
                         ) {
                             Text(
-                                text = user.name,
+                                text = user.displayName,
                                 style = MaterialTheme.typography.titleMedium,
                             )
                             UserStatus(user = user, modifier = Modifier.padding(top = 4.dp))

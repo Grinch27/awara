@@ -64,20 +64,24 @@ fun CommentCard(
                     user = comment.user,
                     modifier = Modifier.size(32.dp),
                     onClick = {
-                        router.navigate("user/${comment.user?.username}")
+                        comment.user
+                            ?.takeIf { it.hasNavigableProfile }
+                            ?.let { router.navigate("user/${it.username}") }
                     }
                 )
                 Column {
                     Text(
-                        text = comment.user?.name ?: "",
+                        text = comment.user?.displayName ?: "",
                         color = MaterialTheme.colorScheme.secondary,
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.clickable {
-                            router.navigate("user/${comment.user?.username}")
+                            comment.user
+                                ?.takeIf { it.hasNavigableProfile }
+                                ?.let { router.navigate("user/${it.username}") }
                         }
                     )
                     Text(
-                        text = ("@" + comment.user?.username),
+                        text = comment.user?.displayHandle ?: "",
                         style = MaterialTheme.typography.labelSmall
                     )
                 }

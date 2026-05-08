@@ -1,5 +1,7 @@
 package me.rerere.awara.util
 
+// TODO(agent): If more endpoints start returning nullable scalars for required fields, replace field defaults with explicit DTO-to-domain normalization.
+
 import android.util.Log
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -25,6 +27,7 @@ private const val TAG = "SerializationConverter"
 val JsonInstance = Json {
     ignoreUnknownKeys = true
     isLenient = true
+    coerceInputValues = true
     explicitNulls = false
     prettyPrint = true
 }

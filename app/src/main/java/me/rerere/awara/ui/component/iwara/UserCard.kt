@@ -22,7 +22,9 @@ fun UserCard(
     Card(
         modifier = modifier,
         onClick = {
-            router.navigate("user/${user.username}")
+            if (user.hasNavigableProfile) {
+                router.navigate("user/${user.username}")
+            }
         }
     ) {
         Column(
@@ -33,11 +35,11 @@ fun UserCard(
 
             Column {
                 Text(
-                    text = user.name,
+                    text = user.displayName,
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    text = "@" + user.username,
+                    text = user.displayHandle,
                     style = MaterialTheme.typography.labelSmall
                 )
             }
