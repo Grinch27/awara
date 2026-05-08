@@ -25,7 +25,7 @@ object EmptyStringSerializer : KSerializer<String> {
         val element = jsonDecoder.decodeJsonElement()
         return when (element) {
             JsonNull -> ""
-            is JsonPrimitive -> element.contentOrNull.orEmpty()
+            is JsonPrimitive -> element.content
             else -> ""
         }
     }
