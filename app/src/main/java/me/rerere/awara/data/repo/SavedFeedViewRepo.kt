@@ -42,6 +42,13 @@ class SavedFeedViewRepo(
         )
     }
 
+    suspend fun replaceAll(views: List<SavedFeedView>) {
+        appDatabase.savedFeedViewDao().replaceAllViews(
+            views = views.map(SavedFeedView::toEntity),
+            filters = views.flatMap(SavedFeedView::toFilterEntities),
+        )
+    }
+
     suspend fun create(
         name: String,
         scope: FeedScope,

@@ -37,6 +37,7 @@ import java.time.Instant
 import java.util.UUID
 
 private const val TAG = "IndexVM"
+private val DEFAULT_MEDIA_SORT = MediaSortOptions.first().name
 
 class IndexVM(
     private val userRepo: UserRepo,
@@ -45,14 +46,15 @@ class IndexVM(
 ) : ViewModel() {
     var state by mutableStateOf(IndexState())
         private set
-    var videoSort: String by mutableStateOf(MediaSortOptions.first().name)
+    var videoSort: String by mutableStateOf(DEFAULT_MEDIA_SORT)
     val videoFilters: MutableList<FilterValue> = mutableStateListOf()
-    var imageSort: String = MediaSortOptions.first().name
+    var imageSort: String by mutableStateOf(DEFAULT_MEDIA_SORT)
     val imageFilters: MutableList<FilterValue> = mutableStateListOf()
 
     val events = MutableSharedFlow<IndexEvent>()
 
     init {
+        refreshSavedViews()
         loadSubscriptions()
         loadVideoList()
         loadImageList()
@@ -128,7 +130,88 @@ class IndexVM(
             filters = filters,
         )
         savedFeedViewRepo.save(view)
+        syncSavedViews(
+            selectedVideoViewId = when (scope) {
+                FeedScope.HOME_VIDEO -> view.id
+                else -> state.selectedVideoSavedViewId
+            },
+            selectedImageViewId = when (scope) {
+                FeedScope.HOME_IMAGE -> view.id
+                else -> state.selectedImageSavedViewId
+            },
+        )
         return view
+    }
+
+    fun applyVideoSavedView(viewId: String?) {
+        applySavedView(scope = FeedScope.HOME_VIDEO, viewId = viewId)
+    }
+
+    fun applyImageSavedView(viewId: String?) {
+        applySavedView(scope = FeedScope.HOME_IMAGE, viewId = viewId)
+    }
+
+    private fun refreshSavedViews(
+        selectedVideoViewId: String? = state.selectedVideoSavedViewId,
+        selectedImageViewId: String? = state.selectedImageSavedViewId,
+    ) {
+        viewModelScope.launch {
+            syncSavedViews(
+                selectedVideoViewId = selectedVideoViewId,
+                selectedImageViewId = selectedImageViewId,
+            )
+        }
+    }
+
+    private suspend fun syncSavedViews(
+        selectedVideoViewId: String? = state.selectedVideoSavedViewId,
+        selectedImageViewId: String? = state.selectedImageSavedViewId,
+    ) {
+        val views = savedFeedViewRepo.getAll()
+        val videoViews = views.filter { it.scope == FeedScope.HOME_VIDEO }
+        val imageViews = views.filter { it.scope == FeedScope.HOME_IMAGE }
+        state = state.copy(
+            savedVideoViews = videoViews,
+            selectedVideoSavedViewId = selectedVideoViewId?.takeIf { viewId ->
+                videoViews.any { it.id == viewId }
+            },
+            savedImageViews = imageViews,
+            selectedImageSavedViewId = selectedImageViewId?.takeIf { viewId ->
+                imageViews.any { it.id == viewId }
+            },
+        )
+    }
+
+    private fun applySavedView(scope: FeedScope, viewId: String?) {
+        val view = when (scope) {
+            FeedScope.HOME_VIDEO -> state.savedVideoViews.firstOrNull { it.id == viewId }
+            FeedScope.HOME_IMAGE -> state.savedImageViews.firstOrNull { it.id == viewId }
+            else -> null
+        }
+
+        when (scope) {
+            FeedScope.HOME_VIDEO -> {
+                videoSort = view?.sort ?: DEFAULT_MEDIA_SORT
+                videoFilters.replaceWith(view?.filters.orEmpty().toLegacyFilterValues())
+                state = state.copy(
+                    videoPage = 1,
+                    selectedVideoSavedViewId = view?.id,
+                )
+                loadVideoList()
+            }
+
+            FeedScope.HOME_IMAGE -> {
+                imageSort = view?.sort ?: DEFAULT_MEDIA_SORT
+                imageFilters.replaceWith(view?.filters.orEmpty().toLegacyFilterValues())
+                state = state.copy(
+                    imagePage = 1,
+                    selectedImageSavedViewId = view?.id,
+                )
+                loadImageList()
+            }
+
+            else -> Unit
+        }
     }
 
     fun loadSubscriptions() {
@@ -266,6 +349,7 @@ class IndexVM(
 
     fun updateVideoSort(sort: String) {
         videoSort = sort
+        clearVideoSavedViewSelection()
         loadVideoList()
     }
 
@@ -277,14 +361,17 @@ class IndexVM(
 
     fun addVideoFilter(filterValue: FilterValue) {
         videoFilters.add(filterValue)
+        clearVideoSavedViewSelection()
     }
 
     fun removeVideoFilter(filterValue: FilterValue) {
         videoFilters.remove(filterValue)
+        clearVideoSavedViewSelection()
     }
 
     fun updateImageSort(sort: String) {
         imageSort = sort
+        clearImageSavedViewSelection()
         loadImageList()
     }
 
@@ -296,18 +383,36 @@ class IndexVM(
 
     fun addImageFilter(filterValue: FilterValue) {
         imageFilters.add(filterValue)
+        clearImageSavedViewSelection()
     }
 
     fun removeImageFilter(filterValue: FilterValue) {
         imageFilters.remove(filterValue)
+        clearImageSavedViewSelection()
     }
 
     fun clearImageFilter() {
         imageFilters.clear()
+        clearImageSavedViewSelection()
     }
 
     fun clearVideoFilter() {
         videoFilters.clear()
+        clearVideoSavedViewSelection()
+    }
+
+    private fun clearVideoSavedViewSelection() {
+        if (state.selectedVideoSavedViewId == null) {
+            return
+        }
+        state = state.copy(selectedVideoSavedViewId = null)
+    }
+
+    private fun clearImageSavedViewSelection() {
+        if (state.selectedImageSavedViewId == null) {
+            return
+        }
+        state = state.copy(selectedImageSavedViewId = null)
     }
 
     data class IndexState(
@@ -320,10 +425,14 @@ class IndexVM(
         val videoPage: Int = 1,
         val videoCount: Int = 0,
         val videoList: List<Media> = emptyList(),
+        val savedVideoViews: List<SavedFeedView> = emptyList(),
+        val selectedVideoSavedViewId: String? = null,
         val imageState: UiState = UiState.Initial,
         val imagePage: Int = 1,
         val imageCount: Int = 0,
         val imageList: List<Media> = emptyList(),
+        val savedImageViews: List<SavedFeedView> = emptyList(),
+        val selectedImageSavedViewId: String? = null,
         val followingCount: Int = 0,
         val followerCount: Int = 0,
         val friendsCount: Int = 0,
@@ -341,5 +450,10 @@ class IndexVM(
         data class ShowUpdateDialog(val code: Int, val version: String, val changes: String) :
             IndexEvent()
     }
+}
+
+private fun MutableList<FilterValue>.replaceWith(filters: List<FilterValue>) {
+    clear()
+    addAll(filters)
 }
 

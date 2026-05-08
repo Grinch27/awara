@@ -89,6 +89,12 @@
     <string name="setting_data_logs_export_title">导出应用日志</string>
     <string name="setting_data_logs_export_text">导出最近 10000 条脱敏后的行为日志 JSON</string>
     <string name="setting_data_logs_export_success">应用日志已导出</string>
+    <string name="setting_data_local_backup_export_title">导出本地数据备份</string>
+    <string name="setting_data_local_backup_export_text">导出 %1$d 个保存视图、%2$d 条历史、%3$d 条下载记录和不含登录态的应用设置 JSON</string>
+    <string name="setting_data_local_backup_export_success">本地数据备份已导出</string>
+    <string name="setting_data_local_backup_import_title">导入本地数据备份</string>
+    <string name="setting_data_local_backup_import_text">从本地 JSON 备份恢复保存视图、历史、下载记录和不含登录态的应用设置</string>
+    <string name="setting_data_local_backup_import_success">本地数据已恢复：%1$d 个保存视图、%2$d 条历史、%3$d 条下载记录</string>
     <string name="setting_data_saved_views_export_title">导出保存视图</string>
     <string name="setting_data_saved_views_export_text">导出 %1$d 个已保存视图的 JSON</string>
     <string name="setting_data_saved_views_export_success">保存视图已导出</string>
@@ -102,6 +108,8 @@
     <string name="author_profile">开发者主页</string>
     <string name="click_to_view_my_iwara_profile">点击查看作者主页</string>
     <string name="save_current_view_action">保存视图</string>
+    <string name="saved_views_title">保存视图</string>
+    <string name="saved_view_chip_all">当前筛选</string>
     <string name="save_current_video_view_title">保存当前视频视图</string>
     <string name="save_current_image_view_title">保存当前图片视图</string>
     <string name="save_current_view_success">视图已保存：%1$s</string>

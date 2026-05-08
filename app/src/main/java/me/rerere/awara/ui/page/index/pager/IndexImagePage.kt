@@ -81,6 +81,9 @@ fun IndexImagePage(vm: IndexVM) {
                     onFilterClear = {
                         vm.clearImageFilter()
                     },
+                    savedViews = state.savedImageViews,
+                    selectedSavedViewId = state.selectedImageSavedViewId,
+                    onSavedViewSelected = vm::applyImageSavedView,
                     onSaveCurrentView = {
                         dialog.input(
                             title = {

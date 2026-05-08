@@ -81,6 +81,9 @@ fun IndexVideoPage(vm: IndexVM) {
                     onFilterClear = {
                         vm.clearVideoFilter()
                     },
+                    savedViews = state.savedVideoViews,
+                    selectedSavedViewId = state.selectedVideoSavedViewId,
+                    onSavedViewSelected = vm::applyVideoSavedView,
                     onSaveCurrentView = {
                         dialog.input(
                             title = {

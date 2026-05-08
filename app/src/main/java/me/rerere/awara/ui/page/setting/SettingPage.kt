@@ -23,7 +23,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -35,6 +34,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import me.rerere.awara.R
+import me.rerere.awara.data.repo.LocalDataSummary
 import me.rerere.awara.ui.LocalDialogProvider
 import me.rerere.awara.ui.LocalMessageProvider
 import me.rerere.awara.ui.LocalRouterProvider
@@ -75,12 +75,12 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
     var pendingExport by remember {
         mutableStateOf<PendingExport?>(null)
     }
-    var savedFeedViewCount by remember {
-        mutableIntStateOf(0)
+    var localDataSummary by remember {
+        mutableStateOf(LocalDataSummary())
     }
 
     LaunchedEffect(Unit) {
-        savedFeedViewCount = vm.getSavedFeedViewCount()
+        localDataSummary = vm.getLocalDataSummary()
     }
 
     val exportDocumentLauncher = rememberLauncherForActivityResult(
@@ -118,12 +118,43 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                 val content = context.readTextDocument(uri)
                 vm.importSavedFeedViews(content)
             }.onSuccess { imported ->
-                savedFeedViewCount = vm.getSavedFeedViewCount()
+                localDataSummary = vm.getLocalDataSummary()
                 message.success {
                     Text(context.getString(R.string.setting_data_saved_views_import_success, imported))
                 }
             }.onFailure {
                 AppLogger.e("SettingPage", "Failed to import saved views", it)
+                message.error {
+                    Text(context.getString(R.string.setting_data_action_failed))
+                }
+            }
+        }
+    }
+
+    val importLocalDataLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri == null) {
+            return@rememberLauncherForActivityResult
+        }
+        coroutineScope.launch {
+            runCatching {
+                val content = context.readTextDocument(uri)
+                vm.importLocalDataBackup(content)
+            }.onSuccess { summary ->
+                localDataSummary = summary
+                message.success {
+                    Text(
+                        context.getString(
+                            R.string.setting_data_local_backup_import_success,
+                            summary.savedViewCount,
+                            summary.historyCount,
+                            summary.downloadCount,
+                        )
+                    )
+                }
+            }.onFailure {
+                AppLogger.e("SettingPage", "Failed to import local data backup", it)
                 message.error {
                     Text(context.getString(R.string.setting_data_action_failed))
                 }
@@ -340,6 +371,61 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                 SettingItemCategory(title = { Text(stringResource(R.string.setting_data)) }) {
                     SettingLinkItem(
                         title = {
+                            Text(stringResource(R.string.setting_data_local_backup_export_title))
+                        },
+                        text = {
+                            Text(
+                                stringResource(
+                                    R.string.setting_data_local_backup_export_text,
+                                    localDataSummary.savedViewCount,
+                                    localDataSummary.historyCount,
+                                    localDataSummary.downloadCount,
+                                )
+                            )
+                        },
+                        icon = {
+                            Icon(Icons.Outlined.Source, null)
+                        },
+                        onClick = {
+                            coroutineScope.launch {
+                                runCatching {
+                                    vm.exportLocalDataBackup()
+                                }.onSuccess { content ->
+                                    pendingExport = PendingExport(
+                                        fileName = "awara-local-data-${System.currentTimeMillis()}.json",
+                                        content = content,
+                                        successMessage = context.getString(
+                                            R.string.setting_data_local_backup_export_success,
+                                        ),
+                                    )
+                                    exportDocumentLauncher.launch(pendingExport?.fileName)
+                                }.onFailure {
+                                    AppLogger.e("SettingPage", "Failed to prepare local data backup export", it)
+                                    message.error {
+                                        Text(context.getString(R.string.setting_data_action_failed))
+                                    }
+                                }
+                            }
+                        }
+                    )
+
+                    SettingLinkItem(
+                        title = {
+                            Text(stringResource(R.string.setting_data_local_backup_import_title))
+                        },
+                        text = {
+                            Text(stringResource(R.string.setting_data_local_backup_import_text))
+                        },
+                        icon = {
+                            Icon(Icons.Outlined.Replay, null)
+                        },
+                        onClick = {
+                            importLocalDataLauncher.launch(arrayOf("application/json", "text/plain"))
+                        }
+                    )
+
+                    SettingLinkItem(
+                        title = {
                             Text(stringResource(R.string.setting_data_logs_export_title))
                         },
                         text = {
@@ -374,7 +460,12 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                             Text(stringResource(R.string.setting_data_saved_views_export_title))
                         },
                         text = {
-                            Text(stringResource(R.string.setting_data_saved_views_export_text, savedFeedViewCount))
+                            Text(
+                                stringResource(
+                                    R.string.setting_data_saved_views_export_text,
+                                    localDataSummary.savedViewCount,
+                                )
+                            )
                         },
                         icon = {
                             Icon(Icons.Outlined.Replay, null)

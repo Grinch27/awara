@@ -5,13 +5,22 @@ package me.rerere.awara.ui.page.setting
 
 import androidx.lifecycle.ViewModel
 import me.rerere.awara.data.repo.AppLogRepo
+import me.rerere.awara.data.repo.LocalDataRepo
+import me.rerere.awara.data.repo.LocalDataSummary
 import me.rerere.awara.data.repo.SavedFeedViewRepo
 
 class SettingVM(
     private val appLogRepo: AppLogRepo,
+    private val localDataRepo: LocalDataRepo,
     private val savedFeedViewRepo: SavedFeedViewRepo,
 ) : ViewModel() {
     suspend fun exportAppLogs(): String = appLogRepo.exportJson()
+
+    suspend fun exportLocalDataBackup(): String = localDataRepo.exportBackupJson()
+
+    suspend fun importLocalDataBackup(content: String): LocalDataSummary = localDataRepo.importBackupJson(content)
+
+    suspend fun getLocalDataSummary(): LocalDataSummary = localDataRepo.getSummary()
 
     suspend fun exportSavedFeedViews(): String = savedFeedViewRepo.exportJson()
 

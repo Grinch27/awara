@@ -10,3 +10,11 @@ fun List<FilterValue>.toFeedFilters(): List<FeedFilter> {
         FeedFilter.KeyValue(key = filter.key, value = filter.value)
     }
 }
+
+fun List<FeedFilter>.toLegacyFilterValues(): List<FilterValue> {
+    return mapNotNull { filter ->
+        when (filter) {
+            is FeedFilter.KeyValue -> FilterValue(key = filter.key, value = filter.value)
+        }
+    }
+}

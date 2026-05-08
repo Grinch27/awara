@@ -6,15 +6,19 @@ package me.rerere.awara.ui.component.iwara.param
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ClearAll
 import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material3.Badge
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +38,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import me.rerere.awara.R
+import me.rerere.awara.domain.feed.SavedFeedView
 import me.rerere.awara.ui.component.common.BetterTabBar
 import me.rerere.awara.ui.component.iwara.param.filter.DateFilter
 import me.rerere.awara.ui.component.iwara.param.filter.RatingFilter
@@ -50,6 +55,9 @@ fun FilterAndSort(
     onFilterRemove: (FilterValue) -> Unit,
     onFilterChooseDone: () -> Unit,
     onFilterClear: () -> Unit,
+    savedViews: List<SavedFeedView> = emptyList(),
+    selectedSavedViewId: String? = null,
+    onSavedViewSelected: ((String?) -> Unit)? = null,
     onSaveCurrentView: (() -> Unit)? = null,
 ) {
     var showFilter by remember {
@@ -104,6 +112,45 @@ fun FilterAndSort(
                 ),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
+                if (savedViews.isNotEmpty() && onSavedViewSelected != null) {
+                    Text(
+                        text = stringResource(R.string.saved_views_title),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        item {
+                            FilterChip(
+                                selected = selectedSavedViewId == null,
+                                onClick = {
+                                    onSavedViewSelected(null)
+                                },
+                                label = {
+                                    Text(stringResource(R.string.saved_view_chip_all))
+                                },
+                            )
+                        }
+
+                        items(
+                            items = savedViews,
+                            key = { it.id },
+                        ) { savedView ->
+                            FilterChip(
+                                selected = savedView.id == selectedSavedViewId,
+                                onClick = {
+                                    onSavedViewSelected(savedView.id)
+                                },
+                                label = {
+                                    Text(savedView.name)
+                                },
+                            )
+                        }
+                    }
+                }
+
                 BetterTabBar(
                     selectedTabIndex = pagerState.currentPage
                 ) {

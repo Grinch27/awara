@@ -90,6 +90,12 @@
     <string name="setting_data_logs_export_title">Export App Logs</string>
     <string name="setting_data_logs_export_text">Export up to 10000 recent sanitized behavior logs as JSON</string>
     <string name="setting_data_logs_export_success">App logs exported</string>
+    <string name="setting_data_local_backup_export_title">Export Local Data Backup</string>
+    <string name="setting_data_local_backup_export_text">Export %1$d saved views, %2$d history items, %3$d downloads, and safe app settings as JSON</string>
+    <string name="setting_data_local_backup_export_success">Local data backup exported</string>
+    <string name="setting_data_local_backup_import_title">Import Local Data Backup</string>
+    <string name="setting_data_local_backup_import_text">Restore saved views, history, downloads, and safe app settings from a local JSON backup</string>
+    <string name="setting_data_local_backup_import_success">Local data restored: %1$d saved views, %2$d history items, %3$d downloads</string>
     <string name="setting_data_saved_views_export_title">Export Saved Views</string>
     <string name="setting_data_saved_views_export_text">Export %1$d saved views as JSON</string>
     <string name="setting_data_saved_views_export_success">Saved views exported</string>
@@ -103,6 +109,8 @@
     <string name="author_profile">Author Profile</string>
     <string name="click_to_view_my_iwara_profile">Click to view my iwara profile</string>
     <string name="save_current_view_action">Save View</string>
+    <string name="saved_views_title">Saved views</string>
+    <string name="saved_view_chip_all">Current filters</string>
     <string name="save_current_video_view_title">Save Current Video View</string>
     <string name="save_current_image_view_title">Save Current Image View</string>
     <string name="save_current_view_success">Saved view: %1$s</string>
