@@ -15,3 +15,6 @@ dependencyResolutionManagement {
 }
 rootProject.name = "awara"
 include(":app")
+include(":core:model")
+project(":core:model").projectDir = file("core/model")
+include(":data")

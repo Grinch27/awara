@@ -4,13 +4,16 @@ package me.rerere.awara.data.entity
 // TODO(agent): If upstream keeps relaxing user payloads, move this resilience from entity defaults into a dedicated DTO-to-domain mapper.
 
 import kotlinx.serialization.Serializable
+import me.rerere.awara.util.EmptyStringSerializer
 import me.rerere.awara.util.InstantSerializer
 import java.time.Instant
 
 @Serializable
 data class User(
     val id: String,
+    @Serializable(with = EmptyStringSerializer::class)
     val username: String = "",
+    @Serializable(with = EmptyStringSerializer::class)
     val name: String = "",
     @Serializable(with = InstantSerializer::class)
     val createdAt: Instant,
@@ -20,9 +23,11 @@ data class User(
     val following: Boolean = false,
     val friend: Boolean = false,
     val premium: Boolean = false,
+    @Serializable(with = EmptyStringSerializer::class)
     val role: String = "",
     @Serializable(with = InstantSerializer::class)
     val seenAt: Instant? = null,
+    @Serializable(with = EmptyStringSerializer::class)
     val status: String = "",
     @Serializable(with = InstantSerializer::class)
     val updatedAt: Instant,

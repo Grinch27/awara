@@ -5,7 +5,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
 import android.net.Uri
-import android.util.Log
+import java.io.IOException
 
 private const val TAG = "ContextUtil"
 
@@ -28,7 +28,7 @@ fun Context.openUrl(url: String) {
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
         startActivity(intent)
     } else {
-        Log.w(TAG, "openUrl: url is not valid: $url")
+        AppLogger.w(TAG, "openUrl rejected invalid url")
     }
 }
 
@@ -69,4 +69,18 @@ fun Context.shareLink(url: String) {
     intent.putExtra(Intent.EXTRA_TEXT, url)
     intent.type = "text/plain"
     startActivity(Intent.createChooser(intent, "Share"))
+}
+
+@Throws(IOException::class)
+fun Context.writeTextDocument(uri: Uri, text: String) {
+    contentResolver.openOutputStream(uri)?.bufferedWriter()?.use { writer ->
+        writer.write(text)
+    } ?: throw IOException("Unable to open output stream")
+}
+
+@Throws(IOException::class)
+fun Context.readTextDocument(uri: Uri): String {
+    return contentResolver.openInputStream(uri)?.bufferedReader()?.use { reader ->
+        reader.readText()
+    } ?: throw IOException("Unable to open input stream")
 }

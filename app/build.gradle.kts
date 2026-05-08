@@ -73,6 +73,9 @@ kotlin {
 dependencies {
     val roomVersion = "2.8.4"
 
+    implementation(project(":core:model"))
+    implementation(project(":data"))
+
     // Android KTX
     implementation("androidx.core:core-ktx:1.10.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")

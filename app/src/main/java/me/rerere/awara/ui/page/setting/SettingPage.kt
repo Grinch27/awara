@@ -1,5 +1,10 @@
 package me.rerere.awara.ui.page.setting
 
+// TODO(user): Decide whether saved-view import/export should stay under Settings or move into a dedicated diagnostics/data management page.
+// TODO(agent): If more diagnostics actions land, split this screen into smaller settings sections or feature-specific pages instead of growing one large composable.
+
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,13 +21,22 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import me.rerere.awara.R
 import me.rerere.awara.ui.LocalDialogProvider
+import me.rerere.awara.ui.LocalMessageProvider
 import me.rerere.awara.ui.LocalRouterProvider
 import me.rerere.awara.ui.component.common.Avatar
 import me.rerere.awara.ui.component.common.BackButton
@@ -31,7 +45,10 @@ import me.rerere.awara.util.DEFAULT_NETWORK_DOH_UPSTREAM
 import me.rerere.awara.util.SETTING_NETWORK_DOH_ENABLED
 import me.rerere.awara.util.SETTING_NETWORK_DOH_ENDPOINT
 import me.rerere.awara.util.SETTING_NETWORK_DOH_UPSTREAM
+import me.rerere.awara.util.AppLogger
 import me.rerere.awara.util.openUrl
+import me.rerere.awara.util.readTextDocument
+import me.rerere.awara.util.writeTextDocument
 import me.rerere.compose_setting.components.SettingItemCategory
 import me.rerere.compose_setting.components.types.SettingBooleanItem
 import me.rerere.compose_setting.components.types.SettingLinkItem
@@ -39,13 +56,81 @@ import me.rerere.compose_setting.components.types.SettingPickerItem
 import me.rerere.compose_setting.preference.rememberBooleanPreference
 import me.rerere.compose_setting.preference.rememberIntPreference
 import me.rerere.compose_setting.preference.rememberStringPreference
+import org.koin.androidx.compose.koinViewModel
+
+private data class PendingExport(
+    val fileName: String,
+    val content: String,
+    val successMessage: String,
+)
 
 @Composable
-fun SettingPage() {
+fun SettingPage(vm: SettingVM = koinViewModel()) {
     val context = LocalContext.current
     val dialog = LocalDialogProvider.current
+    val message = LocalMessageProvider.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val router = LocalRouterProvider.current
+    val coroutineScope = rememberCoroutineScope()
+    var pendingExport by remember {
+        mutableStateOf<PendingExport?>(null)
+    }
+    var savedFeedViewCount by remember {
+        mutableIntStateOf(0)
+    }
+
+    LaunchedEffect(Unit) {
+        savedFeedViewCount = vm.getSavedFeedViewCount()
+    }
+
+    val exportDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json"),
+    ) { uri ->
+        val export = pendingExport
+        pendingExport = null
+        if (uri == null || export == null) {
+            return@rememberLauncherForActivityResult
+        }
+        coroutineScope.launch {
+            runCatching {
+                context.writeTextDocument(uri, export.content)
+            }.onSuccess {
+                message.success {
+                    Text(export.successMessage)
+                }
+            }.onFailure {
+                AppLogger.e("SettingPage", "Failed to write exported document", it)
+                message.error {
+                    Text(context.getString(R.string.setting_data_action_failed))
+                }
+            }
+        }
+    }
+
+    val importSavedViewsLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri == null) {
+            return@rememberLauncherForActivityResult
+        }
+        coroutineScope.launch {
+            runCatching {
+                val content = context.readTextDocument(uri)
+                vm.importSavedFeedViews(content)
+            }.onSuccess { imported ->
+                savedFeedViewCount = vm.getSavedFeedViewCount()
+                message.success {
+                    Text(context.getString(R.string.setting_data_saved_views_import_success, imported))
+                }
+            }.onFailure {
+                AppLogger.e("SettingPage", "Failed to import saved views", it)
+                message.error {
+                    Text(context.getString(R.string.setting_data_action_failed))
+                }
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             LargeTopAppBar(
@@ -246,6 +331,87 @@ fun SettingPage() {
                                     DEFAULT_NETWORK_DOH_UPSTREAM
                                 }
                             }
+                        }
+                    )
+                }
+            }
+
+            item {
+                SettingItemCategory(title = { Text(stringResource(R.string.setting_data)) }) {
+                    SettingLinkItem(
+                        title = {
+                            Text(stringResource(R.string.setting_data_logs_export_title))
+                        },
+                        text = {
+                            Text(stringResource(R.string.setting_data_logs_export_text))
+                        },
+                        icon = {
+                            Icon(Icons.Outlined.Source, null)
+                        },
+                        onClick = {
+                            coroutineScope.launch {
+                                runCatching {
+                                    vm.exportAppLogs()
+                                }.onSuccess { content ->
+                                    pendingExport = PendingExport(
+                                        fileName = "awara-logs-${System.currentTimeMillis()}.json",
+                                        content = content,
+                                        successMessage = context.getString(R.string.setting_data_logs_export_success),
+                                    )
+                                    exportDocumentLauncher.launch(pendingExport?.fileName)
+                                }.onFailure {
+                                    AppLogger.e("SettingPage", "Failed to prepare app logs export", it)
+                                    message.error {
+                                        Text(context.getString(R.string.setting_data_action_failed))
+                                    }
+                                }
+                            }
+                        }
+                    )
+
+                    SettingLinkItem(
+                        title = {
+                            Text(stringResource(R.string.setting_data_saved_views_export_title))
+                        },
+                        text = {
+                            Text(stringResource(R.string.setting_data_saved_views_export_text, savedFeedViewCount))
+                        },
+                        icon = {
+                            Icon(Icons.Outlined.Replay, null)
+                        },
+                        onClick = {
+                            coroutineScope.launch {
+                                runCatching {
+                                    vm.exportSavedFeedViews()
+                                }.onSuccess { content ->
+                                    pendingExport = PendingExport(
+                                        fileName = "awara-saved-views-${System.currentTimeMillis()}.json",
+                                        content = content,
+                                        successMessage = context.getString(R.string.setting_data_saved_views_export_success),
+                                    )
+                                    exportDocumentLauncher.launch(pendingExport?.fileName)
+                                }.onFailure {
+                                    AppLogger.e("SettingPage", "Failed to prepare saved views export", it)
+                                    message.error {
+                                        Text(context.getString(R.string.setting_data_action_failed))
+                                    }
+                                }
+                            }
+                        }
+                    )
+
+                    SettingLinkItem(
+                        title = {
+                            Text(stringResource(R.string.setting_data_saved_views_import_title))
+                        },
+                        text = {
+                            Text(stringResource(R.string.setting_data_saved_views_import_text))
+                        },
+                        icon = {
+                            Icon(Icons.Outlined.Replay, null)
+                        },
+                        onClick = {
+                            importSavedViewsLauncher.launch(arrayOf("application/json", "text/plain"))
                         }
                     )
                 }

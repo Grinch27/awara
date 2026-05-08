@@ -1,5 +1,8 @@
 package me.rerere.awara.ui.page.index.pager
 
+// TODO(user): Decide whether video saved views should support pinning directly from the home feed.
+// TODO(agent): If home feed saved views turn into a primary navigation model, lift this action out of the pager footer and into a shared saved-view entry point.
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -7,8 +10,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.Text
+import kotlinx.coroutines.launch
+import me.rerere.awara.R
+import me.rerere.awara.ui.LocalDialogProvider
+import me.rerere.awara.ui.LocalMessageProvider
 import me.rerere.awara.ui.component.common.UiStateBox
 import me.rerere.awara.ui.component.ext.DynamicStaggeredGridCells
 import me.rerere.awara.ui.component.iwara.MediaCard
@@ -16,10 +26,15 @@ import me.rerere.awara.ui.component.iwara.PaginationBar
 import me.rerere.awara.ui.component.iwara.param.FilterAndSort
 import me.rerere.awara.ui.component.iwara.param.sort.MediaSortOptions
 import me.rerere.awara.ui.page.index.IndexVM
+import me.rerere.awara.util.AppLogger
 
 @Composable
 fun IndexVideoPage(vm: IndexVM) {
     val state = vm.state
+    val dialog = LocalDialogProvider.current
+    val message = LocalMessageProvider.current
+    val coroutineScope = rememberCoroutineScope()
+
     Column {
         UiStateBox(
             state = state.videoState,
@@ -65,7 +80,29 @@ fun IndexVideoPage(vm: IndexVM) {
                     },
                     onFilterClear = {
                         vm.clearVideoFilter()
-                    }
+                    },
+                    onSaveCurrentView = {
+                        dialog.input(
+                            title = {
+                                Text(stringResource(R.string.save_current_video_view_title))
+                            },
+                        ) { value ->
+                            coroutineScope.launch {
+                                runCatching {
+                                    vm.saveCurrentVideoView(value)
+                                }.onSuccess { savedView ->
+                                    message.success {
+                                        Text(stringResource(R.string.save_current_view_success, savedView.name))
+                                    }
+                                }.onFailure {
+                                    AppLogger.e("IndexVideoPage", "Failed to save video feed view", it)
+                                    message.error {
+                                        Text(stringResource(R.string.save_current_view_failure))
+                                    }
+                                }
+                            }
+                        }
+                    },
                 )
             }
         )

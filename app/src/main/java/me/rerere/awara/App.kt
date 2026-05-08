@@ -14,6 +14,7 @@ import me.rerere.awara.di.repoModule
 import me.rerere.awara.di.userCaseModule
 import me.rerere.awara.di.viewModelModule
 import me.rerere.awara.ui.registerErrorHandler
+import me.rerere.awara.util.AppLogger
 import me.rerere.compose_setting.preference.initComposeSetting
 import okhttp3.OkHttpClient
 import org.koin.android.ext.koin.androidContext
@@ -39,6 +40,7 @@ class App : Application(), ImageLoaderFactory, KoinComponent {
                 userCaseModule
             )
         }
+        AppLogger.install(get())
     }
 
     private fun registerNotificationChannel() {

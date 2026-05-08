@@ -1,5 +1,8 @@
 package me.rerere.awara.ui.page.search
 
+// TODO(user): Decide whether saved feed views should be usable as search presets in the first rollout or wait for a dedicated saved-view selector.
+// TODO(agent): If user profile search gains typed filters later, move the remaining raw string branch onto the same FeedQuery pipeline instead of keeping two query styles.
+
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -7,6 +10,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
+import me.rerere.awara.data.feed.toApiParams
 import me.rerere.awara.data.entity.Image
 import me.rerere.awara.data.entity.User
 import me.rerere.awara.data.entity.Video
@@ -15,6 +19,8 @@ import me.rerere.awara.data.source.onError
 import me.rerere.awara.data.source.onException
 import me.rerere.awara.data.source.runAPICatching
 import me.rerere.awara.data.source.stringResource
+import me.rerere.awara.domain.feed.FeedQuery
+import me.rerere.awara.domain.feed.FeedScope
 import me.rerere.awara.ui.component.common.UiState
 
 class SearchVM(
@@ -24,13 +30,24 @@ class SearchVM(
         private set
     var query by mutableStateOf("")
 
+    private fun buildMediaSearchQuery(scope: FeedScope): FeedQuery {
+        return FeedQuery(
+            scope = scope,
+            keyword = query,
+            page = state.page - 1,
+            pageSize = 24,
+        )
+    }
+
     fun search() {
         viewModelScope.launch {
             state = state.copy(uiState = UiState.Loading)
             runAPICatching {
                 when (state.searchType) {
                     "video" -> {
-                        val pager = mediaRepo.searchVideo(query, state.page - 1)
+                        val pager = mediaRepo.getVideoList(
+                            buildMediaSearchQuery(FeedScope.SEARCH_VIDEO).toApiParams()
+                        )
                         state = if (pager.results.isEmpty()) {
                             state.copy(
                                 uiState = UiState.Empty,
@@ -47,7 +64,9 @@ class SearchVM(
                     }
 
                     "image" -> {
-                        val pager = mediaRepo.searchImage(query, state.page - 1)
+                        val pager = mediaRepo.getImageList(
+                            buildMediaSearchQuery(FeedScope.SEARCH_IMAGE).toApiParams()
+                        )
                         state = if (pager.results.isEmpty()) {
                             state.copy(
                                 uiState = UiState.Empty,

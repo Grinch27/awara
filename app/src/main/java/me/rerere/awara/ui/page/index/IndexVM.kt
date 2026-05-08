@@ -14,10 +14,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
+import me.rerere.awara.data.feed.toApiParams
 import me.rerere.awara.R
 import me.rerere.awara.data.dto.Notification
 import me.rerere.awara.data.entity.Media
 import me.rerere.awara.data.repo.MediaRepo
+import me.rerere.awara.data.repo.SavedFeedViewRepo
 import me.rerere.awara.data.repo.UserRepo
 import me.rerere.awara.data.source.onError
 import me.rerere.awara.data.source.onException
@@ -26,17 +28,20 @@ import me.rerere.awara.data.source.runAPICatching
 import me.rerere.awara.data.source.stringResource
 import me.rerere.awara.domain.feed.FeedQuery
 import me.rerere.awara.domain.feed.FeedScope
-import me.rerere.awara.domain.feed.toApiParams
+import me.rerere.awara.domain.feed.SavedFeedView
 import me.rerere.awara.domain.feed.toFeedFilters
 import me.rerere.awara.ui.component.common.UiState
 import me.rerere.awara.ui.component.iwara.param.FilterValue
 import me.rerere.awara.ui.component.iwara.param.sort.MediaSortOptions
+import java.time.Instant
+import java.util.UUID
 
 private const val TAG = "IndexVM"
 
 class IndexVM(
     private val userRepo: UserRepo,
-    private val mediaRepo: MediaRepo
+    private val mediaRepo: MediaRepo,
+    private val savedFeedViewRepo: SavedFeedViewRepo,
 ) : ViewModel() {
     var state by mutableStateOf(IndexState())
         private set
@@ -82,6 +87,48 @@ class IndexVM(
             page = state.imagePage - 1,
             pageSize = 24,
         )
+    }
+
+    suspend fun saveCurrentVideoView(name: String): SavedFeedView {
+        return saveCurrentView(
+            name = name,
+            scope = FeedScope.HOME_VIDEO,
+            sort = videoSort,
+            filters = videoFilters.toFeedFilters(),
+        )
+    }
+
+    suspend fun saveCurrentImageView(name: String): SavedFeedView {
+        return saveCurrentView(
+            name = name,
+            scope = FeedScope.HOME_IMAGE,
+            sort = imageSort,
+            filters = imageFilters.toFeedFilters(),
+        )
+    }
+
+    private suspend fun saveCurrentView(
+        name: String,
+        scope: FeedScope,
+        sort: String?,
+        filters: List<me.rerere.awara.domain.feed.FeedFilter>,
+    ): SavedFeedView {
+        val trimmedName = name.trim().ifBlank {
+            when (scope) {
+                FeedScope.HOME_VIDEO -> "Video View ${Instant.now()}"
+                FeedScope.HOME_IMAGE -> "Image View ${Instant.now()}"
+                else -> "Saved View ${Instant.now()}"
+            }
+        }
+        val view = SavedFeedView(
+            id = UUID.randomUUID().toString(),
+            name = trimmedName,
+            scope = scope,
+            sort = sort,
+            filters = filters,
+        )
+        savedFeedViewRepo.save(view)
+        return view
     }
 
     fun loadSubscriptions() {

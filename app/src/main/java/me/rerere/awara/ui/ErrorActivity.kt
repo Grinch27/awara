@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
+import me.rerere.awara.util.AppLogger
 import me.rerere.awara.util.writeToClipboard
 
 class ErrorActivity : ComponentActivity() {
@@ -58,6 +59,7 @@ class ErrorActivity : ComponentActivity() {
 
 fun Application.registerErrorHandler() {
     Thread.setDefaultUncaughtExceptionHandler { t, e ->
+        AppLogger.e("CrashHandler", "Uncaught exception on ${t.name}", e)
         e.printStackTrace()
         val intent = Intent(this, ErrorActivity::class.java)
             .apply {

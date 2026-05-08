@@ -1,7 +1,9 @@
 package me.rerere.awara.di
 
+import me.rerere.awara.data.repo.AppLogRepo
 import me.rerere.awara.data.repo.CommentRepo
 import me.rerere.awara.data.repo.MediaRepo
+import me.rerere.awara.data.repo.SavedFeedViewRepo
 import me.rerere.awara.data.repo.UserRepo
 import org.koin.dsl.module
 
@@ -16,5 +18,13 @@ val repoModule = module {
 
     single {
         CommentRepo(get())
+    }
+
+    single {
+        AppLogRepo(get())
+    }
+
+    single {
+        SavedFeedViewRepo(get())
     }
 }

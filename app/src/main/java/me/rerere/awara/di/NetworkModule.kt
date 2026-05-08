@@ -4,13 +4,12 @@ package me.rerere.awara.di
 // 1. Keep Iwara auth headers on a dedicated client only.
 // 2. If release metadata is needed again later, prefer a first-party endpoint or GitHub Releases instead of a standalone third-party API.
 
-import me.rerere.awara.BuildConfig
 import me.rerere.awara.data.source.IwaraAPI
+import me.rerere.awara.util.AppLogger
 import me.rerere.awara.util.ConfigurableDohDns
 import me.rerere.awara.util.SerializationConverterFactory
 import me.rerere.compose_setting.preference.mmkvPreference
 import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import retrofit2.Retrofit
@@ -19,14 +18,6 @@ private const val UA = "Mozilla/5.0 (Linux; Android 12; Pixel 6 Build/SD1A.21081
 
 private const val PUBLIC_HTTP_CLIENT = "publicHttpClient"
 private const val IWARA_HTTP_CLIENT = "iwaraHttpClient"
-
-private fun createLoggingInterceptor() = HttpLoggingInterceptor().apply {
-    level = if (BuildConfig.DEBUG) {
-        HttpLoggingInterceptor.Level.BODY
-    } else {
-        HttpLoggingInterceptor.Level.NONE
-    }
-}
 
 val networkModule = module {
     single {
@@ -37,7 +28,7 @@ val networkModule = module {
         OkHttpClient.Builder()
             .dns(get<ConfigurableDohDns>())
             .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
-            .addInterceptor(createLoggingInterceptor())
+            .addInterceptor(AppLogger.createSafeNetworkLogInterceptor())
             .build()
     }
 
@@ -80,7 +71,7 @@ val networkModule = module {
                     .build()
                 it.proceed(newRequest)
             }
-            .addInterceptor(createLoggingInterceptor())
+            .addInterceptor(AppLogger.createSafeNetworkLogInterceptor())
 //            .addInterceptor {
 //                val request = it.request()
 //                val url = request.url

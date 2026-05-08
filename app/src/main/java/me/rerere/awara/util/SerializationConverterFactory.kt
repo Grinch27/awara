@@ -2,7 +2,6 @@ package me.rerere.awara.util
 
 // TODO(agent): If more endpoints start returning nullable scalars for required fields, replace field defaults with explicit DTO-to-domain normalization.
 
-import android.util.Log
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
@@ -83,7 +82,11 @@ internal class SerializationResponseBodyConverter<T>(
         val string = body.string()
         return kotlin.runCatching { json.decodeFromString(type, string) }
             .onFailure {
-                Log.w(TAG, "bad json: $string")
+                AppLogger.w(
+                    TAG,
+                    "Failed to decode JSON for ${type.descriptor.serialName}; responseLength=${string.length}",
+                    it as? Throwable,
+                )
             }
             .getOrThrow()
     }

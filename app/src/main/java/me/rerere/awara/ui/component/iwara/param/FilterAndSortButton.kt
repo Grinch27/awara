@@ -1,5 +1,8 @@
 package me.rerere.awara.ui.component.iwara.param
 
+// TODO(user): Decide whether saved view creation should stay in the filter sheet or move into a dedicated saved-views surface.
+// TODO(agent): If saved views gain icons, pinned ordering, or sharing metadata, split this footer action row into its own composable instead of growing this sheet inline.
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,7 +49,8 @@ fun FilterAndSort(
     onFilterAdd: (FilterValue) -> Unit,
     onFilterRemove: (FilterValue) -> Unit,
     onFilterChooseDone: () -> Unit,
-    onFilterClear: () -> Unit
+    onFilterClear: () -> Unit,
+    onSaveCurrentView: (() -> Unit)? = null,
 ) {
     var showFilter by remember {
         mutableStateOf(false)
@@ -161,6 +165,17 @@ fun FilterAndSort(
                     modifier = Modifier.align(Alignment.End),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    if (onSaveCurrentView != null) {
+                        FilledTonalButton(
+                            onClick = {
+                                showFilter = false
+                                onSaveCurrentView()
+                            },
+                        ) {
+                            Text(stringResource(R.string.save_current_view_action))
+                        }
+                    }
+
                     FilledTonalButton(
                         onClick = {
                             onFilterClear()
