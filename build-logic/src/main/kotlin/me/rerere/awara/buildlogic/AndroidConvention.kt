@@ -4,7 +4,6 @@ package me.rerere.awara.buildlogic
 // TODO(agent): If library modules start needing resource prefixes or publish settings, extend the convention helpers here instead of duplicating per-module config.
 
 import com.android.build.api.dsl.ApplicationExtension
-import com.android.build.api.dsl.CommonExtension
 import com.android.build.api.dsl.LibraryExtension
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
@@ -17,23 +16,11 @@ private const val MIN_SDK = 26
 private const val TARGET_SDK = 33
 private const val JVM_VERSION = 17
 
-internal fun CommonExtension.configureCommonAndroid() {
+internal fun ApplicationExtension.configureAwaraAndroidApplication() {
     compileSdk = COMPILE_SDK
 
     defaultConfig {
         minSdk = MIN_SDK
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-}
-
-internal fun ApplicationExtension.configureAwaraAndroidApplication() {
-    configureCommonAndroid()
-
-    defaultConfig {
         targetSdk = TARGET_SDK
 
         vectorDrawables {
@@ -45,6 +32,11 @@ internal fun ApplicationExtension.configureAwaraAndroidApplication() {
         buildConfig = true
     }
 
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -53,7 +45,16 @@ internal fun ApplicationExtension.configureAwaraAndroidApplication() {
 }
 
 internal fun LibraryExtension.configureAwaraAndroidLibrary() {
-    configureCommonAndroid()
+    compileSdk = COMPILE_SDK
+
+    defaultConfig {
+        minSdk = MIN_SDK
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
 }
 
 internal fun Project.configureAwaraKotlinJvm() {
