@@ -276,3 +276,52 @@
 3. 新增保存视图的 Room 表与仓储接口。
 4. 把首页视频/图片筛选从 `FilterValue` 改接 `FeedQuery`。
 5. 再把搜索页接入同一套查询模型。
+
+## 9. 现状校正与优先级修正
+
+这一节是结合当前仓库代码、现有工作流和对 EhViewer / FreshRSS 的参考后，对上面方案做的校正，避免把已经完成的事情继续当成待办。
+
+### 9.1 已经存在的能力
+
+1. 全局内置 DoH 已经落地，而且默认值已经与本次目标一致。
+   当前 [app/src/main/java/me/rerere/awara/util/ConfigurableDohDns.kt](../app/src/main/java/me/rerere/awara/util/ConfigurableDohDns.kt) 已经实现全局 DNS 解析器，默认 endpoint 是 `doh.opendns.com/dns-query`，默认上游是 `dns.alidns.com/dns-query`。
+
+2. 设置页已经暴露了 DoH 开关、endpoint 和 upstream 配置。
+   当前 [app/src/main/java/me/rerere/awara/ui/page/setting/SettingPage.kt](../app/src/main/java/me/rerere/awara/ui/page/setting/SettingPage.kt) 已经提供 UI 配置入口，所以这部分下一步重点不是“从零实现”，而是补验证、重置入口、输入校验和故障回退。
+
+3. GitHub Actions 已经改成在 CI 中动态同步最新稳定版 Gradle。
+   当前 [.github/workflows/build-apk.yml](../.github/workflows/build-apk.yml)、[.github/workflows/build-apk-docker.yml](../.github/workflows/build-apk-docker.yml) 都会执行 [scripts/sync-gradle-wrapper.sh](../scripts/sync-gradle-wrapper.sh)，因此远端构建已经不是固定死在 `9.1.0`。
+
+4. `FeedQuery` 相关领域对象已经开始存在，只是还没有完成真正的模块迁移和持久化接线。
+   当前 [app/src/main/java/me/rerere/awara/domain/feed/FeedQuery.kt](../app/src/main/java/me/rerere/awara/domain/feed/FeedQuery.kt) 已经有 `FeedQuery`、`FeedScope`、`FeedFilter`、`SavedFeedView`，并且 [app/src/main/java/me/rerere/awara/domain/feed/LegacyFeedQueryMapper.kt](../app/src/main/java/me/rerere/awara/domain/feed/LegacyFeedQueryMapper.kt) 也已经开始承担旧 `FilterValue` 到新查询模型的过渡。因此第一阶段更准确的目标不是“新增模型”，而是把这些模型迁到 `:core:model` / `:data`，再接上 Room 和页面状态。
+
+### 9.2 当前不建议立刻改动的点
+
+1. 本地 `gradle-wrapper.properties` 不建议直接改成每次都跟随最新版。
+   当前顶层插件仍是 AGP `9.0.1`，而 CI 之所以可以动态同步，是因为它先执行验证，再用工作流兜住兼容性风险。仓库内本地 wrapper 继续保留一个已知可启动基线，会比“每次打开工程都追最新”更稳。这个点更适合作为 `build-logic` 和 AGP 升级完成后的第二步，而不是现在先动。
+
+2. ECH 不能按“只加一个设置项”的量级理解。
+   参考 UjuiUjuMandan 的 EhViewer patch，ECH 需要至少同时引入 Conscrypt、自定义 `SSLSocketFactory`、额外 DNS / HTTPS 记录解析、ECH 拒绝后的重试或缓存失效逻辑，以及额外的 ProGuard keep / dontwarn 规则。也就是说，它更像一条单独网络栈分支，而不是普通设置页选项。
+
+### 9.3 建议提升优先级的两件事
+
+1. 先补持久化行为日志，而不是先上 ECH。
+   当前仓库大量使用 Android `Log`，但没有统一的本地持久化日志池。相比 ECH，先做一个默认上限 10000 条、带敏感字段脱敏和导出能力的日志模块，能更快帮助排查下载、登录、评论、解析失败和工作流回归问题。
+
+2. 把 DoH 从“可配置”提升到“可运维”。
+   下一步更有价值的是加 4 个配套能力：
+   一是 endpoint / upstream 输入格式校验。
+   二是恢复默认值按钮。
+   三是最近一次解析失败原因展示。
+   四是按域名区分策略的扩展位，为以后是否单独给 API / 视频 / 图片分流做准备。
+
+### 9.4 从 EhViewer 和 FreshRSS 得到的更具体结论
+
+1. EhViewer 值得借鉴的不是“模块数量多”，而是它先用 `build-logic` 和 `core:*` 把约定与基础层抽离，再持续升级 AGP / Gradle / Paging / Compose。Awara 现在最值得照搬的是这个迁移顺序，而不是先把页面全部拆碎。
+
+2. FreshRSS 值得借鉴的不是单纯筛选器数量，而是“保存查询 -> 分享查询 -> 导出/导入 -> 扩展点”这一整条资产化思路。Awara 的订阅视图如果只停在本地弹窗状态，就拿不到它真正的长期价值。
+
+3. 因此 Awara 的第一阶段目标应该明确调整为：
+   先统一查询模型和保存视图。
+   再补导出导入与恢复能力。
+   然后才考虑 ECH、下载策略插件化、外部播放器策略等更深的网络或扩展能力。
