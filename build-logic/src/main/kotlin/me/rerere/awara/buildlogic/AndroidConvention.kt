@@ -8,14 +8,16 @@ import com.android.build.api.dsl.CommonExtension
 import com.android.build.api.dsl.LibraryExtension
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
+import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.dsl.KotlinTopLevelExtension
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 
 private const val COMPILE_SDK = 34
 private const val MIN_SDK = 26
 private const val TARGET_SDK = 33
 private const val JVM_VERSION = 17
 
-internal fun CommonExtension<*, *, *, *, *, *>.configureCommonAndroid() {
+internal fun CommonExtension.configureCommonAndroid() {
     compileSdk = COMPILE_SDK
 
     defaultConfig {
@@ -59,13 +61,15 @@ internal fun Project.configureAwaraKotlinJvm() {
 }
 
 internal fun Project.configureAwaraComposeCompiler() {
-    extensions.findByType(KotlinTopLevelExtension::class.java)?.compilerOptions?.optIn?.addAll(
-        "androidx.compose.material3.ExperimentalMaterial3Api",
-        "androidx.compose.material.ExperimentalMaterialApi",
-        "androidx.compose.animation.ExperimentalAnimationApi",
-        "androidx.compose.foundation.ExperimentalFoundationApi",
-        "com.google.accompanist.pager.ExperimentalPagerApi",
-        "coil.annotation.ExperimentalCoilApi",
-        "androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi",
-    )
+    tasks.withType<KotlinCompilationTask<*>>().configureEach {
+        compilerOptions.optIn.addAll(
+            "androidx.compose.material3.ExperimentalMaterial3Api",
+            "androidx.compose.material.ExperimentalMaterialApi",
+            "androidx.compose.animation.ExperimentalAnimationApi",
+            "androidx.compose.foundation.ExperimentalFoundationApi",
+            "com.google.accompanist.pager.ExperimentalPagerApi",
+            "coil.annotation.ExperimentalCoilApi",
+            "androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi",
+        )
+    }
 }
