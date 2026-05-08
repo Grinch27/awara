@@ -91,7 +91,7 @@ fun MediaCard(
 
                     Row {
                         Text(
-                            text = media.user.name,
+                            text = media.user.displayName,
                             style = MaterialTheme.typography.labelMedium,
                             color = LocalContentColor.current.copy(alpha = 0.75f),
                         )

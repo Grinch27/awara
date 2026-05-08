@@ -77,7 +77,7 @@ fun ColumnScope.IndexDrawer(vm: IndexVM) {
         Column {
             // User nick name
             Text(
-                text = userState.user?.name ?: "未登录",
+                text = userState.user?.displayName ?: "未登录",
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.primary,
                 overflow = TextOverflow.Ellipsis,
@@ -85,9 +85,9 @@ fun ColumnScope.IndexDrawer(vm: IndexVM) {
             )
 
             // ID
-            if (userState.user?.username != null) {
+            if (userState.user != null) {
                 Text(
-                    text = "@${userState.user.username}",
+                    text = userState.user.displayHandle,
                     style = MaterialTheme.typography.titleMedium,
                 )
             }
