@@ -26,8 +26,28 @@ val databaseModule = module {
             androidContext(),
             AppDatabase::class.java,
             "awara.db"
-        ).addMigrations(MIGRATION_3_4)
+        ).addMigrations(MIGRATION_2_3, MIGRATION_3_4)
             .build()
+    }
+}
+
+private val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL(
+            "CREATE TABLE IF NOT EXISTS `app_logs` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `time` INTEGER NOT NULL, `level` TEXT NOT NULL, `tag` TEXT NOT NULL, `message` TEXT NOT NULL, `throwable` TEXT)",
+        )
+        database.execSQL(
+            "CREATE TABLE IF NOT EXISTS `saved_feed_view` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `scope` TEXT NOT NULL, `description` TEXT NOT NULL, `sort` TEXT, `pinned` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        )
+        database.execSQL(
+            "CREATE TABLE IF NOT EXISTS `saved_feed_filter` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `viewId` TEXT NOT NULL, `filterType` TEXT NOT NULL, `fieldKey` TEXT NOT NULL, `operator` TEXT NOT NULL, `value` TEXT NOT NULL, `extraValue` TEXT, `orderIndex` INTEGER NOT NULL, FOREIGN KEY(`viewId`) REFERENCES `saved_feed_view`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        )
+        database.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_saved_feed_filter_viewId` ON `saved_feed_filter` (`viewId`)",
+        )
+        database.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS `index_saved_feed_filter_viewId_orderIndex` ON `saved_feed_filter` (`viewId`, `orderIndex`)",
+        )
     }
 }
 
@@ -54,7 +74,6 @@ private val MIGRATION_3_4 = object : Migration(3, 4) {
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
-        AutoMigration(from = 2, to = 3),
     ]
 )
 abstract class AppDatabase : RoomDatabase() {
