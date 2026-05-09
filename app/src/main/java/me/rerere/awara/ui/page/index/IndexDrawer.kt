@@ -5,6 +5,7 @@ package me.rerere.awara.ui.page.index
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -59,6 +61,8 @@ fun IndexDrawer(
     val userState = userStore.collectAsState()
     val router = LocalRouterProvider.current
     val message = LocalMessageProvider.current
+    val primaryNavigations = navigations.filter { it.name != "forum" }
+    val communityNavigations = navigations.filter { it.name == "forum" }
     val selectedNavigationTitle = navigations
         .firstOrNull { it.name == selectedNavigationName }
         ?.let { stringResource(it.titleRes) }
@@ -70,23 +74,46 @@ fun IndexDrawer(
     }
 
     Column(
-        modifier = modifier
-            .fillMaxHeight()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 12.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Surface(
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            shape = RoundedCornerShape(28.dp),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+        DrawerSectionTitle(stringResource(R.string.index_drawer_primary_section_title))
+        primaryNavigations.forEach { navigation ->
+            DrawerItem(
+                icon = {
+                    navigation.icon()
+                },
+                label = {
+                    Text(
+                        text = stringResource(navigation.titleRes),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                },
+                selected = selectedNavigationName == navigation.name,
+                onClick = {
+                    onNavigationSelected(navigation.name)
+                },
+            )
+        }
+
+        if (communityNavigations.isNotEmpty()) {
+            DrawerSectionTitle(stringResource(R.string.index_drawer_community_section_title))
+            communityNavigations.forEach { navigation ->
+                DrawerItem(
+                    icon = {
+                        navigation.icon()
+                    },
+                    label = {
+                        Text(
+                            text = stringResource(navigation.titleRes),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    },
+                    selected = selectedNavigationName == navigation.name,
+                    onClick = {
+                        onNavigationSelected(navigation.name)
+                    },
+                )
+            }
             ) {
                 Avatar(
                     modifier = Modifier.size(52.dp),
@@ -225,12 +252,22 @@ fun IndexDrawer(
                 label = {
                     Text(stringResource(R.string.saved_view_chip_all))
                 },
+                supporting = {
+                    Text(stringResource(R.string.saved_view_meta_current_filters))
+                },
                 selected = selectedSavedViewId == null,
                 onClick = {
                     onSavedViewSelected(null)
                 },
             )
-            savedViews.forEach { savedView ->
+            val smartViews = savedViews.filter { it.smartSubscription }
+            val standardViews = savedViews.filterNot { it.smartSubscription }
+
+            if (smartViews.isNotEmpty()) {
+                DrawerSectionTitle(stringResource(R.string.saved_views_smart_title))
+            }
+            smartViews.forEach { savedView ->
+                val supportingText = buildSavedViewSupportingText(savedView)
                 DrawerItem(
                     label = {
                         Text(
@@ -238,6 +275,55 @@ fun IndexDrawer(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
+                    },
+                    supporting = supportingText.takeIf(String::isNotEmpty)?.let { text ->
+                        {
+                            Text(
+                                text = text,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    },
+                    selected = selectedSavedViewId == savedView.id,
+                    onClick = {
+                        onSavedViewSelected(savedView.id)
+                    },
+                )
+            }
+
+            if (standardViews.isNotEmpty()) {
+                DrawerSectionTitle(stringResource(R.string.saved_views_manual_title))
+            }
+            standardViews.forEach { savedView ->
+                val supportingText = buildList {
+                    if (savedView.pinned) {
+                        add(stringResource(R.string.saved_view_meta_pinned))
+                    }
+                    if (savedView.filters.isNotEmpty()) {
+                        add(stringResource(R.string.saved_view_meta_filters, savedView.filters.size))
+                    }
+                    if (savedView.tags.isNotEmpty()) {
+                        add(savedView.tags.joinToString(separator = "  ") { tag -> "#$tag" })
+                    }
+                    savedView.description.trim().takeIf(String::isNotEmpty)?.let(::add)
+                }.joinToString(separator = " · ")
+                DrawerItem(
+                    label = {
+                        Text(
+                            text = savedView.name,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    },
+                    supporting = supportingText.takeIf(String::isNotEmpty)?.let { text ->
+                        {
+                            Text(
+                                text = text,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     },
                     selected = selectedSavedViewId == savedView.id,
                     onClick = {
@@ -250,10 +336,26 @@ fun IndexDrawer(
 }
 
 @Composable
+private fun buildSavedViewSupportingText(savedView: SavedFeedView): String {
+    return buildList {
+        if (savedView.pinned) {
+            add(stringResource(R.string.saved_view_meta_pinned))
+        }
+        if (savedView.filters.isNotEmpty()) {
+            add(stringResource(R.string.saved_view_meta_filters, savedView.filters.size))
+        }
+        if (savedView.tags.isNotEmpty()) {
+            add(savedView.tags.joinToString(separator = "  ") { tag -> "#$tag" })
+        }
+        savedView.description.trim().takeIf(String::isNotEmpty)?.let(::add)
+    }.joinToString(separator = " · ")
+}
+
+@Composable
 private fun DrawerSectionTitle(text: String) {
     Text(
         text = text,
-        style = MaterialTheme.typography.labelLarge,
+        style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
     )
@@ -309,6 +411,7 @@ private fun DrawerItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     icon: (@Composable () -> Unit)? = null,
+    supporting: (@Composable () -> Unit)? = null,
     tail: (@Composable () -> Unit)? = null,
     selected: Boolean = false,
 ) {
@@ -323,26 +426,63 @@ private fun DrawerItem(
             color = if (selected) {
                 MaterialTheme.colorScheme.secondaryContainer
             } else {
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.36f)
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.22f)
             },
+            contentColor = if (selected) {
+                MaterialTheme.colorScheme.onSecondaryContainer
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+            border = if (selected) {
+                BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.28f))
+            } else {
+                null
+            },
+            tonalElevation = if (selected) 1.dp else 0.dp,
             shape = RoundedCornerShape(24.dp),
             onClick = onClick,
             modifier = modifier.fillMaxWidth(),
         ) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
-                    .padding(horizontal = 16.dp, vertical = 14.dp)
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
                     .fillMaxWidth(),
             ) {
                 if (icon != null) {
-                    icon()
+                    Surface(
+                        color = if (selected) {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                        } else {
+                            MaterialTheme.colorScheme.surface
+                        },
+                        shape = RoundedCornerShape(14.dp),
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .padding(6.dp),
+                        ) {
+                            icon()
+                        }
+                    }
                 } else {
-                    Spacer(modifier = Modifier.width(24.dp))
+                    Spacer(modifier = Modifier.width(36.dp))
                 }
-                label()
-                Spacer(modifier = Modifier.weight(1f))
+
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    label()
+                    supporting?.let {
+                        ProvideTextStyle(MaterialTheme.typography.labelSmall) {
+                            it()
+                        }
+                    }
+                }
                 tail?.invoke()
             }
         }

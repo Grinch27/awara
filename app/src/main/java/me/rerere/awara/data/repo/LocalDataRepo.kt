@@ -17,6 +17,7 @@ import me.rerere.awara.util.DEFAULT_NETWORK_DOH_ENDPOINT
 import me.rerere.awara.util.DEFAULT_NETWORK_DOH_UPSTREAM
 import me.rerere.awara.util.InstantSerializer
 import me.rerere.awara.util.JsonInstance
+import me.rerere.awara.util.SETTING_NETWORK_ECH_ENABLED
 import me.rerere.awara.util.SETTING_NETWORK_DOH_ENABLED
 import me.rerere.awara.util.SETTING_NETWORK_DOH_ENDPOINT
 import me.rerere.awara.util.SETTING_NETWORK_DOH_UPSTREAM
@@ -31,7 +32,7 @@ private const val SETTING_PLAYER_QUALITY = "setting.player_quality"
 
 @Serializable
 data class LocalDataBackupBundle(
-    val version: Int = 1,
+    val version: Int = 2,
     @Serializable(with = InstantSerializer::class)
     val exportedAt: Instant = Instant.now(),
     val savedViews: List<SavedFeedView> = emptyList(),
@@ -78,6 +79,7 @@ data class SafeAppSettingsBackup(
     val builtInDohEnabled: Boolean = true,
     val builtInDohEndpoint: String = DEFAULT_NETWORK_DOH_ENDPOINT,
     val builtInDohUpstream: String = DEFAULT_NETWORK_DOH_UPSTREAM,
+    val echEnabled: Boolean = false,
 )
 
 class LocalDataRepo(
@@ -170,6 +172,7 @@ private fun SafeAppSettingsBackup.applyToPreferences() {
     mmkvPreference.putBoolean(SETTING_NETWORK_DOH_ENABLED, builtInDohEnabled)
     mmkvPreference.putString(SETTING_NETWORK_DOH_ENDPOINT, builtInDohEndpoint)
     mmkvPreference.putString(SETTING_NETWORK_DOH_UPSTREAM, builtInDohUpstream)
+    mmkvPreference.putBoolean(SETTING_NETWORK_ECH_ENABLED, echEnabled)
 }
 
 private fun SafeAppSettingsBackup.Companion.fromPreferences(): SafeAppSettingsBackup {
@@ -189,5 +192,6 @@ private fun SafeAppSettingsBackup.Companion.fromPreferences(): SafeAppSettingsBa
             SETTING_NETWORK_DOH_UPSTREAM,
             DEFAULT_NETWORK_DOH_UPSTREAM,
         ) ?: DEFAULT_NETWORK_DOH_UPSTREAM,
+        echEnabled = mmkvPreference.getBoolean(SETTING_NETWORK_ECH_ENABLED, false),
     )
 }

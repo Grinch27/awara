@@ -110,11 +110,53 @@ class IndexVM(
         )
     }
 
+    suspend fun saveCurrentVideoView(
+        name: String,
+        description: String,
+        tags: List<String>,
+        pinned: Boolean,
+        smartSubscription: Boolean,
+    ): SavedFeedView {
+        return saveCurrentView(
+            name = name,
+            scope = FeedScope.HOME_VIDEO,
+            sort = videoSort,
+            filters = videoFilters.toFeedFilters(),
+            description = description,
+            tags = tags,
+            pinned = pinned,
+            smartSubscription = smartSubscription,
+        )
+    }
+
+    suspend fun saveCurrentImageView(
+        name: String,
+        description: String,
+        tags: List<String>,
+        pinned: Boolean,
+        smartSubscription: Boolean,
+    ): SavedFeedView {
+        return saveCurrentView(
+            name = name,
+            scope = FeedScope.HOME_IMAGE,
+            sort = imageSort,
+            filters = imageFilters.toFeedFilters(),
+            description = description,
+            tags = tags,
+            pinned = pinned,
+            smartSubscription = smartSubscription,
+        )
+    }
+
     private suspend fun saveCurrentView(
         name: String,
         scope: FeedScope,
         sort: String?,
         filters: List<me.rerere.awara.domain.feed.FeedFilter>,
+        description: String = "",
+        tags: List<String> = emptyList(),
+        pinned: Boolean = false,
+        smartSubscription: Boolean = false,
     ): SavedFeedView {
         val trimmedName = name.trim().ifBlank {
             when (scope) {
@@ -127,8 +169,12 @@ class IndexVM(
             id = UUID.randomUUID().toString(),
             name = trimmedName,
             scope = scope,
+            description = description.trim(),
+            tags = tags,
             sort = sort,
             filters = filters,
+            pinned = pinned,
+            smartSubscription = smartSubscription,
         )
         savedFeedViewRepo.save(view)
         syncSavedViews(
@@ -169,8 +215,13 @@ class IndexVM(
         selectedImageViewId: String? = state.selectedImageSavedViewId,
     ) {
         val views = savedFeedViewRepo.getAll()
-        val videoViews = views.filter { it.scope == FeedScope.HOME_VIDEO }
-        val imageViews = views.filter { it.scope == FeedScope.HOME_IMAGE }
+        val sortedViews = views.sortedWith(
+            compareByDescending<SavedFeedView> { it.smartSubscription }
+                .thenByDescending { it.pinned }
+                .thenByDescending { it.updatedAt },
+        )
+        val videoViews = sortedViews.filter { it.scope == FeedScope.HOME_VIDEO }
+        val imageViews = sortedViews.filter { it.scope == FeedScope.HOME_IMAGE }
         state = state.copy(
             savedVideoViews = videoViews,
             selectedVideoSavedViewId = selectedVideoViewId?.takeIf { viewId ->

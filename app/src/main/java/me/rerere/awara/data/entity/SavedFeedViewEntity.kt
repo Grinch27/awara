@@ -19,8 +19,10 @@ data class SavedFeedViewEntity(
     @ColumnInfo val name: String,
     @ColumnInfo val scope: String,
     @ColumnInfo val description: String = "",
+    @ColumnInfo val tags: String = "",
     @ColumnInfo val sort: String? = null,
     @ColumnInfo val pinned: Boolean = false,
+    @ColumnInfo val smartSubscription: Boolean = false,
     @ColumnInfo val createdAt: Instant = Instant.now(),
     @ColumnInfo val updatedAt: Instant = Instant.now(),
 )

@@ -16,34 +16,43 @@ import okhttp3.dnsoverhttps.DnsOverHttps
 const val SETTING_NETWORK_DOH_ENABLED = "setting.network_doh_enabled"
 const val SETTING_NETWORK_DOH_ENDPOINT = "setting.network_doh_endpoint"
 const val SETTING_NETWORK_DOH_UPSTREAM = "setting.network_doh_upstream"
+const val SETTING_NETWORK_ECH_ENABLED = "setting.network_ech_enabled"
 
 const val DEFAULT_NETWORK_DOH_ENDPOINT = "doh.opendns.com/dns-query"
-const val DEFAULT_NETWORK_DOH_UPSTREAM = "dns.alidns.com/dns-query"
+const val DEFAULT_NETWORK_DOH_UPSTREAM = DEFAULT_NETWORK_DOH_ENDPOINT
 
-private data class DohPreferenceSnapshot(
-    val enabled: Boolean,
-    val endpoint: String,
-    val upstream: String,
+data class NetworkStackSnapshot(
+    val dohEnabled: Boolean,
+    val dohEndpoint: String,
+    val dohUpstream: String,
+    val echEnabled: Boolean,
 ) {
     companion object {
-        fun fromPreferences(): DohPreferenceSnapshot {
-            return DohPreferenceSnapshot(
-                enabled = mmkvPreference.getBoolean(SETTING_NETWORK_DOH_ENABLED, true),
-                endpoint = mmkvPreference.getString(
+        fun fromPreferences(): NetworkStackSnapshot {
+            return NetworkStackSnapshot(
+                dohEnabled = mmkvPreference.getBoolean(SETTING_NETWORK_DOH_ENABLED, true),
+                dohEndpoint = mmkvPreference.getString(
                     SETTING_NETWORK_DOH_ENDPOINT,
                     DEFAULT_NETWORK_DOH_ENDPOINT,
                 ).orEmpty(),
-                upstream = mmkvPreference.getString(
+                dohUpstream = mmkvPreference.getString(
                     SETTING_NETWORK_DOH_UPSTREAM,
                     DEFAULT_NETWORK_DOH_UPSTREAM,
                 ).orEmpty(),
+                echEnabled = mmkvPreference.getBoolean(SETTING_NETWORK_ECH_ENABLED, false),
             )
         }
     }
 }
 
+interface NetworkTransportPolicy {
+    fun currentSnapshot(): NetworkStackSnapshot
+
+    fun apply(builder: OkHttpClient.Builder): OkHttpClient.Builder
+}
+
 private data class DohResolverCache(
-    val snapshot: DohPreferenceSnapshot,
+    val snapshot: NetworkStackSnapshot,
     val dns: Dns,
 )
 
@@ -71,7 +80,7 @@ class ConfigurableDohDns(
     }
 
     private fun currentDns(): Dns {
-        val snapshot = DohPreferenceSnapshot.fromPreferences()
+        val snapshot = NetworkStackSnapshot.fromPreferences()
         val cached = cache
         if (cached?.snapshot == snapshot) {
             return cached.dns
@@ -89,14 +98,14 @@ class ConfigurableDohDns(
         }
     }
 
-    private fun buildDns(snapshot: DohPreferenceSnapshot): Dns {
-        if (!snapshot.enabled) {
+    private fun buildDns(snapshot: NetworkStackSnapshot): Dns {
+        if (!snapshot.dohEnabled) {
             return Dns.SYSTEM
         }
 
-        val upstreamUrl = snapshot.upstream.toDohUrlOrNull(DEFAULT_NETWORK_DOH_UPSTREAM)
+        val upstreamUrl = snapshot.dohUpstream.toDohUrlOrNull(DEFAULT_NETWORK_DOH_UPSTREAM)
             ?: return Dns.SYSTEM
-        val endpointUrl = snapshot.endpoint.toDohUrlOrNull(DEFAULT_NETWORK_DOH_ENDPOINT)
+        val endpointUrl = snapshot.dohEndpoint.toDohUrlOrNull(DEFAULT_NETWORK_DOH_ENDPOINT)
             ?: return Dns.SYSTEM
 
         val upstreamDns = DnsOverHttps.Builder()
@@ -116,5 +125,22 @@ class ConfigurableDohDns(
             .connectTimeout(timeoutSeconds, TimeUnit.SECONDS)
             .readTimeout(timeoutSeconds, TimeUnit.SECONDS)
             .build()
+    }
+}
+
+class AppNetworkTransportPolicy(
+    private val dns: ConfigurableDohDns,
+) : NetworkTransportPolicy {
+    override fun currentSnapshot(): NetworkStackSnapshot {
+        return NetworkStackSnapshot.fromPreferences()
+    }
+
+    override fun apply(builder: OkHttpClient.Builder): OkHttpClient.Builder {
+        val configuredBuilder = builder.dns(dns)
+        val snapshot = currentSnapshot()
+        if (snapshot.echEnabled) {
+            // Keep the global ECH switch at the shared network boundary until the underlying client stack exposes a concrete ECH transport hook.
+        }
+        return configuredBuilder
     }
 }

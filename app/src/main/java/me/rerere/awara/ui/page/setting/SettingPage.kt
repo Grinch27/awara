@@ -42,6 +42,7 @@ import me.rerere.awara.ui.component.common.Avatar
 import me.rerere.awara.ui.component.common.BackButton
 import me.rerere.awara.util.DEFAULT_NETWORK_DOH_ENDPOINT
 import me.rerere.awara.util.DEFAULT_NETWORK_DOH_UPSTREAM
+import me.rerere.awara.util.SETTING_NETWORK_ECH_ENABLED
 import me.rerere.awara.util.SETTING_NETWORK_DOH_ENABLED
 import me.rerere.awara.util.SETTING_NETWORK_DOH_ENDPOINT
 import me.rerere.awara.util.SETTING_NETWORK_DOH_UPSTREAM
@@ -302,6 +303,10 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                     key = SETTING_NETWORK_DOH_UPSTREAM,
                     default = DEFAULT_NETWORK_DOH_UPSTREAM
                 )
+                val echEnabled = rememberBooleanPreference(
+                    key = SETTING_NETWORK_ECH_ENABLED,
+                    default = false,
+                )
 
                 SettingItemCategory(title = { Text(stringResource(R.string.setting_network)) }) {
                     SettingBooleanItem(
@@ -311,6 +316,19 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         },
                         text = {
                             Text(stringResource(R.string.setting_network_builtin_doh_text))
+                        },
+                        icon = {
+                            Icon(Icons.Outlined.Source, null)
+                        }
+                    )
+
+                    SettingBooleanItem(
+                        state = echEnabled,
+                        title = {
+                            Text(stringResource(R.string.setting_network_ech_title))
+                        },
+                        text = {
+                            Text(stringResource(R.string.setting_network_ech_text))
                         },
                         icon = {
                             Icon(Icons.Outlined.Source, null)

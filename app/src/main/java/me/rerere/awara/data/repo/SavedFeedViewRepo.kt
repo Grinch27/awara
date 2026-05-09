@@ -20,7 +20,7 @@ import java.time.Instant
 
 @Serializable
 data class SavedFeedViewExportBundle(
-    val version: Int = 1,
+    val version: Int = 2,
     @Serializable(with = InstantSerializer::class)
     val exportedAt: Instant = Instant.now(),
     val views: List<SavedFeedView>,
@@ -55,16 +55,20 @@ class SavedFeedViewRepo(
         sort: String?,
         filters: List<FeedFilter>,
         description: String = "",
+        tags: List<String> = emptyList(),
         pinned: Boolean = false,
+        smartSubscription: Boolean = false,
     ): SavedFeedView {
         val view = SavedFeedView(
             id = UUID.randomUUID().toString(),
             name = name,
             scope = scope,
             description = description,
+            tags = tags,
             sort = sort,
             filters = filters,
             pinned = pinned,
+            smartSubscription = smartSubscription,
         )
         save(view)
         return view
@@ -93,8 +97,10 @@ private fun SavedFeedView.toEntity(): SavedFeedViewEntity {
         name = name,
         scope = scope.name,
         description = description,
+        tags = tags.joinToString(separator = ","),
         sort = sort,
         pinned = pinned,
+        smartSubscription = smartSubscription,
         createdAt = createdAt,
         updatedAt = updatedAt,
     )
@@ -122,9 +128,11 @@ private fun SavedFeedViewRecord.toDomain(): SavedFeedView {
         name = view.name,
         scope = FeedScope.valueOf(view.scope),
         description = view.description,
+        tags = view.tags.toSavedViewTags(),
         sort = view.sort,
         filters = filters.map(SavedFeedFilterEntity::toDomainFilter),
         pinned = view.pinned,
+        smartSubscription = view.smartSubscription,
         createdAt = view.createdAt,
         updatedAt = view.updatedAt,
     )
@@ -135,4 +143,11 @@ private fun SavedFeedFilterEntity.toDomainFilter(): FeedFilter {
         "key_value" -> FeedFilter.KeyValue(key = fieldKey, value = value)
         else -> FeedFilter.KeyValue(key = fieldKey, value = value)
     }
+}
+
+private fun String.toSavedViewTags(): List<String> {
+    return split(',')
+        .map(String::trim)
+        .filter(String::isNotEmpty)
+        .distinct()
 }
