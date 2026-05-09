@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import me.rerere.awara.BuildConfig
 import me.rerere.awara.R
+import me.rerere.awara.domain.feed.FeedScope
 import me.rerere.awara.ui.LocalRouterProvider
 import me.rerere.awara.ui.component.common.NamedHorizontalPager
 import me.rerere.awara.ui.component.common.TodoStatus
@@ -50,6 +51,7 @@ import me.rerere.awara.ui.page.index.indexNavigations
 import me.rerere.awara.ui.page.index.pager.IndexImagePage
 import me.rerere.awara.ui.page.index.pager.IndexSubscriptionPage
 import me.rerere.awara.ui.page.index.pager.IndexVideoPage
+import me.rerere.awara.ui.page.savedview.savedFeedViewsRoute
 import me.rerere.awara.ui.stores.LocalUserStore
 import me.rerere.awara.ui.stores.collectAsState
 
@@ -75,6 +77,10 @@ fun IndexPageTabletLayout(vm: IndexVM) {
         "video" -> vm.state.selectedVideoSavedViewId
         "image" -> vm.state.selectedImageSavedViewId
         else -> null
+    }
+    val savedViewScope = when (currentNavigation?.name) {
+        "image" -> FeedScope.HOME_IMAGE
+        else -> FeedScope.HOME_VIDEO
     }
     val onSavedViewSelected: (String?) -> Unit = { savedViewId ->
         when (currentNavigation?.name) {
@@ -230,6 +236,9 @@ fun IndexPageTabletLayout(vm: IndexVM) {
                     savedViews = savedViews,
                     selectedSavedViewId = selectedSavedViewId,
                     onSavedViewSelected = onSavedViewSelected,
+                    onManageSavedViews = {
+                        navController.navigate(savedFeedViewsRoute(savedViewScope))
+                    },
                     modifier = Modifier.fillMaxSize(),
                 )
             }

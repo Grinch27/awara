@@ -23,11 +23,14 @@ import kotlinx.coroutines.launch
 import me.rerere.awara.R
 import me.rerere.awara.ui.LocalDialogProvider
 import me.rerere.awara.ui.LocalMessageProvider
+import me.rerere.awara.ui.LocalRouterProvider
 import me.rerere.awara.ui.component.common.UiStateBox
 import me.rerere.awara.ui.component.ext.DynamicStaggeredGridCells
 import me.rerere.awara.ui.component.iwara.MediaCard
 import me.rerere.awara.ui.component.iwara.PaginationBar
 import me.rerere.awara.ui.component.iwara.param.FilterAndSort
+import me.rerere.awara.ui.page.savedview.savedFeedViewsRoute
+import me.rerere.awara.domain.feed.FeedScope
 import me.rerere.awara.ui.component.iwara.param.sort.MediaSortOptions
 import me.rerere.awara.ui.page.index.SavedFeedViewDraft
 import me.rerere.awara.ui.page.index.SavedFeedViewEditor
@@ -40,6 +43,7 @@ fun IndexImagePage(vm: IndexVM) {
     val state = vm.state
     val dialog = LocalDialogProvider.current
     val message = LocalMessageProvider.current
+    val router = LocalRouterProvider.current
     val coroutineScope = rememberCoroutineScope()
     var saveDraft by remember { mutableStateOf(SavedFeedViewDraft()) }
 
@@ -92,6 +96,9 @@ fun IndexImagePage(vm: IndexVM) {
                     savedViews = state.savedImageViews,
                     selectedSavedViewId = state.selectedImageSavedViewId,
                     onSavedViewSelected = vm::applyImageSavedView,
+                    onManageSavedViews = {
+                        router.navigate(savedFeedViewsRoute(FeedScope.HOME_IMAGE))
+                    },
                     onSaveCurrentView = {
                         saveDraft = SavedFeedViewDraft()
                         dialog.show(

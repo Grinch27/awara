@@ -6,6 +6,7 @@ package me.rerere.awara.ui.page.index
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -27,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -54,6 +57,7 @@ fun IndexDrawer(
     savedViews: List<SavedFeedView>,
     selectedSavedViewId: String?,
     onSavedViewSelected: (String?) -> Unit,
+    onManageSavedViews: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val userStore = LocalUserStore.current
@@ -135,6 +139,22 @@ fun IndexDrawer(
                             style = MaterialTheme.typography.labelMedium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(top = 8.dp),
+                    ) {
+                        DrawerHeaderChip(
+                            text = selectedNavigationTitle ?: stringResource(R.string.app_name),
+                        )
+                        DrawerHeaderChip(
+                            text = if (userState.user != null) {
+                                accountSubtitle
+                            } else {
+                                stringResource(R.string.saved_views_guest_state)
+                            },
                         )
                     }
                 }
@@ -229,8 +249,21 @@ fun IndexDrawer(
             }
         }
 
-        if (savedViews.isNotEmpty()) {
-            DrawerSectionTitle(stringResource(R.string.saved_views_title))
+        if (savedViews.isNotEmpty() || onManageSavedViews != null) {
+            DrawerSectionTitle(
+                text = stringResource(R.string.saved_views_title),
+                supportingText = stringResource(
+                    R.string.saved_views_manage_summary,
+                    savedViews.size,
+                    savedViews.count(SavedFeedView::pinned),
+                ),
+                actionLabel = if (onManageSavedViews != null) {
+                    stringResource(R.string.saved_views_manage_action)
+                } else {
+                    null
+                },
+                onActionClick = onManageSavedViews,
+            )
             DrawerItem(
                 label = {
                     Text(stringResource(R.string.saved_view_chip_all))
@@ -367,13 +400,42 @@ private fun buildSavedViewSupportingText(savedView: SavedFeedView): String {
 }
 
 @Composable
-private fun DrawerSectionTitle(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelMedium,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-    )
+private fun DrawerSectionTitle(
+    text: String,
+    supportingText: String? = null,
+    actionLabel: String? = null,
+    onActionClick: (() -> Unit)? = null,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            supportingText?.takeIf(String::isNotEmpty)?.let { meta ->
+                Text(
+                    text = meta,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        if (actionLabel != null && onActionClick != null) {
+            TextButton(
+                onClick = onActionClick,
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+            ) {
+                Text(actionLabel)
+            }
+        }
+    }
 }
 
 @Composable
@@ -499,7 +561,37 @@ private fun DrawerItem(
                     }
                 }
                 tail?.invoke()
+                if (selected) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .padding(end = 2.dp)
+                    ) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = CircleShape,
+                            modifier = Modifier.fillMaxSize(),
+                        ) {}
+                    }
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun DrawerHeaderChip(text: String) {
+    Surface(
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        shape = RoundedCornerShape(999.dp),
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+        )
     }
 }

@@ -218,6 +218,7 @@ class IndexVM(
         val sortedViews = views.sortedWith(
             compareByDescending<SavedFeedView> { it.smartSubscription }
                 .thenByDescending { it.pinned }
+                .thenBy { if (it.pinned) it.pinOrder else Int.MAX_VALUE }
                 .thenByDescending { it.updatedAt },
         )
         val videoViews = sortedViews.filter { it.scope == FeedScope.HOME_VIDEO }

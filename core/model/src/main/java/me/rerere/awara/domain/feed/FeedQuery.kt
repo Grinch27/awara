@@ -54,6 +54,7 @@ data class SavedFeedView(
     val sort: String? = null,
     val filters: List<FeedFilter> = emptyList(),
     val pinned: Boolean = false,
+    val pinOrder: Int = 0,
     val smartSubscription: Boolean = false,
     @Serializable(with = FeedInstantSerializer::class)
     val createdAt: Instant = Instant.now(),

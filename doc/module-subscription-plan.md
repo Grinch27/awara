@@ -25,8 +25,8 @@
 3. 设置页的数据入口不再只覆盖日志与保存视图：当前已经补上统一的本地数据备份包，覆盖保存视图、历史、下载记录和不含登录态的安全设置；应用日志仍保持单独的脱敏导出通道。
 4. 首页壳已经继续按 EhViewer 的使用习惯收敛：手机首页改为抽屉优先、平板首页改为常驻左侧主导航，频道切换、快捷入口和固定保存视图都统一收进首页左侧壳层，不再依赖底部导航或顶部标签条作为主入口。
 5. 首页左侧壳层已经继续往 EhViewer / FreshRSS 的信息组织方式靠拢：主浏览、社区、快捷入口和保存视图分段展示，选中态和保存视图条目都已经改成更高信息密度的两行布局。
-6. 保存视图已经开始进入“标签化 + 智能订阅”阶段：本地模型、导出导入和首页保存入口都已经补上 tags / smartSubscription / pinned 元数据，首页侧栏也已经先把智能订阅和手动视图分组展示。
-7. 网络栈已经补上第一层共享边界：DoH 偏好现在继续保持全局生效，同时已经新增 ECH 全局偏好和统一的 `NetworkTransportPolicy` 接口，后续真正的 ECH 传输实现只需要继续落在这一层。
+6. 保存视图已经继续进入“标签化 + 智能订阅 + 独立管理”阶段：本地模型、导出导入和首页保存入口都已经补上 tags / smartSubscription / pinned 元数据，同时已经新增显式 `pinOrder`、标签过滤、固定顺序调整和独立保存视图管理页。
+7. 网络栈已经补上第一层共享边界：DoH 偏好现在继续保持全局生效，同时已经新增 ECH 全局偏好和统一的 `NetworkTransportPolicy` 接口；但标准 Android / Maven Central 可用的 Conscrypt Java API 当前没有公开 ECH 方法，真正的 ECH 传输仍受限于自定义 Conscrypt / JNI 分支能力。
 
 这意味着后续阶段不应再把“保存视图导出导入”或“基础本地数据备份”当成待设计项，而应该继续往“跨页面复用、固定入口、搜索模板复用、类型化查询模型收敛”推进。
 
@@ -316,6 +316,7 @@
 
 2. ECH 不能按“只加一个设置项”的量级理解。
    参考 UjuiUjuMandan 的 EhViewer patch，ECH 需要至少同时引入 Conscrypt、自定义 `SSLSocketFactory`、额外 DNS / HTTPS 记录解析、ECH 拒绝后的重试或缓存失效逻辑，以及额外的 ProGuard keep / dontwarn 规则。也就是说，它更像一条单独网络栈分支，而不是普通设置页选项。
+   进一步确认后，当前公开可用的 Conscrypt 稳定版和公开源码里都没有可直接接入的 `setEchConfigList` / `getEchConfigList` / `setCheckDnsForEch` / `EchRejectedException` Java API，因此 awara 这条线如果要继续推进，基本前提已经不是“补几个依赖”，而是要接受自编译 Conscrypt / JNI 分支或平台私有实现方案。
 
 ### 9.3 建议提升优先级的两件事
 

@@ -13,6 +13,7 @@ import me.rerere.awara.ui.page.message.MessageVM
 import me.rerere.awara.ui.page.playlist.PlaylistDetailVM
 import me.rerere.awara.ui.page.playlist.PlaylistsVM
 import me.rerere.awara.ui.page.search.SearchVM
+import me.rerere.awara.ui.page.savedview.SavedFeedViewsVM
 import me.rerere.awara.ui.page.setting.SettingVM
 import me.rerere.awara.ui.page.user.UserVM
 import me.rerere.awara.ui.page.video.VideoVM
@@ -36,4 +37,5 @@ val viewModelModule = module {
     viewModelOf(::MessageVM)
     viewModelOf(::ConversationsVM)
     viewModelOf(::SettingVM)
+    viewModelOf(::SavedFeedViewsVM)
 }

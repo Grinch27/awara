@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -59,6 +60,7 @@ fun FilterAndSort(
     selectedSavedViewId: String? = null,
     onSavedViewSelected: ((String?) -> Unit)? = null,
     onSaveCurrentView: (() -> Unit)? = null,
+    onManageSavedViews: (() -> Unit)? = null,
 ) {
     var showFilter by remember {
         mutableStateOf(false)
@@ -212,6 +214,17 @@ fun FilterAndSort(
                     modifier = Modifier.align(Alignment.End),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    if (onManageSavedViews != null) {
+                        TextButton(
+                            onClick = {
+                                showFilter = false
+                                onManageSavedViews()
+                            },
+                        ) {
+                            Text(stringResource(R.string.saved_views_manage_action))
+                        }
+                    }
+
                     if (onSaveCurrentView != null) {
                         FilledTonalButton(
                             onClick = {

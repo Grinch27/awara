@@ -26,7 +26,7 @@ val databaseModule = module {
             androidContext(),
             AppDatabase::class.java,
             "awara.db"
-        ).addMigrations(MIGRATION_2_3, MIGRATION_3_4)
+        ).addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
             .build()
     }
 }
@@ -62,6 +62,14 @@ private val MIGRATION_3_4 = object : Migration(3, 4) {
     }
 }
 
+private val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL(
+            "ALTER TABLE saved_feed_view ADD COLUMN pinOrder INTEGER NOT NULL DEFAULT 0",
+        )
+    }
+}
+
 @Database(
     entities = [
         HistoryItem::class,
@@ -70,7 +78,7 @@ private val MIGRATION_3_4 = object : Migration(3, 4) {
         SavedFeedViewEntity::class,
         SavedFeedFilterEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),

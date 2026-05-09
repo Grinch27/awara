@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoMode
 import androidx.compose.material.icons.outlined.ColorLens
+import androidx.compose.material.icons.outlined.FeaturedPlayList
 import androidx.compose.material.icons.outlined.HomeWork
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.Replay
@@ -35,11 +36,13 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import me.rerere.awara.R
 import me.rerere.awara.data.repo.LocalDataSummary
+import me.rerere.awara.domain.feed.FeedScope
 import me.rerere.awara.ui.LocalDialogProvider
 import me.rerere.awara.ui.LocalMessageProvider
 import me.rerere.awara.ui.LocalRouterProvider
 import me.rerere.awara.ui.component.common.Avatar
 import me.rerere.awara.ui.component.common.BackButton
+import me.rerere.awara.ui.page.savedview.savedFeedViewsRoute
 import me.rerere.awara.util.DEFAULT_NETWORK_DOH_ENDPOINT
 import me.rerere.awara.util.DEFAULT_NETWORK_DOH_UPSTREAM
 import me.rerere.awara.util.SETTING_NETWORK_ECH_ENABLED
@@ -387,6 +390,21 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
 
             item {
                 SettingItemCategory(title = { Text(stringResource(R.string.setting_data)) }) {
+                    SettingLinkItem(
+                        title = {
+                            Text(stringResource(R.string.setting_data_saved_views_manage_title))
+                        },
+                        text = {
+                            Text(stringResource(R.string.setting_data_saved_views_manage_text))
+                        },
+                        icon = {
+                            Icon(Icons.Outlined.FeaturedPlayList, null)
+                        },
+                        onClick = {
+                            router.navigate(savedFeedViewsRoute(FeedScope.HOME_VIDEO))
+                        }
+                    )
+
                     SettingLinkItem(
                         title = {
                             Text(stringResource(R.string.setting_data_local_backup_export_title))

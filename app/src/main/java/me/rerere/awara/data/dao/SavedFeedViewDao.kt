@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Upsert
+import java.time.Instant
 import me.rerere.awara.data.entity.SavedFeedFilterEntity
 import me.rerere.awara.data.entity.SavedFeedViewEntity
 
@@ -15,8 +16,22 @@ data class SavedFeedViewRecord(
 
 @Dao
 interface SavedFeedViewDao {
-    @Query("SELECT * FROM saved_feed_view ORDER BY pinned DESC, updatedAt DESC, createdAt DESC")
+    @Query(
+        """
+        SELECT * FROM saved_feed_view
+        ORDER BY pinned DESC,
+            CASE WHEN pinned = 1 THEN pinOrder ELSE 2147483647 END ASC,
+            updatedAt DESC,
+            createdAt DESC
+        """,
+    )
     suspend fun getViews(): List<SavedFeedViewEntity>
+
+    @Query("SELECT * FROM saved_feed_view WHERE id = :id LIMIT 1")
+    suspend fun getView(id: String): SavedFeedViewEntity?
+
+    @Query("SELECT COALESCE(MAX(pinOrder), 0) FROM saved_feed_view WHERE pinned = 1 AND scope = :scope")
+    suspend fun getMaxPinOrder(scope: String): Int
 
     @Query("SELECT * FROM saved_feed_filter WHERE viewId IN (:viewIds)")
     suspend fun getFiltersByViewIds(viewIds: List<String>): List<SavedFeedFilterEntity>
@@ -38,6 +53,23 @@ interface SavedFeedViewDao {
 
     @Query("DELETE FROM saved_feed_view WHERE id = :id")
     suspend fun deleteView(id: String)
+
+    @Query(
+        "UPDATE saved_feed_view SET pinned = :pinned, pinOrder = :pinOrder, updatedAt = :updatedAt WHERE id = :id",
+    )
+    suspend fun updatePinnedState(
+        id: String,
+        pinned: Boolean,
+        pinOrder: Int,
+        updatedAt: Long,
+    )
+
+    @Query("UPDATE saved_feed_view SET pinOrder = :pinOrder, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun updatePinOrder(
+        id: String,
+        pinOrder: Int,
+        updatedAt: Long,
+    )
 
     @Query("DELETE FROM saved_feed_filter")
     suspend fun deleteAllFilters()
