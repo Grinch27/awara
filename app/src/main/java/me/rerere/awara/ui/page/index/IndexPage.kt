@@ -78,6 +78,7 @@ private fun UpdateCheck(vm: IndexVM) {
 
 data class IndexNavigation(
     val name: String,
+    val titleRes: Int,
     val title: @Composable () -> Unit,
     val icon: @Composable () -> Unit,
     val needLogin: Boolean = false,
@@ -86,6 +87,7 @@ data class IndexNavigation(
 val indexNavigations = listOf(
     IndexNavigation(
         name = "subscription",
+        titleRes = R.string.index_nav_subscription,
         title = {
             Text(stringResource(R.string.index_nav_subscription), maxLines = 1)
         },
@@ -96,6 +98,7 @@ val indexNavigations = listOf(
     ),
     IndexNavigation(
         name = "video",
+        titleRes = R.string.index_nav_video,
         title = {
             Text(stringResource(R.string.index_nav_video), maxLines = 1)
         },
@@ -105,6 +108,7 @@ val indexNavigations = listOf(
     ),
     IndexNavigation(
         name = "image",
+        titleRes = R.string.index_nav_image,
         title = {
             Text(stringResource(R.string.index_nav_image), maxLines = 1)
         },
@@ -114,6 +118,7 @@ val indexNavigations = listOf(
     ),
     IndexNavigation(
         name = "forum",
+        titleRes = R.string.index_nav_forum,
         title = {
             Text(stringResource(R.string.index_nav_forum), maxLines = 1)
         },
