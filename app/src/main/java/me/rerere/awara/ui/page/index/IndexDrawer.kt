@@ -3,8 +3,8 @@ package me.rerere.awara.ui.page.index
 // TODO(user): Decide whether the phone home toolbar also needs a one-tap filter/search entry, or if keeping navigation-focused actions there is enough.
 // TODO(agent): If the left sidebar keeps growing, split it into account, home navigation, and utility sections instead of letting this file become another mini-shell.
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -73,56 +72,44 @@ fun IndexDrawer(
         }
     }
 
-    Column(
-        DrawerSectionTitle(stringResource(R.string.index_drawer_primary_section_title))
-        primaryNavigations.forEach { navigation ->
-            DrawerItem(
-                icon = {
-                    navigation.icon()
-                },
-                label = {
-                    Text(
-                        text = stringResource(navigation.titleRes),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                },
-                selected = selectedNavigationName == navigation.name,
-                onClick = {
-                    onNavigationSelected(navigation.name)
-                },
-            )
-        }
+    val accountSubtitle = userState.user?.displayName ?: "未登录"
 
-        if (communityNavigations.isNotEmpty()) {
-            DrawerSectionTitle(stringResource(R.string.index_drawer_community_section_title))
-            communityNavigations.forEach { navigation ->
-                DrawerItem(
-                    icon = {
-                        navigation.icon()
-                    },
-                    label = {
-                        Text(
-                            text = stringResource(navigation.titleRes),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    },
-                    selected = selectedNavigationName == navigation.name,
-                    onClick = {
-                        onNavigationSelected(navigation.name)
-                    },
-                )
-            }
+    Column(
+        modifier = modifier
+            .fillMaxHeight()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 12.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.44f),
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            tonalElevation = 2.dp,
+            border = BorderStroke(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
+            ),
+            shape = RoundedCornerShape(28.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 16.dp),
             ) {
                 Avatar(
                     modifier = Modifier.size(52.dp),
                     user = userState.user,
                     onClick = {
-                        router.navigate("login")
+                        userState.user?.id?.let { userId ->
+                            router.navigate("user/$userId")
+                        } ?: router.navigate("login")
                     },
                     showOnlineStatus = false,
                 )
+
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = stringResource(R.string.app_name),
@@ -137,20 +124,21 @@ fun IndexDrawer(
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
-                        text = userState.user?.displayName ?: "未登录",
+                        text = accountSubtitle,
                         style = MaterialTheme.typography.bodyMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    if (userState.user != null) {
+                    userState.user?.let { user ->
                         Text(
-                            text = userState.user.displayHandle,
+                            text = user.displayHandle,
                             style = MaterialTheme.typography.labelMedium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }
+
                 if (userState.user != null) {
                     IconButton(
                         onClick = {
@@ -160,7 +148,7 @@ fun IndexDrawer(
                             }
                         },
                     ) {
-                        Icon(Icons.Outlined.ExitToApp, "Logout")
+                        Icon(Icons.Outlined.ExitToApp, contentDescription = "Logout")
                     }
                 }
             }
@@ -199,24 +187,19 @@ fun IndexDrawer(
             }
         }
 
-        navigations.forEach { navigation ->
-            DrawerItem(
-                icon = {
-                    navigation.icon()
-                },
-                label = {
-                    Text(
-                        text = stringResource(navigation.titleRes),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                },
-                selected = selectedNavigationName == navigation.name,
-                onClick = {
-                    onNavigationSelected(navigation.name)
-                },
-            )
-        }
+        DrawerNavigationSection(
+            title = stringResource(R.string.index_drawer_primary_section_title),
+            navigations = primaryNavigations,
+            selectedNavigationName = selectedNavigationName,
+            onNavigationSelected = onNavigationSelected,
+        )
+
+        DrawerNavigationSection(
+            title = stringResource(R.string.index_drawer_community_section_title),
+            navigations = communityNavigations,
+            selectedNavigationName = selectedNavigationName,
+            onNavigationSelected = onNavigationSelected,
+        )
 
         if (quickActions.isNotEmpty()) {
             DrawerSectionTitle(stringResource(R.string.index_home_shortcuts_title))
@@ -332,6 +315,38 @@ fun IndexDrawer(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun DrawerNavigationSection(
+    title: String,
+    navigations: List<IndexNavigation>,
+    selectedNavigationName: String?,
+    onNavigationSelected: (String) -> Unit,
+) {
+    if (navigations.isEmpty()) {
+        return
+    }
+
+    DrawerSectionTitle(title)
+    navigations.forEach { navigation ->
+        DrawerItem(
+            icon = {
+                navigation.icon()
+            },
+            label = {
+                Text(
+                    text = stringResource(navigation.titleRes),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            },
+            selected = selectedNavigationName == navigation.name,
+            onClick = {
+                onNavigationSelected(navigation.name)
+            },
+        )
     }
 }
 
