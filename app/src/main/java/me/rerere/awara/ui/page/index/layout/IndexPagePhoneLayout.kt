@@ -1,14 +1,12 @@
 package me.rerere.awara.ui.page.index.layout
 
-// TODO(user): Keep the phone home page aligned with an EhViewer-like workflow: fast top tab switching, quick entry cards, and no dependency on bottom navigation.
-// TODO(agent): If the home chrome needs more sections later, extract a shared home shell composable instead of duplicating more control logic in phone and tablet layouts.
+// TODO(user): The phone home page now uses a drawer-first workflow closer to EhViewer; decide later whether search/filter also deserves a dedicated primary action here.
+// TODO(agent): If the sidebar starts carrying too many quick tools, split utility entries from main home navigation before adding more home controls.
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Download
@@ -16,6 +14,7 @@ import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.FeaturedPlayList
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Lens
+import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Message
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Search
@@ -24,7 +23,6 @@ import androidx.compose.material3.Badge
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
@@ -37,19 +35,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import me.rerere.awara.BuildConfig
 import me.rerere.awara.R
 import me.rerere.awara.ui.LocalRouterProvider
 import me.rerere.awara.ui.component.common.NamedHorizontalPager
 import me.rerere.awara.ui.component.common.TodoStatus
-import me.rerere.awara.ui.component.iwara.Avatar
 import me.rerere.awara.ui.page.index.IndexDrawer
-import me.rerere.awara.ui.page.index.IndexNavigationTabs
-import me.rerere.awara.ui.page.index.IndexQuickAccessStrip
 import me.rerere.awara.ui.page.index.IndexQuickAction
-import me.rerere.awara.ui.page.index.IndexSavedViewStrip
 import me.rerere.awara.ui.page.index.IndexVM
 import me.rerere.awara.ui.page.index.indexNavigations
 import me.rerere.awara.ui.page.index.pager.IndexImagePage
@@ -72,6 +65,25 @@ fun IndexPagePhoneLayout(vm: IndexVM) {
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val currentNavigation = navigations.getOrNull(pagerState.currentPage)
+    val savedViews = when (currentNavigation?.name) {
+        "video" -> vm.state.savedVideoViews
+        "image" -> vm.state.savedImageViews
+        else -> emptyList()
+    }
+    val selectedSavedViewId = when (currentNavigation?.name) {
+        "video" -> vm.state.selectedVideoSavedViewId
+        "image" -> vm.state.selectedImageSavedViewId
+        else -> null
+    }
+    val onSavedViewSelected: (String?) -> Unit = { savedViewId ->
+        when (currentNavigation?.name) {
+            "video" -> vm.applyVideoSavedView(savedViewId)
+            "image" -> vm.applyImageSavedView(savedViewId)
+        }
+        scope.launch {
+            drawerState.close()
+        }
+    }
     val quickActions = buildList {
         if (userState.user != null) {
             add(
@@ -80,6 +92,7 @@ fun IndexPagePhoneLayout(vm: IndexVM) {
                     labelRes = R.string.drawer_favorite,
                     icon = Icons.Outlined.FavoriteBorder,
                     onClick = {
+                        scope.launch { drawerState.close() }
                         navController.navigate("favorites")
                     },
                 )
@@ -90,6 +103,7 @@ fun IndexPagePhoneLayout(vm: IndexVM) {
                     labelRes = R.string.drawer_playlists,
                     icon = Icons.Outlined.FeaturedPlayList,
                     onClick = {
+                        scope.launch { drawerState.close() }
                         userState.user?.id?.let { userId ->
                             navController.navigate("playlists/$userId")
                         }
@@ -103,6 +117,7 @@ fun IndexPagePhoneLayout(vm: IndexVM) {
                 labelRes = R.string.drawer_downloads,
                 icon = Icons.Outlined.Download,
                 onClick = {
+                    scope.launch { drawerState.close() }
                     navController.navigate("download")
                 },
             )
@@ -113,6 +128,7 @@ fun IndexPagePhoneLayout(vm: IndexVM) {
                 labelRes = R.string.drawer_history,
                 icon = Icons.Outlined.History,
                 onClick = {
+                    scope.launch { drawerState.close() }
                     navController.navigate("history")
                 },
             )
@@ -123,6 +139,7 @@ fun IndexPagePhoneLayout(vm: IndexVM) {
                 labelRes = R.string.drawer_setting,
                 icon = Icons.Outlined.Settings,
                 onClick = {
+                    scope.launch { drawerState.close() }
                     navController.navigate("setting")
                 },
             )
@@ -132,7 +149,25 @@ fun IndexPagePhoneLayout(vm: IndexVM) {
     ModalNavigationDrawer(
         drawerContent = {
             ModalDrawerSheet {
-                IndexDrawer(vm)
+                IndexDrawer(
+                    vm = vm,
+                    navigations = navigations,
+                    selectedNavigationName = currentNavigation?.name,
+                    onNavigationSelected = { navigationName ->
+                        val index = navigations.indexOfFirst { it.name == navigationName }
+                        if (index >= 0) {
+                            scope.launch {
+                                pagerState.animateScrollToPage(index)
+                                drawerState.close()
+                            }
+                        }
+                    },
+                    quickActions = quickActions,
+                    savedViews = savedViews,
+                    selectedSavedViewId = selectedSavedViewId,
+                    onSavedViewSelected = onSavedViewSelected,
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
         },
         drawerState = drawerState,
@@ -141,23 +176,16 @@ fun IndexPagePhoneLayout(vm: IndexVM) {
             topBar = {
                 TopAppBar(
                     title = {
-                        Column {
-                            Text(text = stringResource(currentNavigation?.titleRes ?: R.string.app_name))
-                            Text(
-                                text = userState.user?.displayName ?: stringResource(R.string.app_name),
-                                style = MaterialTheme.typography.labelMedium,
-                            )
-                        }
+                        Text(text = stringResource(currentNavigation?.titleRes ?: R.string.app_name))
                     },
                     navigationIcon = {
-                        Avatar(
-                            user = userState.user,
+                        IconButton(
                             onClick = {
                                 scope.launch { drawerState.open() }
                             },
-                            modifier = Modifier.size(32.dp),
-                            showOnlineStatus = false,
-                        )
+                        ) {
+                            Icon(Icons.Outlined.Menu, stringResource(R.string.app_name))
+                        }
                     },
                     actions = {
                         if (BuildConfig.DEBUG) {
@@ -217,69 +245,29 @@ fun IndexPagePhoneLayout(vm: IndexVM) {
                 )
             },
         ) { innerPadding ->
-            Column(
+            NamedHorizontalPager(
+                state = pagerState,
                 modifier = Modifier
                     .padding(innerPadding)
                     .fillMaxSize(),
-            ) {
-                IndexNavigationTabs(
-                    navigations = navigations,
-                    selectedIndex = pagerState.currentPage,
-                    onNavigationSelected = { index ->
-                        scope.launch { pagerState.animateScrollToPage(index) }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                pages = navigations.map { it.name },
+            ) { page ->
+                when (page) {
+                    "subscription" -> {
+                        IndexSubscriptionPage(vm)
+                    }
 
-                IndexQuickAccessStrip(
-                    actions = quickActions,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-
-                when (currentNavigation?.name) {
                     "video" -> {
-                        IndexSavedViewStrip(
-                            savedViews = vm.state.savedVideoViews,
-                            selectedSavedViewId = vm.state.selectedVideoSavedViewId,
-                            onSavedViewSelected = vm::applyVideoSavedView,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
+                        IndexVideoPage(vm)
                     }
 
                     "image" -> {
-                        IndexSavedViewStrip(
-                            savedViews = vm.state.savedImageViews,
-                            selectedSavedViewId = vm.state.selectedImageSavedViewId,
-                            onSavedViewSelected = vm::applyImageSavedView,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
+                        IndexImagePage(vm)
                     }
-                }
 
-                NamedHorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    pages = navigations.map { it.name },
-                ) { page ->
-                    when (page) {
-                        "subscription" -> {
-                            IndexSubscriptionPage(vm)
-                        }
-
-                        "video" -> {
-                            IndexVideoPage(vm)
-                        }
-
-                        "image" -> {
-                            IndexImagePage(vm)
-                        }
-
-                        "forum" -> {
-                            Box(modifier = Modifier.fillMaxSize()) {
-                                TodoStatus()
-                            }
+                    "forum" -> {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            TodoStatus()
                         }
                     }
                 }
