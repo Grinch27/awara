@@ -24,7 +24,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import me.rerere.awara.R
 import me.rerere.awara.data.entity.Comment
 import me.rerere.awara.ui.LocalRouterProvider
 import me.rerere.awara.ui.component.iwara.Avatar
@@ -39,6 +41,8 @@ import me.rerere.awara.util.toLocalDateTimeString
 fun CommentCard(
     modifier: Modifier = Modifier,
     comment: Comment,
+    nestingLevel: Int = 0,
+    showParentContext: Boolean = false,
     onLoadReplies: (Comment) -> Unit,
     onReply: (Comment) -> Unit
 ) {
@@ -46,12 +50,16 @@ fun CommentCard(
     val user = LocalUserStore.current.collectAsState()
     val router = LocalRouterProvider.current
     Surface(
-        modifier = modifier,
+        modifier = modifier.padding(start = (nestingLevel * 12).dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.22f),
         tonalElevation = 1.dp,
         border = BorderStroke(
             width = 1.dp,
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
+            color = if (nestingLevel > 0) {
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.28f)
+            } else {
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
+            },
         ),
         shape = RoundedCornerShape(16.dp),
     ) {
@@ -104,11 +112,27 @@ fun CommentCard(
                         color = MaterialTheme.colorScheme.primaryContainer,
                     ) {
                         Text(
-                            text = "我",
+                            text = stringResource(R.string.comment_me_badge),
                             style = MaterialTheme.typography.labelMedium,
                             modifier = Modifier.padding(vertical = 3.dp, horizontal = 7.dp)
                         )
                     }
+                }
+            }
+
+            if (showParentContext && comment.parent?.user != null) {
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
+                    shape = RoundedCornerShape(999.dp),
+                ) {
+                    Text(
+                        text = stringResource(
+                            R.string.comment_reply_to,
+                            comment.parent.user.displayName,
+                        ),
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    )
                 }
             }
 
@@ -142,7 +166,7 @@ fun CommentCard(
                         contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
                     ) {
                         Text(
-                            text = "共${comment.numReplies}条回复",
+                            text = stringResource(R.string.comment_replies_count, comment.numReplies),
                             style = MaterialTheme.typography.labelMedium,
                         )
                         Icon(Icons.Outlined.KeyboardArrowDown, null)
@@ -157,7 +181,7 @@ fun CommentCard(
                         contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
-                            text = "回复",
+                            text = stringResource(R.string.comment_reply_action),
                             style = MaterialTheme.typography.labelMedium,
                         )
                     }

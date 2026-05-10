@@ -66,7 +66,15 @@
     <string name="comment_replies_count">%d replies</string>
     <string name="comment_reply_action">Reply</string>
     <string name="comment_reply_placeholder">Reply %s</string>
+    <string name="comment_reply_to">Replying to %s</string>
+    <string name="comment_me_badge">Me</string>
     <string name="video_related_title">Related Videos</string>
+    <string name="video_detail_title">Video Detail</string>
+    <string name="video_jump_comments">Comments %d</string>
+    <string name="video_jump_related">Related %d</string>
+    <string name="video_related_count">%d videos</string>
+    <string name="video_related_expand">Expand</string>
+    <string name="video_related_collapse">Collapse</string>
     <string name="sort_date">Date</string>
     <string name="sort_trending">Trending</string>
     <string name="sort_popularity">Popularity</string>

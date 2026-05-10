@@ -102,6 +102,8 @@ fun CommentList(
                 items(currentComment.comments) { comment ->
                     CommentCard(
                         comment = comment,
+                        nestingLevel = if (state.stack.size > 1) 1 else 0,
+                        showParentContext = state.stack.size > 1,
                         onLoadReplies = {
                             onPush(it.id)
                             replyTo = it
@@ -186,6 +188,8 @@ fun EmbeddedCommentSection(
                     currentComment.comments.forEach { comment ->
                         CommentCard(
                             comment = comment,
+                            nestingLevel = if (state.stack.size > 1) 1 else 0,
+                            showParentContext = state.stack.size > 1,
                             onLoadReplies = {
                                 onPush(it.id)
                                 replyTo = it
