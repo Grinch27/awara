@@ -31,6 +31,12 @@
     <string name="playlist">Playlist</string>
     <string name="playlist_num_videos">Total %d videos</string>
     <string name="search">Search</string>
+    <string name="search_hint_media">Search media, tags, or users</string>
+    <string name="search_recent_title">Recent Searches</string>
+    <string name="search_recent_empty">No recent searches yet</string>
+    <string name="search_recent_clear">Clear</string>
+    <string name="search_apply_recent_action">Search</string>
+    <string name="search_results_count">Results: %d</string>
     <string name="favorites">Favorites</string>
     <string name="follow">Follow</string>
     <string name="unfollow">Unfollow</string>

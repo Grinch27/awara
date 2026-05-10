@@ -30,6 +30,12 @@
     <string name="playlist">播单</string>
     <string name="playlist_num_videos">共 %d 个视频</string>
     <string name="search">搜索</string>
+    <string name="search_hint_media">搜索媒体、标签或用户</string>
+    <string name="search_recent_title">最近搜索</string>
+    <string name="search_recent_empty">还没有最近搜索</string>
+    <string name="search_recent_clear">清空</string>
+    <string name="search_apply_recent_action">搜索</string>
+    <string name="search_results_count">结果：%d</string>
     <string name="favorites">最爱</string>
     <string name="follow">订阅</string>
     <string name="unfollow">取消订阅</string>

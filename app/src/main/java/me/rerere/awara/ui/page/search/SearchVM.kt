@@ -4,6 +4,7 @@ package me.rerere.awara.ui.page.search
 // TODO(agent): If user profile search gains typed filters later, move the remaining raw string branch onto the same FeedQuery pipeline instead of keeping two query styles.
 
 import androidx.compose.material3.Text
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -21,7 +22,12 @@ import me.rerere.awara.data.source.runAPICatching
 import me.rerere.awara.data.source.stringResource
 import me.rerere.awara.domain.feed.FeedQuery
 import me.rerere.awara.domain.feed.FeedScope
+import me.rerere.awara.domain.feed.toFeedFilters
 import me.rerere.awara.ui.component.common.UiState
+import me.rerere.awara.ui.component.iwara.param.FilterValue
+import me.rerere.awara.ui.component.iwara.param.sort.MediaSortOptions
+
+private val DEFAULT_MEDIA_SORT = MediaSortOptions.first().name
 
 class SearchVM(
     private val mediaRepo: MediaRepo
@@ -29,14 +35,32 @@ class SearchVM(
     var state by mutableStateOf(SearchState())
         private set
     var query by mutableStateOf("")
+    var videoSort: String by mutableStateOf(DEFAULT_MEDIA_SORT)
+    val videoFilters: MutableList<FilterValue> = mutableStateListOf()
+    var imageSort: String by mutableStateOf(DEFAULT_MEDIA_SORT)
+    val imageFilters: MutableList<FilterValue> = mutableStateListOf()
 
     private fun buildMediaSearchQuery(scope: FeedScope): FeedQuery {
         return FeedQuery(
             scope = scope,
             keyword = query,
+            sort = when (scope) {
+                FeedScope.SEARCH_IMAGE -> imageSort
+                else -> videoSort
+            },
+            filters = when (scope) {
+                FeedScope.SEARCH_IMAGE -> imageFilters.toFeedFilters()
+                else -> videoFilters.toFeedFilters()
+            },
             page = state.page - 1,
             pageSize = 24,
         )
+    }
+
+    fun submitSearch() {
+        query = query.trim()
+        state = state.copy(page = 1)
+        search()
     }
 
     fun search() {
@@ -127,6 +151,46 @@ class SearchVM(
         if (query.isNotBlank()) {
             search()
         }
+    }
+
+    fun updateVideoSort(sort: String) {
+        videoSort = sort
+        state = state.copy(page = 1)
+        if (state.searchType == "video" && query.isNotBlank()) {
+            search()
+        }
+    }
+
+    fun addVideoFilter(filterValue: FilterValue) {
+        videoFilters.add(filterValue)
+    }
+
+    fun removeVideoFilter(filterValue: FilterValue) {
+        videoFilters.remove(filterValue)
+    }
+
+    fun clearVideoFilter() {
+        videoFilters.clear()
+    }
+
+    fun updateImageSort(sort: String) {
+        imageSort = sort
+        state = state.copy(page = 1)
+        if (state.searchType == "image" && query.isNotBlank()) {
+            search()
+        }
+    }
+
+    fun addImageFilter(filterValue: FilterValue) {
+        imageFilters.add(filterValue)
+    }
+
+    fun removeImageFilter(filterValue: FilterValue) {
+        imageFilters.remove(filterValue)
+    }
+
+    fun clearImageFilter() {
+        imageFilters.clear()
     }
 
     data class SearchState(
