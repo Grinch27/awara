@@ -94,8 +94,6 @@
     <string name="setting_network">网络</string>
     <string name="setting_network_builtin_doh_title">内置 DoH</string>
     <string name="setting_network_builtin_doh_text">为应用内的 API、媒体和图片请求统一启用 DNS over HTTPS</string>
-    <string name="setting_network_ech_title">全局 ECH 策略</string>
-    <string name="setting_network_ech_text">在共享网络边界保留全局 Encrypted Client Hello 偏好，供兼容的客户端统一接入。</string>
     <string name="setting_network_doh_endpoint_title">DoH 地址</string>
     <string name="setting_network_doh_upstream_title">上游 DoH 解析器</string>
     <string name="index_home_shortcuts_title">快捷入口</string>

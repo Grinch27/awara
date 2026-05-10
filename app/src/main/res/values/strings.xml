@@ -95,8 +95,6 @@
     <string name="setting_network">Network</string>
     <string name="setting_network_builtin_doh_title">Built-in DoH</string>
     <string name="setting_network_builtin_doh_text">Use built-in DNS over HTTPS for app-wide API, media, and image requests</string>
-    <string name="setting_network_ech_title">Global ECH Policy</string>
-    <string name="setting_network_ech_text">Keep an app-wide Encrypted Client Hello preference at the shared network boundary for compatible clients.</string>
     <string name="setting_network_doh_endpoint_title">DoH Endpoint</string>
     <string name="setting_network_doh_upstream_title">Upstream DoH Resolver</string>
     <string name="index_home_shortcuts_title">Quick access</string>

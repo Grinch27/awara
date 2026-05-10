@@ -16,7 +16,6 @@ import okhttp3.dnsoverhttps.DnsOverHttps
 const val SETTING_NETWORK_DOH_ENABLED = "setting.network_doh_enabled"
 const val SETTING_NETWORK_DOH_ENDPOINT = "setting.network_doh_endpoint"
 const val SETTING_NETWORK_DOH_UPSTREAM = "setting.network_doh_upstream"
-const val SETTING_NETWORK_ECH_ENABLED = "setting.network_ech_enabled"
 
 const val DEFAULT_NETWORK_DOH_ENDPOINT = "doh.opendns.com/dns-query"
 const val DEFAULT_NETWORK_DOH_UPSTREAM = DEFAULT_NETWORK_DOH_ENDPOINT
@@ -25,7 +24,6 @@ data class NetworkStackSnapshot(
     val dohEnabled: Boolean,
     val dohEndpoint: String,
     val dohUpstream: String,
-    val echEnabled: Boolean,
 ) {
     companion object {
         fun fromPreferences(): NetworkStackSnapshot {
@@ -39,7 +37,6 @@ data class NetworkStackSnapshot(
                     SETTING_NETWORK_DOH_UPSTREAM,
                     DEFAULT_NETWORK_DOH_UPSTREAM,
                 ).orEmpty(),
-                echEnabled = mmkvPreference.getBoolean(SETTING_NETWORK_ECH_ENABLED, false),
             )
         }
     }
@@ -136,11 +133,6 @@ class AppNetworkTransportPolicy(
     }
 
     override fun apply(builder: OkHttpClient.Builder): OkHttpClient.Builder {
-        val configuredBuilder = builder.dns(dns)
-        val snapshot = currentSnapshot()
-        if (snapshot.echEnabled) {
-            // Keep the global ECH switch at the shared network boundary until the underlying client stack exposes a concrete ECH transport hook.
-        }
-        return configuredBuilder
+        return builder.dns(dns)
     }
 }

@@ -26,7 +26,7 @@
 4. 首页壳已经继续按 EhViewer 的使用习惯收敛：手机首页改为抽屉优先、平板首页改为常驻左侧主导航，频道切换、快捷入口和固定保存视图都统一收进首页左侧壳层，不再依赖底部导航或顶部标签条作为主入口。
 5. 首页左侧壳层已经继续往 EhViewer / FreshRSS 的信息组织方式靠拢：主浏览、社区、快捷入口和保存视图分段展示，选中态和保存视图条目都已经改成更高信息密度的两行布局。
 6. 保存视图已经继续进入“标签化 + 智能订阅 + 独立管理”阶段：本地模型、导出导入和首页保存入口都已经补上 tags / smartSubscription / pinned 元数据，同时已经新增显式 `pinOrder`、标签过滤、固定顺序调整和独立保存视图管理页。
-7. 网络栈已经补上第一层共享边界：DoH 偏好现在继续保持全局生效，同时已经新增 ECH 全局偏好和统一的 `NetworkTransportPolicy` 接口；但标准 Android / Maven Central 可用的 Conscrypt Java API 当前没有公开 ECH 方法，真正的 ECH 传输仍受限于自定义 Conscrypt / JNI 分支能力。
+7. 网络栈已经补上第一层共享边界：DoH 偏好现在继续保持全局生效，并通过统一的 `NetworkTransportPolicy` 接口应用到共享客户端；ECH 方案已经明确下线，不再保留占位偏好或未落地的传输分支。
 
 这意味着后续阶段不应再把“保存视图导出导入”或“基础本地数据备份”当成待设计项，而应该继续往“跨页面复用、固定入口、搜索模板复用、类型化查询模型收敛”推进。
 
@@ -314,14 +314,14 @@
 1. 本地 `gradle-wrapper.properties` 不建议直接改成每次都跟随最新版。
    当前顶层插件仍是 AGP `9.0.1`，而 CI 之所以可以动态同步，是因为它先执行验证，再用工作流兜住兼容性风险。仓库内本地 wrapper 继续保留一个已知可启动基线，会比“每次打开工程都追最新”更稳。这个点更适合作为 `build-logic` 和 AGP 升级完成后的第二步，而不是现在先动。
 
-2. ECH 不能按“只加一个设置项”的量级理解。
-   参考 UjuiUjuMandan 的 EhViewer patch，ECH 需要至少同时引入 Conscrypt、自定义 `SSLSocketFactory`、额外 DNS / HTTPS 记录解析、ECH 拒绝后的重试或缓存失效逻辑，以及额外的 ProGuard keep / dontwarn 规则。也就是说，它更像一条单独网络栈分支，而不是普通设置页选项。
-   进一步确认后，当前公开可用的 Conscrypt 稳定版和公开源码里都没有可直接接入的 `setEchConfigList` / `getEchConfigList` / `setCheckDnsForEch` / `EchRejectedException` Java API，因此 awara 这条线如果要继续推进，基本前提已经不是“补几个依赖”，而是要接受自编译 Conscrypt / JNI 分支或平台私有实现方案。
+2. ECH 需求已经明确移除，不再保留“先挂一个设置项”的中间状态。
+   参考 UjuiUjuMandan 的 EhViewer patch，ECH 至少需要 Conscrypt、自定义 `SSLSocketFactory`、额外 DNS / HTTPS 记录解析、ECH 拒绝后的重试或缓存失效逻辑，以及额外的 ProGuard keep / dontwarn 规则；它本质上是一条独立网络栈分支，而不是普通设置页选项。
+   进一步确认后，当前公开可用的 Conscrypt 稳定版和公开源码里都没有可直接接入的 `setEchConfigList` / `getEchConfigList` / `setCheckDnsForEch` / `EchRejectedException` Java API，所以本方案后续不再把 ECH 作为近期路线的一部分。
 
 ### 9.3 建议提升优先级的两件事
 
-1. 先补持久化行为日志，而不是先上 ECH。
-   当前仓库大量使用 Android `Log`，但没有统一的本地持久化日志池。相比 ECH，先做一个默认上限 10000 条、带敏感字段脱敏和导出能力的日志模块，能更快帮助排查下载、登录、评论、解析失败和工作流回归问题。
+1. 先补持久化行为日志，而不是继续投入更深的网络实验。
+   当前仓库大量使用 Android `Log`，但没有统一的本地持久化日志池。先做一个默认上限 10000 条、带敏感字段脱敏和导出能力的日志模块，能更快帮助排查下载、登录、评论、解析失败和工作流回归问题。
 
 2. 把 DoH 从“可配置”提升到“可运维”。
    下一步更有价值的是加 4 个配套能力：
@@ -339,4 +339,4 @@
 3. 因此 Awara 的第一阶段目标应该明确调整为：
    先统一查询模型和保存视图。
    再补导出导入与恢复能力。
-   然后才考虑 ECH、下载策略插件化、外部播放器策略等更深的网络或扩展能力。
+   然后再考虑下载策略插件化、外部播放器策略等更深的网络或扩展能力。
