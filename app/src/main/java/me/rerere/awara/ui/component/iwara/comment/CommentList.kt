@@ -74,8 +74,6 @@ fun CommentList(
         replyTo = null
     }
 
-    val currentComment = state.stack.last()
-
     Column(
         modifier = modifier,
     ) {
