@@ -14,8 +14,8 @@ import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material3.Divider
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.DockedSearchBar
 import androidx.compose.material3.FilledTonalButton
@@ -264,7 +264,7 @@ fun SearchPage(vm: SearchVM = koinViewModel()) {
                         )
                     }
 
-                    HorizontalDivider()
+                    Divider()
 
                     Text(
                         text = stringResource(R.string.search_results_count, vm.state.count),
