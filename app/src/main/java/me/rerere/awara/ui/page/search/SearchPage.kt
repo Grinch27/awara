@@ -1,5 +1,8 @@
 package me.rerere.awara.ui.page.search
 
+// TODO(user): Decide whether saved views should surface here as first-class search presets once the search summary row settles.
+// TODO(agent): If search gains server-side suggestion APIs later, replace the local-only quick history chips with ranked mixed suggestions instead of stacking another row.
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,9 +12,12 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Divider
@@ -35,11 +41,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import me.rerere.awara.R
 import me.rerere.awara.ui.component.common.BackButton
 import me.rerere.awara.ui.component.common.SelectButton
 import me.rerere.awara.ui.component.common.SelectOption
+import me.rerere.awara.ui.component.common.UiState
 import me.rerere.awara.ui.component.common.UiStateBox
 import me.rerere.awara.ui.component.ext.DynamicStaggeredGridCells
 import me.rerere.awara.ui.component.iwara.MediaCard
@@ -47,6 +55,8 @@ import me.rerere.awara.ui.component.iwara.MediaListModeButton
 import me.rerere.awara.ui.component.iwara.mediaListGridCells
 import me.rerere.awara.ui.component.iwara.PaginationBar
 import me.rerere.awara.ui.component.iwara.param.FilterAndSort
+import me.rerere.awara.ui.component.iwara.param.FilterChipCloseIcon
+import me.rerere.awara.ui.component.iwara.param.FilterValue
 import me.rerere.awara.ui.component.iwara.param.sort.MediaSortOptions
 import me.rerere.awara.ui.component.iwara.rememberMediaListModePreference
 import me.rerere.awara.ui.component.iwara.UserCard
@@ -66,6 +76,19 @@ fun SearchPage(vm: SearchVM = koinViewModel()) {
             .take(8)
             .toList()
     }
+    val activeFilters = when (vm.state.searchType) {
+        "image" -> vm.imageFilters.toList()
+        "video" -> vm.videoFilters.toList()
+        else -> emptyList()
+    }
+    val activeSort = when (vm.state.searchType) {
+        "image" -> vm.imageSort
+        "video" -> vm.videoSort
+        else -> ""
+    }
+    val showSearchSummary = vm.query.isNotBlank() || activeFilters.isNotEmpty() || (
+        vm.state.searchType != "user" && vm.state.uiState != UiState.Initial
+    )
 
     fun persistRecentQuery() {
         val trimmedQuery = vm.query.trim()
@@ -237,8 +260,23 @@ fun SearchPage(vm: SearchVM = koinViewModel()) {
                             )
                         },
                         trailingIcon = {
-                            IconButton(onClick = { submitSearch() }) {
-                                Icon(Icons.Outlined.Search, null)
+                            IconButton(
+                                onClick = {
+                                    if (searchBarActive && vm.query.isNotBlank()) {
+                                        vm.query = ""
+                                    } else {
+                                        submitSearch()
+                                    }
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = if (searchBarActive && vm.query.isNotBlank()) {
+                                        Icons.Outlined.Close
+                                    } else {
+                                        Icons.Outlined.Search
+                                    },
+                                    contentDescription = null,
+                                )
                             }
                         }
                     )
@@ -264,7 +302,61 @@ fun SearchPage(vm: SearchVM = koinViewModel()) {
                         )
                     }
 
-                    Divider()
+                    if (recentQueries.isNotEmpty() && !searchBarActive) {
+                        Text(
+                            text = stringResource(R.string.search_recent_quick_title),
+                            style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
+                        )
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            items(
+                                items = recentQueries,
+                                key = { it },
+                            ) { recentQuery ->
+                                FilterChip(
+                                    selected = recentQuery == vm.query,
+                                    onClick = {
+                                        vm.query = recentQuery
+                                        submitSearch()
+                                    },
+                                    label = {
+                                        Text(
+                                            text = recentQuery,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(Icons.Outlined.History, null)
+                                    },
+                                )
+                            }
+                        }
+                    }
+
+                    if (showSearchSummary) {
+                        Divider()
+
+                        SearchSummarySection(
+                            query = vm.query,
+                            searchType = vm.state.searchType,
+                            activeSort = activeSort,
+                            activeFilters = activeFilters,
+                            onEditQuery = {
+                                searchBarActive = true
+                            },
+                            onRemoveFilter = { filterValue ->
+                                if (vm.state.searchType == "image") {
+                                    vm.removeImageFilter(filterValue)
+                                } else {
+                                    vm.removeVideoFilter(filterValue)
+                                }
+                                vm.submitSearch()
+                            },
+                        )
+                    }
 
                     Text(
                         text = stringResource(R.string.search_results_count, vm.state.count),
@@ -351,4 +443,109 @@ private fun SearchTypeChip(
             Text(label)
         },
     )
+}
+
+@Composable
+private fun SearchSummarySection(
+    query: String,
+    searchType: String,
+    activeSort: String,
+    activeFilters: List<FilterValue>,
+    onEditQuery: () -> Unit,
+    onRemoveFilter: (FilterValue) -> Unit,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            if (query.isNotBlank()) {
+                item {
+                    FilterChip(
+                        selected = true,
+                        onClick = onEditQuery,
+                        label = {
+                            Text(
+                                text = stringResource(R.string.search_summary_query, query),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        },
+                    )
+                }
+            }
+
+            if (searchType != "user") {
+                item {
+                    FilterChip(
+                        selected = true,
+                        onClick = {},
+                        label = {
+                            Text(
+                                text = stringResource(
+                                    R.string.search_summary_sort,
+                                    mediaSortLabel(activeSort)
+                                ),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        },
+                    )
+                }
+            }
+        }
+
+        if (activeFilters.isNotEmpty()) {
+            Text(
+                text = stringResource(R.string.search_summary_filters_title),
+                style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
+            )
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                items(
+                    items = activeFilters,
+                    key = { "${it.key}:${it.value}" },
+                ) { filterValue ->
+                    FilterChip(
+                        selected = true,
+                        onClick = {
+                            onRemoveFilter(filterValue)
+                        },
+                        label = {
+                            Text(
+                                text = formatSearchFilterValue(filterValue),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        },
+                        leadingIcon = FilterChipCloseIcon,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun mediaSortLabel(sort: String): String {
+    return when (sort) {
+        "trending" -> stringResource(R.string.sort_trending)
+        "popularity" -> stringResource(R.string.sort_popularity)
+        "views" -> stringResource(R.string.sort_views)
+        "likes" -> stringResource(R.string.sort_likes)
+        else -> stringResource(R.string.sort_date)
+    }
+}
+
+private fun formatSearchFilterValue(filterValue: FilterValue): String {
+    return if (filterValue.key.contains("tag", ignoreCase = true)) {
+        "#${filterValue.value}"
+    } else {
+        "${filterValue.key}:${filterValue.value}"
+    }
 }

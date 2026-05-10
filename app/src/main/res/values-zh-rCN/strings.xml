@@ -36,6 +36,10 @@
     <string name="search_recent_clear">清空</string>
     <string name="search_apply_recent_action">搜索</string>
     <string name="search_results_count">结果：%d</string>
+    <string name="search_recent_quick_title">快捷搜索</string>
+    <string name="search_summary_query">关键词：%s</string>
+    <string name="search_summary_sort">排序：%s</string>
+    <string name="search_summary_filters_title">当前筛选</string>
     <string name="favorites">最爱</string>
     <string name="follow">订阅</string>
     <string name="unfollow">取消订阅</string>
@@ -54,6 +58,14 @@
     <string name="user">用户</string>
     <string name="num_likes">喜欢：%d</string>
     <string name="num_views">播放: %d</string>
+    <string name="comment_section_title">评论</string>
+    <string name="comment_reply_thread_title">回复详情</string>
+    <string name="comment_empty">还没有评论</string>
+    <string name="comment_meta_count">共 %d 条评论</string>
+    <string name="comment_replies_count">共 %d 条回复</string>
+    <string name="comment_reply_action">回复</string>
+    <string name="comment_reply_placeholder">回复 %s</string>
+    <string name="video_related_title">相关推荐</string>
     <string name="sort_date">日期</string>
     <string name="sort_trending">趋势</string>
     <string name="sort_popularity">流行</string>

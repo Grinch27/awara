@@ -37,6 +37,10 @@
     <string name="search_recent_clear">Clear</string>
     <string name="search_apply_recent_action">Search</string>
     <string name="search_results_count">Results: %d</string>
+    <string name="search_recent_quick_title">Quick Search</string>
+    <string name="search_summary_query">Query: %s</string>
+    <string name="search_summary_sort">Sort: %s</string>
+    <string name="search_summary_filters_title">Active Filters</string>
     <string name="favorites">Favorites</string>
     <string name="follow">Follow</string>
     <string name="unfollow">Unfollow</string>
@@ -55,6 +59,14 @@
     <string name="user">User</string>
     <string name="num_likes">Likes: %d</string>
     <string name="num_views">Views: %d</string>
+    <string name="comment_section_title">Comments</string>
+    <string name="comment_reply_thread_title">Reply Thread</string>
+    <string name="comment_empty">No comments yet</string>
+    <string name="comment_meta_count">%d comments</string>
+    <string name="comment_replies_count">%d replies</string>
+    <string name="comment_reply_action">Reply</string>
+    <string name="comment_reply_placeholder">Reply %s</string>
+    <string name="video_related_title">Related Videos</string>
     <string name="sort_date">Date</string>
     <string name="sort_trending">Trending</string>
     <string name="sort_popularity">Popularity</string>

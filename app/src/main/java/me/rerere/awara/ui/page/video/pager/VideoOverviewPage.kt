@@ -1,5 +1,8 @@
 package me.rerere.awara.ui.page.video.pager
 
+// TODO(user): Decide whether related videos on phone detail should stay below comments or move into a collapsed secondary block after more device testing.
+// TODO(agent): If overview metadata later gains playlist note editing or translation, split the reusable header section into smaller cards instead of growing one long column.
+
 import android.Manifest
 import android.os.Build
 import androidx.compose.animation.animateContentSize
@@ -86,17 +89,10 @@ fun VideoOverviewPage(vm: VideoVM) {
     val state = vm.state
     val listMode by rememberMediaListModePreference()
     if (state.private) {
-        Column(
-            modifier = Modifier.padding(8.dp)
-        ) {
-            AuthorCard(user = state.privateUser, onClickSub = null)
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    text = stringResource(R.string.errors_private_video),
-                )
-            }
-        }
-
+        VideoOverviewHeaderSection(
+            vm = vm,
+            modifier = Modifier.padding(8.dp),
+        )
     } else {
         Spin(
             show = state.loading,
@@ -109,35 +105,57 @@ fun VideoOverviewPage(vm: VideoVM) {
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 contentPadding = PaddingValues(8.dp) + WindowInsets.navigationBars.asPaddingValues()
             ) {
-                state.video?.let {
-                    item(span = StaggeredGridItemSpan.FullLine) {
-                        VideoInfoCard(
-                            video = it,
-                            vm = vm
-                        )
-                    }
-                    item(
-                        span = StaggeredGridItemSpan.FullLine
-                    ) {
-                        AuthorCard(
-                            user = it.user,
-                            onClickSub = {
-                                vm.followOrUnfollow()
-                            }
-                        )
-                    }
+                item(span = StaggeredGridItemSpan.FullLine) {
+                    VideoOverviewHeaderSection(vm = vm)
+                }
 
-                    item(span = StaggeredGridItemSpan.FullLine) {
-                        TagRow(
-                            tags = state.video.tags,
-                        )
-                    }
-
-                    items(state.relatedVideos) {
-                        MediaCard(media = it, listMode = listMode)
-                    }
+                items(state.relatedVideos) {
+                    MediaCard(media = it, listMode = listMode)
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun VideoOverviewHeaderSection(
+    vm: VideoVM,
+    modifier: Modifier = Modifier,
+) {
+    val state = vm.state
+    if (state.private) {
+        Column(
+            modifier = modifier,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            AuthorCard(user = state.privateUser, onClickSub = null)
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Text(
+                    text = stringResource(R.string.errors_private_video),
+                )
+            }
+        }
+        return
+    }
+
+    state.video?.let { video ->
+        Column(
+            modifier = modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            VideoInfoCard(
+                video = video,
+                vm = vm,
+            )
+            AuthorCard(
+                user = video.user,
+                onClickSub = {
+                    vm.followOrUnfollow()
+                }
+            )
+            TagRow(
+                tags = video.tags,
+            )
         }
     }
 }
