@@ -22,42 +22,47 @@ import androidx.compose.ui.unit.dp
 import me.rerere.awara.ui.component.common.UiStateBox
 import me.rerere.awara.ui.component.iwara.MediaCard
 import me.rerere.awara.ui.component.iwara.MediaListModeButton
-import me.rerere.awara.ui.component.iwara.mediaListGridCells
 import me.rerere.awara.ui.component.iwara.PaginationBar
+import me.rerere.awara.ui.component.iwara.mediaListGridCells
 import me.rerere.awara.ui.component.iwara.rememberMediaListModePreference
 import me.rerere.awara.ui.hooks.rememberDebounce
 import me.rerere.awara.ui.page.index.IndexVM
 
 @Composable
 fun IndexSubscriptionPage(
-    vm: IndexVM
+    vm: IndexVM,
 ) {
     var listMode by rememberMediaListModePreference()
+
     Column(
         modifier = Modifier.fillMaxSize(),
     ) {
         UiStateBox(
             state = vm.state.subscriptionState,
-            modifier = Modifier.weight(1f).fillMaxWidth(),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
             onErrorRetry = {
                 vm.loadSubscriptions()
-            }
+            },
         ) {
             LazyVerticalStaggeredGrid(
                 modifier = Modifier.fillMaxSize(),
                 columns = mediaListGridCells(listMode),
                 verticalItemSpacing = 8.dp,
                 contentPadding = PaddingValues(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(vm.state.subscriptions) {
                     MediaCard(media = it, listMode = listMode)
                 }
             }
         }
+
         val pageJumpDebounce = rememberDebounce(delay = 500L) { page: Int ->
             vm.jumpToSubscriptionPage(page)
         }
+
         PaginationBar(
             page = vm.state.subscriptionPage,
             limit = 24,
@@ -69,14 +74,16 @@ fun IndexSubscriptionPage(
                 var showDropdown by remember {
                     mutableStateOf(false)
                 }
+
                 FilledTonalButton(
-                    onClick = { showDropdown = true }
+                    onClick = { showDropdown = true },
                 ) {
                     Text(stringResource(vm.state.subscriptionType.id))
                 }
+
                 DropdownMenu(
                     expanded = showDropdown,
-                    onDismissRequest = { showDropdown = false }
+                    onDismissRequest = { showDropdown = false },
                 ) {
                     IndexVM.SubscriptionType.values().forEach {
                         DropdownMenuItem(
@@ -89,14 +96,14 @@ fun IndexSubscriptionPage(
                             },
                         )
                     }
+                }
             },
             trailing = {
                 MediaListModeButton(
                     value = listMode,
                     onValueChange = { listMode = it },
                 )
-                }
-            }
+            },
         )
     }
 }

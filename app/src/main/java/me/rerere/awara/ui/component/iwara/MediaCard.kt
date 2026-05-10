@@ -31,211 +31,200 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import me.rerere.awara.R
-import me.rerere.awara.data.entity.Image
+import me.rerere.awara.data.entity.Image as GalleryImage
 import me.rerere.awara.data.entity.Media
 import me.rerere.awara.data.entity.Video
 import me.rerere.awara.data.entity.thumbnailUrl
 import me.rerere.awara.ui.LocalRouterProvider
 import me.rerere.awara.ui.component.common.SkeletonBox
-import me.rerere.compose_setting.preference.rememberBooleanPreference
 import me.rerere.awara.util.toLocalDateTimeString
+import me.rerere.compose_setting.preference.rememberBooleanPreference
 
 @Composable
 fun MediaCard(
     modifier: Modifier = Modifier,
     listMode: String = MEDIA_LIST_MODE_DETAIL,
-    media: Media
+    media: Media,
 ) {
     val router = LocalRouterProvider.current
     val workMode by rememberBooleanPreference(
         key = "setting.work_mode",
-        default = false
+        default = false,
     )
-    val painter = rememberAsyncImagePainter(
-        model = media.thumbnailUrl()
-    )
+    val painter = rememberAsyncImagePainter(model = media.thumbnailUrl())
+
     Card(
         modifier = modifier,
         onClick = {
             when (media) {
                 is Video -> router.navigate("video/${media.id}")
-                is Image -> router.navigate("image/${media.id}")
+                is GalleryImage -> router.navigate("image/${media.id}")
             }
-        }
+        },
     ) {
-        Box {
-            Column {
-                SkeletonBox(
-                    show = painter.state is AsyncImagePainter.State.Loading,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(220f / 160f),
-                ) {
-                    Image(
-                        painter = painter,
-                        contentDescription = "Media Cover",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .then(if (workMode) Modifier.blur(8.dp) else Modifier)
-                    )
-                }
-
-                Column(
-                    modifier = Modifier.padding(
-                        horizontal = 6.dp,
-                        vertical = 4.dp
-                    )
-                ) {
-                    Text(
-                        text = media.title.trim(),
-                        maxLines = 2,
-    Card(
-                    )
-
-                    Row {
-                        Text(
-                            text = media.user.displayName,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = LocalContentColor.current.copy(alpha = 0.75f),
-                        )
         when (listMode) {
-            MEDIA_LIST_MODE_THUMBNAIL -> {
-                Column {
-                    MediaCover(
-                        media = media,
-                        painter = painter,
-                        workMode = workMode,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(220f / 160f),
-                    )
+            MEDIA_LIST_MODE_THUMBNAIL -> ThumbnailMediaCardBody(
+                media = media,
+                painter = painter,
+                workMode = workMode,
+            )
 
-                    Column(
-                        modifier = Modifier.padding(
-                            horizontal = 6.dp,
-                            vertical = 4.dp
-                        )
-                    ) {
-                        Text(
-                            text = media.title.trim(),
-                            maxLines = 2,
-                            style = MaterialTheme.typography.labelLarge
-                        )
+            else -> DetailMediaCardBody(
+                media = media,
+                painter = painter,
+                workMode = workMode,
+            )
+        }
+    }
+}
 
-                        Row {
-                            Text(
-                                text = media.user.displayName,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = LocalContentColor.current.copy(alpha = 0.75f),
-                            )
+@Composable
+private fun ThumbnailMediaCardBody(
+    media: Media,
+    painter: AsyncImagePainter,
+    workMode: Boolean,
+) {
+    Column {
+        MediaCover(
+            media = media,
+            painter = painter,
+            workMode = workMode,
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(220f / 160f),
+        )
 
-                            Spacer(modifier = Modifier.weight(1f))
+        Column(
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+        ) {
+            Text(
+                text = media.title.trim(),
+                maxLines = 2,
+                style = MaterialTheme.typography.labelLarge,
+            )
 
-                            Icon(
-                                imageVector = Icons.Outlined.FavoriteBorder,
-                                contentDescription = null,
-                                tint = LocalContentColor.current.copy(alpha = 0.75f),
-                                modifier = Modifier.height(16.dp)
-                            )
-                            Text(
-                                text = media.numLikes.toString(),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = LocalContentColor.current.copy(alpha = 0.75f)
-                            )
-                        }
-                    }
-                }
-            }
+            Row {
+                Text(
+                    text = media.user.displayName,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = LocalContentColor.current.copy(alpha = 0.75f),
+                )
 
-            else -> {
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    MediaCover(
-                        media = media,
-                        painter = painter,
-                        workMode = workMode,
-                        modifier = Modifier
-                            .width(164.dp)
-                            .aspectRatio(220f / 160f),
-                    )
+                Spacer(modifier = Modifier.weight(1f))
 
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        Text(
-                            text = media.title.trim(),
-                            maxLines = 3,
-                            style = MaterialTheme.typography.titleSmall,
-                        )
-                        Text(
-                            text = media.user.displayName,
-                            style = MaterialTheme.typography.labelLarge,
-                            color = LocalContentColor.current.copy(alpha = 0.82f),
-                            maxLines = 1,
-                        )
-                        Text(
-                            text = media.createdAt.toLocalDateTimeString(),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = LocalContentColor.current.copy(alpha = 0.68f),
-                            maxLines = 1,
-                        )
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Text(
-                                text = stringResource(R.string.num_views, media.numViews),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = LocalContentColor.current.copy(alpha = 0.78f),
-                            )
-                            Text(
-                                text = stringResource(R.string.num_likes, media.numLikes),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = LocalContentColor.current.copy(alpha = 0.78f),
-                            )
-                        }
-                        if (!media.body.isNullOrBlank()) {
-                            Text(
-                                text = media.body.trim(),
-                                maxLines = 3,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = LocalContentColor.current.copy(alpha = 0.78f),
-                            )
-                        }
-                    }
-                }
+                Icon(
+                    imageVector = Icons.Outlined.FavoriteBorder,
+                    contentDescription = null,
+                    tint = LocalContentColor.current.copy(alpha = 0.75f),
+                    modifier = Modifier.height(16.dp),
+                )
+                Text(
+                    text = media.numLikes.toString(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = LocalContentColor.current.copy(alpha = 0.75f),
+                )
             }
         }
-                        Spacer(modifier = Modifier.weight(1f))
+    }
+}
 
-                        Icon(
-                            imageVector = Icons.Outlined.FavoriteBorder,
-                            contentDescription = null,
-                            tint = LocalContentColor.current.copy(alpha = 0.75f),
-                            modifier = Modifier.height(
-                                16.dp
-                            )
-                        )
-                        Text(
-                            text = media.numLikes.toString(),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = LocalContentColor.current.copy(alpha = 0.75f)
-                        )
-                    }
-                }
+@Composable
+private fun DetailMediaCardBody(
+    media: Media,
+    painter: AsyncImagePainter,
+    workMode: Boolean,
+) {
+    val description = media.body?.trim().orEmpty()
+
+    Row(modifier = Modifier.fillMaxWidth()) {
+        MediaCover(
+            media = media,
+            painter = painter,
+            workMode = workMode,
+            modifier = Modifier
+                .width(164.dp)
+                .aspectRatio(220f / 160f),
+        )
+
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                text = media.title.trim(),
+                maxLines = 3,
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Text(
+                text = media.user.displayName,
+                style = MaterialTheme.typography.labelLarge,
+                color = LocalContentColor.current.copy(alpha = 0.82f),
+                maxLines = 1,
+            )
+            Text(
+                text = media.createdAt.toLocalDateTimeString(),
+                style = MaterialTheme.typography.labelSmall,
+                color = LocalContentColor.current.copy(alpha = 0.68f),
+                maxLines = 1,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = stringResource(R.string.num_views, media.numViews),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = LocalContentColor.current.copy(alpha = 0.78f),
+                )
+                Text(
+                    text = stringResource(R.string.num_likes, media.numLikes),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = LocalContentColor.current.copy(alpha = 0.78f),
+                )
             }
+            if (description.isNotEmpty()) {
+                Text(
+                    text = description,
+                    maxLines = 3,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = LocalContentColor.current.copy(alpha = 0.78f),
+                )
+            }
+        }
+    }
+}
 
-            if(media is Video && media.private) {
-                Badge(
-                    modifier = Modifier
-                        .padding(4.dp)
-                        .align(Alignment.TopEnd)
-                ) {
-                    Text(
-                        text = stringResource(R.string.private_badge),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
+@Composable
+private fun MediaCover(
+    media: Media,
+    painter: AsyncImagePainter,
+    workMode: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier = modifier) {
+        SkeletonBox(
+            show = painter.state is AsyncImagePainter.State.Loading,
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            Image(
+                painter = painter,
+                contentDescription = "Media Cover",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(if (workMode) Modifier.blur(8.dp) else Modifier),
+            )
+        }
+
+        if (media is Video && media.private) {
+            Badge(
+                modifier = Modifier
+                    .padding(4.dp)
+                    .align(Alignment.TopEnd),
+            ) {
+                Text(
+                    text = stringResource(R.string.private_badge),
+                    style = MaterialTheme.typography.bodySmall,
+                )
             }
         }
     }
