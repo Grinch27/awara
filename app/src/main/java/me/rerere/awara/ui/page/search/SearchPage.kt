@@ -19,6 +19,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -30,12 +32,16 @@ import me.rerere.awara.ui.component.common.SelectOption
 import me.rerere.awara.ui.component.common.UiStateBox
 import me.rerere.awara.ui.component.ext.DynamicStaggeredGridCells
 import me.rerere.awara.ui.component.iwara.MediaCard
+import me.rerere.awara.ui.component.iwara.MediaListModeButton
+import me.rerere.awara.ui.component.iwara.mediaListGridCells
 import me.rerere.awara.ui.component.iwara.PaginationBar
+import me.rerere.awara.ui.component.iwara.rememberMediaListModePreference
 import me.rerere.awara.ui.component.iwara.UserCard
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun SearchPage(vm: SearchVM = koinViewModel()) {
+    var listMode by rememberMediaListModePreference()
     Scaffold(
         topBar = {
             TopAppBar(
@@ -55,7 +61,13 @@ fun SearchPage(vm: SearchVM = koinViewModel()) {
                 onPageChange = {
                      vm.jumpToPage(it)
                 },
-                contentPadding = WindowInsets.navigationBars.asPaddingValues()
+                contentPadding = WindowInsets.navigationBars.asPaddingValues(),
+                trailing = {
+                    MediaListModeButton(
+                        value = listMode,
+                        onValueChange = { listMode = it },
+                    )
+                }
             )
         }
     ) {
@@ -97,7 +109,11 @@ fun SearchPage(vm: SearchVM = koinViewModel()) {
                 }
             ) {
                 LazyVerticalStaggeredGrid(
-                    columns = DynamicStaggeredGridCells(150.dp, 2, 4),
+                    columns = if (vm.state.searchType == "user") {
+                        DynamicStaggeredGridCells(180.dp, 1, 2)
+                    } else {
+                        mediaListGridCells(listMode)
+                    },
                     contentPadding = PaddingValues(8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalItemSpacing = 8.dp,
@@ -106,13 +122,13 @@ fun SearchPage(vm: SearchVM = koinViewModel()) {
                     when (vm.state.searchType) {
                         "video" -> {
                             items(vm.state.videoList) {
-                                MediaCard(media = it)
+                                MediaCard(media = it, listMode = listMode)
                             }
                         }
 
                         "image" -> {
                             items(vm.state.imageList) {
-                                MediaCard(media = it)
+                                MediaCard(media = it, listMode = listMode)
                             }
                         }
 

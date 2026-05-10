@@ -16,6 +16,7 @@ import androidx.compose.material.icons.outlined.HomeWork
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.Replay
 import androidx.compose.material.icons.outlined.Source
+import androidx.compose.material.icons.outlined.ViewAgenda
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.Scaffold
@@ -42,6 +43,9 @@ import me.rerere.awara.ui.LocalMessageProvider
 import me.rerere.awara.ui.LocalRouterProvider
 import me.rerere.awara.ui.component.common.Avatar
 import me.rerere.awara.ui.component.common.BackButton
+import me.rerere.awara.ui.component.iwara.MEDIA_LIST_MODE_DETAIL
+import me.rerere.awara.ui.component.iwara.MEDIA_LIST_MODE_THUMBNAIL
+import me.rerere.awara.ui.component.iwara.SETTING_MEDIA_LIST_MODE
 import me.rerere.awara.ui.page.savedview.savedFeedViewsRoute
 import me.rerere.awara.util.DEFAULT_NETWORK_DOH_ENDPOINT
 import me.rerere.awara.util.DEFAULT_NETWORK_DOH_UPSTREAM
@@ -199,6 +203,10 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         key = "setting.work_mode",
                         default = false
                     )
+                    val mediaListMode = rememberStringPreference(
+                        key = SETTING_MEDIA_LIST_MODE,
+                        default = MEDIA_LIST_MODE_DETAIL,
+                    )
                     val dynamicColor = rememberBooleanPreference(
                         key = "setting.dynamic_color",
                         default = true
@@ -250,6 +258,29 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                         },
                         icon = {
                             Icon(Icons.Outlined.HomeWork,  null)
+                        }
+                    )
+
+                    SettingPickerItem(
+                        state = mediaListMode,
+                        items = listOf(MEDIA_LIST_MODE_DETAIL, MEDIA_LIST_MODE_THUMBNAIL),
+                        itemLabel = { mode ->
+                            Text(
+                                text = when (mode) {
+                                    MEDIA_LIST_MODE_DETAIL -> stringResource(R.string.media_list_mode_detail)
+                                    MEDIA_LIST_MODE_THUMBNAIL -> stringResource(R.string.media_list_mode_thumbnail)
+                                    else -> "?"
+                                }
+                            )
+                        },
+                        title = {
+                            Text(stringResource(R.string.setting_look_media_list_mode_title))
+                        },
+                        icon = {
+                            Icon(Icons.Outlined.ViewAgenda, null)
+                        },
+                        text = {
+                            Text(stringResource(R.string.setting_look_media_list_mode_text))
                         }
                     )
                 }

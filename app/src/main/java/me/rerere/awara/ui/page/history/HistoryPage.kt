@@ -15,6 +15,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
@@ -28,9 +30,12 @@ import me.rerere.awara.data.entity.HistoryItem
 import me.rerere.awara.data.entity.HistoryType
 import me.rerere.awara.ui.LocalRouterProvider
 import me.rerere.awara.ui.component.common.BackButton
-import me.rerere.awara.ui.component.ext.DynamicStaggeredGridCells
 import me.rerere.awara.ui.component.ext.items
 import me.rerere.awara.ui.component.ext.plus
+import me.rerere.awara.ui.component.iwara.MEDIA_LIST_MODE_THUMBNAIL
+import me.rerere.awara.ui.component.iwara.MediaListModeButton
+import me.rerere.awara.ui.component.iwara.mediaListGridCells
+import me.rerere.awara.ui.component.iwara.rememberMediaListModePreference
 import me.rerere.awara.util.toLocalDateTimeString
 import org.koin.androidx.compose.koinViewModel
 
@@ -38,6 +43,7 @@ import org.koin.androidx.compose.koinViewModel
 fun HistoryPage(vm: HistoryVM = koinViewModel()) {
     val itemsPaged = vm.historyItems.collectAsLazyPagingItems()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    var listMode by rememberMediaListModePreference()
     Scaffold(
         topBar = {
             LargeTopAppBar(
@@ -47,6 +53,12 @@ fun HistoryPage(vm: HistoryVM = koinViewModel()) {
                 navigationIcon = {
                     BackButton()
                 },
+                actions = {
+                    MediaListModeButton(
+                        value = listMode,
+                        onValueChange = { listMode = it },
+                    )
+                },
                 scrollBehavior = scrollBehavior
             )
         }
@@ -54,19 +66,19 @@ fun HistoryPage(vm: HistoryVM = koinViewModel()) {
         LazyVerticalStaggeredGrid(
             modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
             contentPadding = it + PaddingValues(8.dp),
-            columns = DynamicStaggeredGridCells(),
+            columns = mediaListGridCells(listMode),
             verticalItemSpacing = 8.dp,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(itemsPaged) {
-                HistoryItem(it!!)
+                HistoryItem(item = it!!, listMode = listMode)
             }
         }
     }
 }
 
 @Composable
-private fun HistoryItem(item: HistoryItem) {
+private fun HistoryItem(item: HistoryItem, listMode: String) {
     val router = LocalRouterProvider.current
     Card(
         onClick = {
@@ -77,31 +89,70 @@ private fun HistoryItem(item: HistoryItem) {
             }
         }
     ) {
-        Column {
-            AsyncImage(
-                model = item.thumbnail,
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(22 / 16f),
-                contentScale = ContentScale.Crop
-            )
-
-            Column(
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = item.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+        if (listMode == MEDIA_LIST_MODE_THUMBNAIL) {
+            Column {
+                AsyncImage(
+                    model = item.thumbnail,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(22 / 16f),
+                    contentScale = ContentScale.Crop
                 )
 
-                Text(
-                    text = item.time.toLocalDateTimeString(),
-                    style = MaterialTheme.typography.labelMedium,
+                Column(
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = item.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+
+                    Text(
+                        text = item.time.toLocalDateTimeString(),
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                }
+            }
+        } else {
+            androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxWidth()) {
+                AsyncImage(
+                    model = item.thumbnail,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .width(164.dp)
+                        .aspectRatio(22 / 16f),
+                    contentScale = ContentScale.Crop
                 )
+
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = item.title,
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = when (item.type) {
+                            HistoryType.VIDEO -> stringResource(R.string.video)
+                            HistoryType.IMAGE -> stringResource(R.string.image)
+                            else -> stringResource(R.string.post)
+                        },
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                    Text(
+                        text = item.time.toLocalDateTimeString(),
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                }
             }
         }
     }

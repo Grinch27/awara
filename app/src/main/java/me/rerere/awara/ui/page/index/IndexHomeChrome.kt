@@ -68,6 +68,7 @@ fun IndexNavigationTabs(
 @Composable
 fun IndexQuickAccessStrip(
     actions: List<IndexQuickAction>,
+    titleRes: Int = R.string.index_home_shortcuts_title,
     modifier: Modifier = Modifier,
 ) {
     if (actions.isEmpty()) {
@@ -79,7 +80,7 @@ fun IndexQuickAccessStrip(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
-            text = stringResource(R.string.index_home_shortcuts_title),
+            text = stringResource(titleRes),
             style = MaterialTheme.typography.titleSmall,
         )
 
@@ -117,6 +118,72 @@ fun IndexQuickAccessStrip(
                                 Text(action.badgeCount.toString())
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun IndexHomeLandingPage(
+    navigations: List<IndexNavigation>,
+    onNavigationSelected: (String) -> Unit,
+    quickActions: List<IndexQuickAction>,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.padding(vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        IndexNavigationCardStrip(
+            navigations = navigations.filterNot { it.name == "home" },
+            onNavigationSelected = onNavigationSelected,
+        )
+        IndexQuickAccessStrip(actions = quickActions)
+    }
+}
+
+@Composable
+private fun IndexNavigationCardStrip(
+    navigations: List<IndexNavigation>,
+    onNavigationSelected: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (navigations.isEmpty()) {
+        return
+    }
+
+    Column(
+        modifier = modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.index_drawer_primary_section_title),
+            style = MaterialTheme.typography.titleSmall,
+        )
+
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            items(items = navigations, key = { navigation -> navigation.name }) { navigation ->
+                ElevatedCard(
+                    onClick = {
+                        onNavigationSelected(navigation.name)
+                    },
+                    modifier = Modifier.width(120.dp),
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        navigation.icon()
+                        Text(
+                            text = stringResource(navigation.titleRes),
+                            style = MaterialTheme.typography.titleSmall,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                     }
                 }
             }

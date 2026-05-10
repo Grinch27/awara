@@ -25,9 +25,11 @@ import me.rerere.awara.ui.LocalDialogProvider
 import me.rerere.awara.ui.LocalMessageProvider
 import me.rerere.awara.ui.LocalRouterProvider
 import me.rerere.awara.ui.component.common.UiStateBox
-import me.rerere.awara.ui.component.ext.DynamicStaggeredGridCells
 import me.rerere.awara.ui.component.iwara.MediaCard
+import me.rerere.awara.ui.component.iwara.MediaListModeButton
+import me.rerere.awara.ui.component.iwara.mediaListGridCells
 import me.rerere.awara.ui.component.iwara.PaginationBar
+import me.rerere.awara.ui.component.iwara.rememberMediaListModePreference
 import me.rerere.awara.ui.component.iwara.param.FilterAndSort
 import me.rerere.awara.ui.page.savedview.savedFeedViewsRoute
 import me.rerere.awara.domain.feed.FeedScope
@@ -46,6 +48,7 @@ fun IndexImagePage(vm: IndexVM) {
     val router = LocalRouterProvider.current
     val coroutineScope = rememberCoroutineScope()
     var saveDraft by remember { mutableStateOf(SavedFeedViewDraft()) }
+    var listMode by rememberMediaListModePreference()
 
     Column {
         UiStateBox(
@@ -58,14 +61,14 @@ fun IndexImagePage(vm: IndexVM) {
             }
         ) {
             LazyVerticalStaggeredGrid(
-                columns = DynamicStaggeredGridCells(150.dp, 2, 4),
+                columns = mediaListGridCells(listMode),
                 contentPadding = PaddingValues(8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalItemSpacing = 8.dp,
                 modifier = Modifier.matchParentSize()
             ) {
                 items(state.imageList) {
-                    MediaCard(media = it)
+                    MediaCard(media = it, listMode = listMode)
                 }
             }
         }
@@ -141,6 +144,12 @@ fun IndexImagePage(vm: IndexVM) {
                             }
                         )
                     },
+                )
+            },
+            trailing = {
+                MediaListModeButton(
+                    value = listMode,
+                    onValueChange = { listMode = it },
                 )
             }
         )

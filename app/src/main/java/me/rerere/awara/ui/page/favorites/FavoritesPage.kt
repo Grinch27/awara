@@ -15,21 +15,24 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import me.rerere.awara.R
 import me.rerere.awara.ui.component.common.BackButton
 import me.rerere.awara.ui.component.common.BetterTabBar
 import me.rerere.awara.ui.component.common.Spin
-import me.rerere.awara.ui.component.ext.DynamicStaggeredGridCells
 import me.rerere.awara.ui.component.ext.excludeBottom
 import me.rerere.awara.ui.component.ext.onlyBottom
 import me.rerere.awara.ui.component.iwara.MediaCard
+import me.rerere.awara.ui.component.iwara.MediaListModeButton
+import me.rerere.awara.ui.component.iwara.mediaListGridCells
 import me.rerere.awara.ui.component.iwara.PaginationBar
+import me.rerere.awara.ui.component.iwara.rememberMediaListModePreference
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -37,6 +40,7 @@ fun FavoritesPage(vm: FavoritesVM = koinViewModel()) {
     val appbarBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val pagerState = rememberPagerState(pageCount = { 2 })
     val scope = rememberCoroutineScope()
+    var listMode by rememberMediaListModePreference()
     Scaffold(
         topBar = {
             LargeTopAppBar(
@@ -89,7 +93,7 @@ fun FavoritesPage(vm: FavoritesVM = koinViewModel()) {
                                     .fillMaxWidth()
                             ) {
                                 LazyVerticalStaggeredGrid(
-                                    columns = DynamicStaggeredGridCells(),
+                                    columns = mediaListGridCells(listMode),
                                     contentPadding = PaddingValues(8.dp),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     verticalItemSpacing = 8.dp,
@@ -98,7 +102,7 @@ fun FavoritesPage(vm: FavoritesVM = koinViewModel()) {
                                         .nestedScroll(appbarBehavior.nestedScrollConnection)
                                 ) {
                                     items(vm.state.videoList) { video ->
-                                        MediaCard(media = video.video)
+                                        MediaCard(media = video.video, listMode = listMode)
                                     }
                                 }
                             }
@@ -110,7 +114,13 @@ fun FavoritesPage(vm: FavoritesVM = koinViewModel()) {
                                 onPageChange = {
                                     vm.jumpToVideoPage(it)
                                 },
-                                contentPadding = innerPadding.onlyBottom()
+                                contentPadding = innerPadding.onlyBottom(),
+                                trailing = {
+                                    MediaListModeButton(
+                                        value = listMode,
+                                        onValueChange = { listMode = it },
+                                    )
+                                }
                             )
                         }
                     }
@@ -124,7 +134,7 @@ fun FavoritesPage(vm: FavoritesVM = koinViewModel()) {
                                     .fillMaxWidth()
                             ) {
                                 LazyVerticalStaggeredGrid(
-                                    columns = DynamicStaggeredGridCells(),
+                                    columns = mediaListGridCells(listMode),
                                     contentPadding = PaddingValues(8.dp),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     verticalItemSpacing = 8.dp,
@@ -133,7 +143,7 @@ fun FavoritesPage(vm: FavoritesVM = koinViewModel()) {
                                         .nestedScroll(appbarBehavior.nestedScrollConnection)
                                 ) {
                                     items(vm.state.imageList) { image ->
-                                        MediaCard(media = image.image)
+                                        MediaCard(media = image.image, listMode = listMode)
                                     }
                                 }
                             }
@@ -145,7 +155,13 @@ fun FavoritesPage(vm: FavoritesVM = koinViewModel()) {
                                 onPageChange = {
                                     vm.jumpToImagePage(it)
                                 },
-                                contentPadding = innerPadding.onlyBottom()
+                                contentPadding = innerPadding.onlyBottom(),
+                                trailing = {
+                                    MediaListModeButton(
+                                        value = listMode,
+                                        onValueChange = { listMode = it },
+                                    )
+                                }
                             )
                         }
                     }

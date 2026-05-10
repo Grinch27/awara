@@ -68,10 +68,11 @@ import me.rerere.awara.ui.LocalMessageProvider
 import me.rerere.awara.ui.component.common.Button
 import me.rerere.awara.ui.component.common.ButtonType
 import me.rerere.awara.ui.component.common.Spin
-import me.rerere.awara.ui.component.ext.DynamicStaggeredGridCells
 import me.rerere.awara.ui.component.ext.plus
 import me.rerere.awara.ui.component.iwara.AuthorCard
 import me.rerere.awara.ui.component.iwara.MediaCard
+import me.rerere.awara.ui.component.iwara.mediaListGridCells
+import me.rerere.awara.ui.component.iwara.rememberMediaListModePreference
 import me.rerere.awara.ui.component.iwara.RichText
 import me.rerere.awara.ui.component.iwara.TagRow
 import me.rerere.awara.ui.page.video.VideoVM
@@ -83,6 +84,7 @@ import me.rerere.awara.worker.DownloadWorker
 @Composable
 fun VideoOverviewPage(vm: VideoVM) {
     val state = vm.state
+    val listMode by rememberMediaListModePreference()
     if (state.private) {
         Column(
             modifier = Modifier.padding(8.dp)
@@ -102,7 +104,7 @@ fun VideoOverviewPage(vm: VideoVM) {
         ) {
             LazyVerticalStaggeredGrid(
                 modifier = Modifier.fillMaxSize(),
-                columns = DynamicStaggeredGridCells(),
+                columns = mediaListGridCells(listMode),
                 verticalItemSpacing = 8.dp,
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 contentPadding = PaddingValues(8.dp) + WindowInsets.navigationBars.asPaddingValues()
@@ -132,7 +134,7 @@ fun VideoOverviewPage(vm: VideoVM) {
                     }
 
                     items(state.relatedVideos) {
-                        MediaCard(media = it)
+                        MediaCard(media = it, listMode = listMode)
                     }
                 }
             }

@@ -18,11 +18,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import me.rerere.awara.ui.component.common.UiStateBox
-import me.rerere.awara.ui.component.ext.DynamicStaggeredGridCells
 import me.rerere.awara.ui.component.iwara.MediaCard
+import me.rerere.awara.ui.component.iwara.MediaListModeButton
+import me.rerere.awara.ui.component.iwara.mediaListGridCells
 import me.rerere.awara.ui.component.iwara.PaginationBar
+import me.rerere.awara.ui.component.iwara.rememberMediaListModePreference
 import me.rerere.awara.ui.hooks.rememberDebounce
 import me.rerere.awara.ui.page.index.IndexVM
 
@@ -30,6 +31,7 @@ import me.rerere.awara.ui.page.index.IndexVM
 fun IndexSubscriptionPage(
     vm: IndexVM
 ) {
+    var listMode by rememberMediaListModePreference()
     Column(
         modifier = Modifier.fillMaxSize(),
     ) {
@@ -42,13 +44,13 @@ fun IndexSubscriptionPage(
         ) {
             LazyVerticalStaggeredGrid(
                 modifier = Modifier.fillMaxSize(),
-                columns = DynamicStaggeredGridCells(150.dp, 2, 4),
+                columns = mediaListGridCells(listMode),
                 verticalItemSpacing = 8.dp,
                 contentPadding = PaddingValues(8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(vm.state.subscriptions) {
-                    MediaCard(media = it)
+                    MediaCard(media = it, listMode = listMode)
                 }
             }
         }
@@ -86,6 +88,12 @@ fun IndexSubscriptionPage(
                             },
                         )
                     }
+                },
+                trailing = {
+                    MediaListModeButton(
+                        value = listMode,
+                        onValueChange = { listMode = it },
+                    )
                 }
             }
         )

@@ -103,8 +103,8 @@ fun CommentList(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(8.dp)
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+                contentPadding = PaddingValues(10.dp)
             ) {
                 items(currentComment.comments) { comment ->
                     CommentCard(

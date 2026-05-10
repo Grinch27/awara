@@ -2,6 +2,7 @@ package me.rerere.awara.ui.component.iwara.comment
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
-import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -45,15 +45,22 @@ fun CommentCard(
     val context = LocalContext.current
     val user = LocalUserStore.current.collectAsState()
     val router = LocalRouterProvider.current
-    Card(
+    Surface(
         modifier = modifier,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.22f),
+        tonalElevation = 1.dp,
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
+        ),
+        shape = RoundedCornerShape(16.dp),
     ) {
         Column(
             modifier = Modifier
                 .animateContentSize()
-                .padding(8.dp)
+                .padding(horizontal = 10.dp, vertical = 9.dp)
                 .fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -62,7 +69,7 @@ fun CommentCard(
             ) {
                 Avatar(
                     user = comment.user,
-                    modifier = Modifier.size(32.dp),
+                    modifier = Modifier.size(30.dp),
                     onClick = {
                         comment.user
                             ?.takeIf { it.hasNavigableProfile }
@@ -73,7 +80,7 @@ fun CommentCard(
                     Text(
                         text = comment.user?.displayName ?: "",
                         color = MaterialTheme.colorScheme.secondary,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleSmall,
                         modifier = Modifier.clickable {
                             comment.user
                                 ?.takeIf { it.hasNavigableProfile }
@@ -94,12 +101,12 @@ fun CommentCard(
                 if(comment.user?.id == user.user?.id) {
                     Surface(
                         shape = RoundedCornerShape(4.dp),
-                        tonalElevation = 4.dp
+                        color = MaterialTheme.colorScheme.primaryContainer,
                     ) {
                         Text(
                             text = "我",
                             style = MaterialTheme.typography.labelMedium,
-                            modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp)
+                            modifier = Modifier.padding(vertical = 3.dp, horizontal = 7.dp)
                         )
                     }
                 }
@@ -109,7 +116,8 @@ fun CommentCard(
                 text = comment.body,
                 onLinkClick = {
                     context.openUrl(it)
-                }
+                },
+                style = MaterialTheme.typography.bodyMedium,
             )
 
             Row(
@@ -131,7 +139,7 @@ fun CommentCard(
                         onClick = {
                             onLoadReplies(comment)
                         },
-                        contentPadding = PaddingValues(4.dp),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
                     ) {
                         Text(
                             text = "共${comment.numReplies}条回复",
@@ -146,7 +154,7 @@ fun CommentCard(
                         onClick = {
                             onReply(comment)
                         },
-                        contentPadding = PaddingValues(4.dp)
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
                             text = "回复",

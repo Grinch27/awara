@@ -65,8 +65,6 @@ fun IndexDrawer(
     val userState = userStore.collectAsState()
     val router = LocalRouterProvider.current
     val message = LocalMessageProvider.current
-    val primaryNavigations = navigations.filter { it.name != "forum" }
-    val communityNavigations = navigations.filter { it.name == "forum" }
     val selectedNavigationTitle = navigations
         .firstOrNull { it.name == selectedNavigationName }
         ?.let { stringResource(it.titleRes) }
@@ -210,44 +208,34 @@ fun IndexDrawer(
 
         DrawerNavigationSection(
             title = stringResource(R.string.index_drawer_primary_section_title),
-            navigations = primaryNavigations,
+            navigations = navigations,
             selectedNavigationName = selectedNavigationName,
             onNavigationSelected = onNavigationSelected,
         )
 
-        DrawerNavigationSection(
-            title = stringResource(R.string.index_drawer_community_section_title),
-            navigations = communityNavigations,
-            selectedNavigationName = selectedNavigationName,
-            onNavigationSelected = onNavigationSelected,
-        )
-
-        if (quickActions.isNotEmpty()) {
-            DrawerSectionTitle(stringResource(R.string.index_home_shortcuts_title))
-            quickActions.forEach { action ->
-                DrawerItem(
-                    icon = {
-                        Icon(action.icon, stringResource(action.labelRes))
-                    },
-                    label = {
-                        Text(
-                            text = stringResource(action.labelRes),
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    },
-                    tail = if (action.badgeCount > 0) {
-                        {
-                            Badge {
-                                Text(action.badgeCount.toString())
-                            }
+        quickActions.forEach { action ->
+            DrawerItem(
+                icon = {
+                    Icon(action.icon, stringResource(action.labelRes))
+                },
+                label = {
+                    Text(
+                        text = stringResource(action.labelRes),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                },
+                tail = if (action.badgeCount > 0) {
+                    {
+                        Badge {
+                            Text(action.badgeCount.toString())
                         }
-                    } else {
-                        null
-                    },
-                    onClick = action.onClick,
-                )
-            }
+                    }
+                } else {
+                    null
+                },
+                onClick = action.onClick,
+            )
         }
 
         if (savedViews.isNotEmpty() || onManageSavedViews != null) {

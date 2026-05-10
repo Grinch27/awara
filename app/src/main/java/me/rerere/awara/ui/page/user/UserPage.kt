@@ -59,11 +59,13 @@ import me.rerere.awara.ui.component.common.ImageAppBar
 import me.rerere.awara.ui.component.common.TodoStatus
 import me.rerere.awara.ui.component.common.pullrefresh.SwipeRefresh
 import me.rerere.awara.ui.component.common.pullrefresh.rememberSwipeRefreshState
-import me.rerere.awara.ui.component.ext.DynamicStaggeredGridCells
 import me.rerere.awara.ui.component.ext.excludeBottom
 import me.rerere.awara.ui.component.iwara.Avatar
 import me.rerere.awara.ui.component.iwara.MediaCard
+import me.rerere.awara.ui.component.iwara.MediaListModeButton
+import me.rerere.awara.ui.component.iwara.mediaListGridCells
 import me.rerere.awara.ui.component.iwara.PaginationBar
+import me.rerere.awara.ui.component.iwara.rememberMediaListModePreference
 import me.rerere.awara.ui.component.iwara.RichText
 import me.rerere.awara.ui.component.iwara.UserStatus
 import me.rerere.awara.util.openUrl
@@ -77,6 +79,7 @@ fun UserPage(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var expand by remember { mutableStateOf(false) }
+    var listMode by rememberMediaListModePreference()
     Scaffold(
         topBar = {
             if (expand) {
@@ -165,11 +168,19 @@ fun UserPage(
                 ) { page ->
                     when (page) {
                         0 -> {
-                            VideoPage(vm)
+                            VideoPage(
+                                vm = vm,
+                                listMode = listMode,
+                                onListModeChange = { listMode = it },
+                            )
                         }
 
                         1 -> {
-                            ImagePage(vm)
+                            ImagePage(
+                                vm = vm,
+                                listMode = listMode,
+                                onListModeChange = { listMode = it },
+                            )
                         }
 
                         2 -> {
@@ -295,7 +306,11 @@ private fun UserCard(
 }
 
 @Composable
-private fun VideoPage(vm: UserVM) {
+private fun VideoPage(
+    vm: UserVM,
+    listMode: String,
+    onListModeChange: (String) -> Unit,
+) {
     Column {
         SwipeRefresh(
             state = rememberSwipeRefreshState(isRefreshing = vm.state.videoLoading),
@@ -309,14 +324,14 @@ private fun VideoPage(vm: UserVM) {
                     EmptyStatus()
                 } else {
                     LazyVerticalStaggeredGrid(
-                        columns = DynamicStaggeredGridCells(150.dp, 2, 4),
+                        columns = mediaListGridCells(listMode),
                         modifier = Modifier.fillMaxSize(),
                         verticalItemSpacing = 8.dp,
                         contentPadding = PaddingValues(8.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(vm.state.videoList) {
-                            MediaCard(media = it)
+                            MediaCard(media = it, listMode = listMode)
                         }
                     }
                 }
@@ -329,13 +344,23 @@ private fun VideoPage(vm: UserVM) {
             onPageChange = {
                 vm.changeVideoPage(it)
             },
-            contentPadding = WindowInsets.navigationBars.asPaddingValues()
+            contentPadding = WindowInsets.navigationBars.asPaddingValues(),
+            trailing = {
+                MediaListModeButton(
+                    value = listMode,
+                    onValueChange = onListModeChange,
+                )
+            }
         )
     }
 }
 
 @Composable
-private fun ImagePage(vm: UserVM) {
+private fun ImagePage(
+    vm: UserVM,
+    listMode: String,
+    onListModeChange: (String) -> Unit,
+) {
     Column {
         SwipeRefresh(
             state = rememberSwipeRefreshState(isRefreshing = vm.state.imageLoading),
@@ -349,14 +374,14 @@ private fun ImagePage(vm: UserVM) {
                     EmptyStatus()
                 } else {
                     LazyVerticalStaggeredGrid(
-                        columns = DynamicStaggeredGridCells(150.dp, 2, 4),
+                        columns = mediaListGridCells(listMode),
                         modifier = Modifier.fillMaxSize(),
                         verticalItemSpacing = 8.dp,
                         contentPadding = PaddingValues(8.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(vm.state.imageList) {
-                            MediaCard(media = it)
+                            MediaCard(media = it, listMode = listMode)
                         }
                     }
                 }
@@ -369,7 +394,13 @@ private fun ImagePage(vm: UserVM) {
             onPageChange = {
                 vm.changeImagePage(it)
             },
-            contentPadding = WindowInsets.navigationBars.asPaddingValues()
+            contentPadding = WindowInsets.navigationBars.asPaddingValues(),
+            trailing = {
+                MediaListModeButton(
+                    value = listMode,
+                    onValueChange = onListModeChange,
+                )
+            }
         )
     }
 }

@@ -11,8 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
@@ -22,7 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,7 +30,6 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
 import me.rerere.awara.ui.component.common.BackButton
 import me.rerere.awara.ui.component.common.BetterTabBar
 import me.rerere.awara.ui.component.ext.excludeBottom
@@ -43,8 +40,7 @@ import me.rerere.awara.ui.page.video.pager.VideoOverviewPage
 
 @Composable
 fun VideoPagePhoneLayout(vm: VideoVM, state: PlayerState, player: @Composable () -> Unit) {
-    val pagerState = rememberPagerState(pageCount = { 2 })
-    val scope = rememberCoroutineScope()
+    var selectedSection by rememberSaveable { mutableStateOf("overview") }
     var offset by remember { mutableStateOf(0f) }
     val nestedScrollConnection = remember {
         object : NestedScrollConnection {
@@ -97,20 +93,20 @@ fun VideoPagePhoneLayout(vm: VideoVM, state: PlayerState, player: @Composable ()
                 .fillMaxSize()
         ) {
             BetterTabBar(
-                selectedTabIndex = pagerState.currentPage,
+                selectedTabIndex = if (selectedSection == "overview") 0 else 1,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Tab(
-                    selected = pagerState.currentPage == 0,
-                    onClick = { scope.launch { pagerState.animateScrollToPage(0) } },
+                    selected = selectedSection == "overview",
+                    onClick = { selectedSection = "overview" },
                     text = {
                         Text("简介")
                     },
                 )
 
                 Tab(
-                    selected = pagerState.currentPage == 1,
-                    onClick = { scope.launch { pagerState.animateScrollToPage(1) } },
+                    selected = selectedSection == "comments",
+                    onClick = { selectedSection = "comments" },
                     text = {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -125,16 +121,15 @@ fun VideoPagePhoneLayout(vm: VideoVM, state: PlayerState, player: @Composable ()
                     }
                 )
             }
-            HorizontalPager(
+            Box(
                 modifier = Modifier
                     .nestedScroll(nestedScrollConnection)
                     .weight(1f)
                     .fillMaxWidth(),
-                state = pagerState,
             ) {
-                when (it) {
-                    0 -> VideoOverviewPage(vm)
-                    1 -> VideoCommentPage(vm)
+                when (selectedSection) {
+                    "comments" -> VideoCommentPage(vm)
+                    else -> VideoOverviewPage(vm)
                 }
             }
         }

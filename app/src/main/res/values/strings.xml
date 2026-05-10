@@ -4,6 +4,7 @@
     <string name="login_button">Login</string>
     <string name="login_user">Username or Email</string>
     <string name="login_password">Password</string>
+    <string name="index_nav_home">Home</string>
     <string name="index_nav_video">Video</string>
     <string name="index_nav_image">Image</string>
     <string name="index_nav_forum">Forum</string>
@@ -53,6 +54,8 @@
     <string name="sort_popularity">Popularity</string>
     <string name="sort_views">Views</string>
     <string name="sort_likes">Likes</string>
+    <string name="media_list_mode_detail">Detail</string>
+    <string name="media_list_mode_thumbnail">Thumbnail</string>
     <string name="drawer_favorite">Favorites</string>
     <string name="drawer_playlists">Playlists</string>
     <string name="drawer_downloads">Downloads</string>
@@ -76,6 +79,8 @@
     <string name="setting_look_dynamic_color_text">Whether to dynamically adjust the color according to the video cover</string>
     <string name="setting_look_work_mode_title">Work Mode</string>
     <string name="setting_look_work_mode_text">The video cover will be blurred</string>
+    <string name="setting_look_media_list_mode_title">Media List Mode</string>
+    <string name="setting_look_media_list_mode_text">Switch media feeds between detail and thumbnail layouts.</string>
     <string name="setting_player">Player Setting</string>
     <string name="setting_player_auto_play_title">Autoplay</string>
     <string name="setting_player_auto_play_text">Automatically start buffering and playing the video</string>

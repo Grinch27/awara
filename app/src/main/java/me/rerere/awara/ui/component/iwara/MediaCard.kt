@@ -1,6 +1,7 @@
 package me.rerere.awara.ui.component.iwara
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Badge
@@ -36,10 +38,12 @@ import me.rerere.awara.data.entity.thumbnailUrl
 import me.rerere.awara.ui.LocalRouterProvider
 import me.rerere.awara.ui.component.common.SkeletonBox
 import me.rerere.compose_setting.preference.rememberBooleanPreference
+import me.rerere.awara.util.toLocalDateTimeString
 
 @Composable
 fun MediaCard(
     modifier: Modifier = Modifier,
+    listMode: String = MEDIA_LIST_MODE_DETAIL,
     media: Media
 ) {
     val router = LocalRouterProvider.current
@@ -86,7 +90,7 @@ fun MediaCard(
                     Text(
                         text = media.title.trim(),
                         maxLines = 2,
-                        style = MaterialTheme.typography.labelLarge
+    Card(
                     )
 
                     Row {
@@ -95,7 +99,113 @@ fun MediaCard(
                             style = MaterialTheme.typography.labelMedium,
                             color = LocalContentColor.current.copy(alpha = 0.75f),
                         )
+        when (listMode) {
+            MEDIA_LIST_MODE_THUMBNAIL -> {
+                Column {
+                    MediaCover(
+                        media = media,
+                        painter = painter,
+                        workMode = workMode,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(220f / 160f),
+                    )
 
+                    Column(
+                        modifier = Modifier.padding(
+                            horizontal = 6.dp,
+                            vertical = 4.dp
+                        )
+                    ) {
+                        Text(
+                            text = media.title.trim(),
+                            maxLines = 2,
+                            style = MaterialTheme.typography.labelLarge
+                        )
+
+                        Row {
+                            Text(
+                                text = media.user.displayName,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = LocalContentColor.current.copy(alpha = 0.75f),
+                            )
+
+                            Spacer(modifier = Modifier.weight(1f))
+
+                            Icon(
+                                imageVector = Icons.Outlined.FavoriteBorder,
+                                contentDescription = null,
+                                tint = LocalContentColor.current.copy(alpha = 0.75f),
+                                modifier = Modifier.height(16.dp)
+                            )
+                            Text(
+                                text = media.numLikes.toString(),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = LocalContentColor.current.copy(alpha = 0.75f)
+                            )
+                        }
+                    }
+                }
+            }
+
+            else -> {
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    MediaCover(
+                        media = media,
+                        painter = painter,
+                        workMode = workMode,
+                        modifier = Modifier
+                            .width(164.dp)
+                            .aspectRatio(220f / 160f),
+                    )
+
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Text(
+                            text = media.title.trim(),
+                            maxLines = 3,
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        Text(
+                            text = media.user.displayName,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = LocalContentColor.current.copy(alpha = 0.82f),
+                            maxLines = 1,
+                        )
+                        Text(
+                            text = media.createdAt.toLocalDateTimeString(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = LocalContentColor.current.copy(alpha = 0.68f),
+                            maxLines = 1,
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text(
+                                text = stringResource(R.string.num_views, media.numViews),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = LocalContentColor.current.copy(alpha = 0.78f),
+                            )
+                            Text(
+                                text = stringResource(R.string.num_likes, media.numLikes),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = LocalContentColor.current.copy(alpha = 0.78f),
+                            )
+                        }
+                        if (!media.body.isNullOrBlank()) {
+                            Text(
+                                text = media.body.trim(),
+                                maxLines = 3,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = LocalContentColor.current.copy(alpha = 0.78f),
+                            )
+                        }
+                    }
+                }
+            }
+        }
                         Spacer(modifier = Modifier.weight(1f))
 
                         Icon(

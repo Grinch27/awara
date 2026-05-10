@@ -3,6 +3,7 @@
     <string name="login_button">登录</string>
     <string name="login_user">用户名或邮箱</string>
     <string name="login_password">密码</string>
+    <string name="index_nav_home">主页</string>
     <string name="index_nav_video">视频</string>
     <string name="index_nav_image">图片</string>
     <string name="index_nav_forum">论坛</string>
@@ -52,6 +53,8 @@
     <string name="sort_popularity">流行</string>
     <string name="sort_views">播放量</string>
     <string name="sort_likes">喜欢</string>
+    <string name="media_list_mode_detail">详情</string>
+    <string name="media_list_mode_thumbnail">缩略图</string>
     <string name="drawer_favorite">最爱</string>
     <string name="drawer_playlists">播单</string>
     <string name="drawer_downloads">下载</string>
@@ -75,6 +78,8 @@
     <string name="setting_look_dynamic_color_text">是否根据视频封面动态调整颜色</string>
     <string name="setting_look_work_mode_title">工作模式</string>
     <string name="setting_look_work_mode_text">视频封面会模糊</string>
+    <string name="setting_look_media_list_mode_title">媒体列表模式</string>
+    <string name="setting_look_media_list_mode_text">在媒体列表中切换详情和缩略图布局。</string>
     <string name="setting_player">播放器设置</string>
     <string name="setting_player_auto_play_title">自动播放</string>
     <string name="setting_player_auto_play_text">自动开始缓冲和播放视频</string>

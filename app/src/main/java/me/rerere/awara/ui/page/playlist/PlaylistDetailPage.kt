@@ -14,21 +14,25 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import me.rerere.awara.R
 import me.rerere.awara.ui.component.common.BackButton
 import me.rerere.awara.ui.component.common.Spin
-import me.rerere.awara.ui.component.ext.DynamicStaggeredGridCells
 import me.rerere.awara.ui.component.iwara.MediaCard
+import me.rerere.awara.ui.component.iwara.MediaListModeButton
+import me.rerere.awara.ui.component.iwara.mediaListGridCells
 import me.rerere.awara.ui.component.iwara.PaginationBar
+import me.rerere.awara.ui.component.iwara.rememberMediaListModePreference
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun PlaylistDetailPage(vm: PlaylistDetailVM = koinViewModel()) {
     val appbarBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    var listMode by rememberMediaListModePreference()
     Scaffold(
         topBar = {
             LargeTopAppBar(
@@ -49,7 +53,13 @@ fun PlaylistDetailPage(vm: PlaylistDetailVM = koinViewModel()) {
                 onPageChange = {
                     vm.jumpToPage(it)
                 },
-                contentPadding = WindowInsets.navigationBars.asPaddingValues()
+                contentPadding = WindowInsets.navigationBars.asPaddingValues(),
+                trailing = {
+                    MediaListModeButton(
+                        value = listMode,
+                        onValueChange = { listMode = it },
+                    )
+                }
             )
         }
     ) {
@@ -60,7 +70,7 @@ fun PlaylistDetailPage(vm: PlaylistDetailVM = koinViewModel()) {
                 .padding(it)
         ) {
             LazyVerticalStaggeredGrid(
-                columns = DynamicStaggeredGridCells(),
+                columns = mediaListGridCells(listMode),
                 contentPadding = PaddingValues(8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalItemSpacing = 8.dp,
@@ -69,7 +79,7 @@ fun PlaylistDetailPage(vm: PlaylistDetailVM = koinViewModel()) {
                     .nestedScroll(appbarBehavior.nestedScrollConnection)
             ) {
                 items(vm.state.list) { video ->
-                    MediaCard(media = video)
+                    MediaCard(media = video, listMode = listMode)
                 }
             }
         }
