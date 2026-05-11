@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="confirm">Confirm</string>
+    <string name="video">Video</string>
+    <string name="image">Image</string>
+    <string name="user">User</string>
+    <string name="rating_all">All</string>
+    <string name="rating_general">General</string>
+    <string name="rating_ecchi">Ecchi</string>
+    <string name="rating">Rating</string>
+    <string name="date">Date</string>
+    <string name="tag">Tag</string>
+    <string name="search">Search</string>
+    <string name="search_hint_media">Search media, tags, or users</string>
+    <string name="search_recent_title">Recent Searches</string>
+    <string name="search_recent_empty">No recent searches yet</string>
+    <string name="search_recent_clear">Clear</string>
+    <string name="search_apply_recent_action">Search</string>
+    <string name="search_results_count">Results: %1$d</string>
+    <string name="search_recent_quick_title">Quick Search</string>
+    <string name="search_summary_query">Query: %1$s</string>
+    <string name="search_summary_sort">Sort: %1$s</string>
+    <string name="search_summary_filters_title">Active Filters</string>
+    <string name="private_badge">Private</string>
+    <string name="premium">Premium</string>
+    <string name="num_likes">Likes: %1$d</string>
+    <string name="num_views">Views: %1$d</string>
+    <string name="sort_date">Date</string>
+    <string name="sort_trending">Trending</string>
+    <string name="sort_popularity">Popularity</string>
+    <string name="sort_views">Views</string>
+    <string name="sort_likes">Likes</string>
+    <string name="media_list_mode_detail">Detail</string>
+    <string name="media_list_mode_thumbnail">Thumbnail</string>
+    <string name="search_error_default">Something went wrong. Tap to retry.</string>
+</resources>

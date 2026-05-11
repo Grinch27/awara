@@ -1,0 +1,1376 @@
+package me.rerere.awara.ui.page.search
+
+// TODO(user): Decide whether saved views should surface here as first-class search presets once the search summary row settles.
+// TODO(agent): If search gains server-side suggestion APIs later, replace the local-only quick history chips with ranked mixed suggestions instead of stacking another row.
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
+import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.ClearAll
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Favorite
+import androidx.compose.material.icons.outlined.FilterList
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.LocalFireDepartment
+import androidx.compose.material.icons.outlined.RemoveRedEye
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material3.Badge
+import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
+import androidx.compose.material3.DockedSearchBar
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastForEach
+import coil.compose.AsyncImage
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import me.rerere.awara.feature.search.R
+import me.rerere.awara.ui.component.common.UiState
+import me.rerere.awara.ui.component.iwara.param.FilterValue
+import me.rerere.awara.ui.component.iwara.param.sort.DEFAULT_MEDIA_SORT
+import me.rerere.awara.ui.component.iwara.param.sort.MediaSortKeys
+import me.rerere.compose_setting.preference.rememberStringPreference
+import org.koin.androidx.compose.get
+import org.koin.androidx.compose.koinViewModel
+import java.util.Calendar
+
+private const val SETTING_MEDIA_LIST_MODE = "setting.media_list_mode"
+private const val MEDIA_LIST_MODE_DETAIL = "detail"
+private const val MEDIA_LIST_MODE_THUMBNAIL = "thumbnail"
+
+@Composable
+fun SearchPage(
+    vm: SearchVM = koinViewModel(),
+    onBack: () -> Unit = {},
+    onOpenMedia: (SearchMediaItem) -> Unit = {},
+    onOpenUser: (SearchUserItem) -> Unit = {},
+) {
+    var listMode by rememberStringPreference(
+        key = SETTING_MEDIA_LIST_MODE,
+        default = MEDIA_LIST_MODE_DETAIL,
+    )
+    var recentQueriesRaw by rememberStringPreference(key = "search.recent_queries", default = "")
+    var searchBarActive by rememberSaveable { mutableStateOf(false) }
+    val gridState = rememberLazyStaggeredGridState()
+    val recentQueries = remember(recentQueriesRaw) {
+        recentQueriesRaw.lineSequence()
+            .map(String::trim)
+            .filter(String::isNotEmpty)
+            .distinct()
+            .take(8)
+            .toList()
+    }
+    val activeFilters = when (vm.state.searchType) {
+        "image" -> vm.imageFilters.toList()
+        "video" -> vm.videoFilters.toList()
+        else -> emptyList()
+    }
+    val activeSort = when (vm.state.searchType) {
+        "image" -> vm.imageSort
+        "video" -> vm.videoSort
+        else -> DEFAULT_MEDIA_SORT
+    }
+    val showSearchSummary = vm.query.isNotBlank() || activeFilters.isNotEmpty() || (
+        vm.state.searchType != "user" && vm.state.uiState != UiState.Initial
+    )
+    val currentItemCount = when (vm.state.searchType) {
+        "image" -> vm.state.imageList.size
+        "user" -> vm.state.userList.size
+        else -> vm.state.videoList.size
+    }
+
+    LaunchedEffect(
+        gridState,
+        vm.state.searchType,
+        currentItemCount,
+        vm.state.hasMore,
+        vm.state.loadingMore,
+    ) {
+        snapshotFlow {
+            gridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+        }.collectLatest { lastVisibleIndex ->
+            if (vm.state.hasMore && !vm.state.loadingMore && currentItemCount > 0 && lastVisibleIndex >= currentItemCount - 6) {
+                vm.loadNextPage()
+            }
+        }
+    }
+
+    fun persistRecentQuery() {
+        val trimmedQuery = vm.query.trim()
+        if (trimmedQuery.isBlank()) {
+            return
+        }
+        recentQueriesRaw = buildList {
+            add(trimmedQuery)
+            addAll(recentQueries.filterNot { it == trimmedQuery })
+        }.take(8).joinToString(separator = "\n")
+    }
+
+    fun submitSearch() {
+        persistRecentQuery()
+        vm.submitSearch()
+        searchBarActive = false
+    }
+
+    Scaffold { innerPadding ->
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.24f),
+                shape = MaterialTheme.shapes.extraLarge,
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        }
+                        Text(
+                            text = stringResource(R.string.search),
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                    }
+
+                    DockedSearchBar(
+                        modifier = Modifier.fillMaxWidth(),
+                        query = vm.query,
+                        onQueryChange = { vm.query = it },
+                        onSearch = { submitSearch() },
+                        active = searchBarActive,
+                        onActiveChange = { searchBarActive = it },
+                        placeholder = {
+                            Text(stringResource(R.string.search_hint_media))
+                        },
+                        content = {
+                            if (recentQueries.isEmpty()) {
+                                ListItem(
+                                    headlineContent = {
+                                        Text(stringResource(R.string.search_recent_empty))
+                                    },
+                                    leadingContent = {
+                                        Icon(Icons.Outlined.History, null)
+                                    },
+                                )
+                            } else {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(text = stringResource(R.string.search_recent_title))
+                                    TextButton(onClick = { recentQueriesRaw = "" }) {
+                                        Text(stringResource(R.string.search_recent_clear))
+                                    }
+                                }
+                                recentQueries.forEach { recentQuery ->
+                                    ListItem(
+                                        headlineContent = { Text(recentQuery) },
+                                        leadingContent = { Icon(Icons.Outlined.History, null) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        trailingContent = {
+                                            FilledTonalButton(
+                                                onClick = {
+                                                    vm.query = recentQuery
+                                                    submitSearch()
+                                                },
+                                            ) {
+                                                Text(stringResource(R.string.search_apply_recent_action))
+                                            }
+                                        },
+                                    )
+                                }
+                            }
+                        },
+                        leadingIcon = {
+                            SelectButton(
+                                value = vm.state.searchType,
+                                options = searchOptions(),
+                                onValueChange = vm::updateSearchType,
+                            )
+                        },
+                        trailingIcon = {
+                            IconButton(
+                                onClick = {
+                                    if (searchBarActive && vm.query.isNotBlank()) {
+                                        vm.query = ""
+                                    } else {
+                                        submitSearch()
+                                    }
+                                },
+                            ) {
+                                Icon(
+                                    imageVector = if (searchBarActive && vm.query.isNotBlank()) {
+                                        Icons.Outlined.Close
+                                    } else {
+                                        Icons.Outlined.Search
+                                    },
+                                    contentDescription = null,
+                                )
+                            }
+                        },
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        SearchTypeChip(
+                            selected = vm.state.searchType == "video",
+                            label = stringResource(R.string.video),
+                            onClick = { vm.updateSearchType("video") },
+                        )
+                        SearchTypeChip(
+                            selected = vm.state.searchType == "image",
+                            label = stringResource(R.string.image),
+                            onClick = { vm.updateSearchType("image") },
+                        )
+                        SearchTypeChip(
+                            selected = vm.state.searchType == "user",
+                            label = stringResource(R.string.user),
+                            onClick = { vm.updateSearchType("user") },
+                        )
+                    }
+
+                    if (vm.state.searchType != "user") {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            FilterAndSort(
+                                sort = if (vm.state.searchType == "image") vm.imageSort else vm.videoSort,
+                                onSortChange = {
+                                    if (vm.state.searchType == "image") {
+                                        vm.updateImageSort(it)
+                                    } else {
+                                        vm.updateVideoSort(it)
+                                    }
+                                },
+                                filterValues = if (vm.state.searchType == "image") vm.imageFilters else vm.videoFilters,
+                                onFilterAdd = {
+                                    if (vm.state.searchType == "image") {
+                                        vm.addImageFilter(it)
+                                    } else {
+                                        vm.addVideoFilter(it)
+                                    }
+                                },
+                                onFilterRemove = {
+                                    if (vm.state.searchType == "image") {
+                                        vm.removeImageFilter(it)
+                                    } else {
+                                        vm.removeVideoFilter(it)
+                                    }
+                                },
+                                onFilterChooseDone = vm::submitSearch,
+                                onFilterClear = {
+                                    if (vm.state.searchType == "image") {
+                                        vm.clearImageFilter()
+                                    } else {
+                                        vm.clearVideoFilter()
+                                    }
+                                },
+                            )
+
+                            MediaListModeButton(
+                                value = listMode,
+                                onValueChange = { listMode = it },
+                            )
+                        }
+                    }
+
+                    if (recentQueries.isNotEmpty() && !searchBarActive) {
+                        Text(
+                            text = stringResource(R.string.search_recent_quick_title),
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            items(items = recentQueries, key = { it }) { recentQuery ->
+                                FilterChip(
+                                    selected = recentQuery == vm.query,
+                                    onClick = {
+                                        vm.query = recentQuery
+                                        submitSearch()
+                                    },
+                                    label = {
+                                        Text(
+                                            text = recentQuery,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(Icons.Outlined.History, null)
+                                    },
+                                )
+                            }
+                        }
+                    }
+
+                    if (showSearchSummary) {
+                        Divider()
+                        SearchSummarySection(
+                            query = vm.query,
+                            searchType = vm.state.searchType,
+                            activeSort = activeSort,
+                            activeFilters = activeFilters,
+                            onEditQuery = {
+                                searchBarActive = true
+                            },
+                            onRemoveFilter = { filterValue ->
+                                if (vm.state.searchType == "image") {
+                                    vm.removeImageFilter(filterValue)
+                                } else {
+                                    vm.removeVideoFilter(filterValue)
+                                }
+                                vm.submitSearch()
+                            },
+                        )
+                    }
+
+                    Text(text = stringResource(R.string.search_results_count, vm.state.count))
+                }
+            }
+
+            Surface(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.12f),
+                shape = MaterialTheme.shapes.extraLarge,
+            ) {
+                UiStateBox(
+                    modifier = Modifier.fillMaxSize(),
+                    state = vm.state.uiState,
+                    onErrorRetry = vm::search,
+                ) {
+                    LazyVerticalStaggeredGrid(
+                        state = gridState,
+                        columns = if (vm.state.searchType == "user") {
+                            DynamicStaggeredGridCells(180.dp, 1, 2)
+                        } else {
+                            mediaListGridCells(listMode)
+                        },
+                        contentPadding = PaddingValues(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalItemSpacing = 8.dp,
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
+                        when (vm.state.searchType) {
+                            "video" -> {
+                                items(vm.state.videoList, key = { it.id }) { media ->
+                                    SearchMediaCard(
+                                        media = media,
+                                        listMode = listMode,
+                                        onClick = { onOpenMedia(media) },
+                                    )
+                                }
+                            }
+
+                            "image" -> {
+                                items(vm.state.imageList, key = { it.id }) { media ->
+                                    SearchMediaCard(
+                                        media = media,
+                                        listMode = listMode,
+                                        onClick = { onOpenMedia(media) },
+                                    )
+                                }
+                            }
+
+                            "user" -> {
+                                items(vm.state.userList, key = { it.id }) { user ->
+                                    SearchUserCard(
+                                        user = user,
+                                        onClick = { onOpenUser(user) },
+                                    )
+                                }
+                            }
+                        }
+
+                        if (vm.state.loadingMore) {
+                            item(span = StaggeredGridItemSpan.FullLine) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 12.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    CircularProgressIndicator()
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun searchOptions(): List<SelectOption<String>> {
+    return listOf(
+        SelectOption(
+            value = "video",
+            label = { Text(stringResource(R.string.video)) },
+        ),
+        SelectOption(
+            value = "image",
+            label = { Text(stringResource(R.string.image)) },
+        ),
+        SelectOption(
+            value = "user",
+            label = { Text(stringResource(R.string.user)) },
+        ),
+    )
+}
+
+@Composable
+private fun SearchTypeChip(
+    selected: Boolean,
+    label: String,
+    onClick: () -> Unit,
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label) },
+    )
+}
+
+@Composable
+private fun SearchSummarySection(
+    query: String,
+    searchType: String,
+    activeSort: String,
+    activeFilters: List<FilterValue>,
+    onEditQuery: () -> Unit,
+    onRemoveFilter: (FilterValue) -> Unit,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+            shape = MaterialTheme.shapes.large,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(
+                modifier = Modifier.padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.search_summary_filters_title),
+                    style = MaterialTheme.typography.labelMedium,
+                )
+
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    if (query.isNotBlank()) {
+                        item {
+                            FilterChip(
+                                selected = true,
+                                onClick = onEditQuery,
+                                label = {
+                                    Text(
+                                        text = stringResource(R.string.search_summary_query, query),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                },
+                            )
+                        }
+                    }
+
+                    if (searchType != "user") {
+                        item {
+                            FilterChip(
+                                selected = true,
+                                onClick = {},
+                                label = {
+                                    Text(
+                                        text = stringResource(
+                                            R.string.search_summary_sort,
+                                            mediaSortLabel(activeSort),
+                                        ),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            items(items = activeFilters, key = { "${it.key}:${it.value}" }) { filterValue ->
+                FilterChip(
+                    selected = true,
+                    onClick = { onRemoveFilter(filterValue) },
+                    label = {
+                        Text(
+                            text = formatSearchFilterValue(filterValue),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(Icons.Outlined.Close, contentDescription = null)
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun mediaSortLabel(sort: String): String {
+    return when (sort) {
+        "trending" -> stringResource(R.string.sort_trending)
+        "popularity" -> stringResource(R.string.sort_popularity)
+        "views" -> stringResource(R.string.sort_views)
+        "likes" -> stringResource(R.string.sort_likes)
+        else -> stringResource(R.string.sort_date)
+    }
+}
+
+private fun formatSearchFilterValue(filterValue: FilterValue): String {
+    return if (filterValue.key.contains("tag", ignoreCase = true)) {
+        "#${filterValue.value}"
+    } else {
+        "${filterValue.key}:${filterValue.value}"
+    }
+}
+
+@Composable
+private fun UiStateBox(
+    modifier: Modifier = Modifier,
+    state: UiState,
+    onErrorRetry: () -> Unit = {},
+    content: @Composable BoxScope.() -> Unit,
+) {
+    Box(modifier = modifier) {
+        when (state) {
+            UiState.Initial -> Unit
+            UiState.Empty -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(text = stringResource(R.string.search_recent_empty))
+                }
+            }
+
+            UiState.Loading -> {
+                content()
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+
+            UiState.Success -> content()
+            is UiState.Error -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    state.message?.invoke()
+                    if (state.message == null) {
+                        Text(
+                            text = state.messageText ?: stringResource(R.string.search_error_default),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                    TextButton(onClick = onErrorRetry) {
+                        Text(stringResource(R.string.confirm))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Stable
+private class SelectOption<T>(
+    val value: T,
+    val label: @Composable () -> Unit,
+)
+
+@Composable
+private fun <T> SelectButton(
+    value: T,
+    options: List<SelectOption<T>>,
+    onValueChange: (T) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var showDropdown by remember { mutableStateOf(false) }
+    Box(modifier = modifier) {
+        TextButton(onClick = { showDropdown = !showDropdown }) {
+            options.firstOrNull { it.value == value }?.label?.invoke() ?: Text("-")
+        }
+
+        DropdownMenu(
+            expanded = showDropdown,
+            onDismissRequest = { showDropdown = false },
+        ) {
+            options.fastForEach { option ->
+                DropdownMenuItem(
+                    text = { option.label() },
+                    onClick = {
+                        onValueChange(option.value)
+                        showDropdown = false
+                    },
+                )
+            }
+        }
+    }
+}
+
+private data class SortOption(
+    val name: String,
+    val label: @Composable () -> Unit,
+    val icon: @Composable () -> Unit,
+)
+
+@Composable
+private fun mediaSortOptions(): List<SortOption> {
+    return MediaSortKeys.map { key ->
+        when (key) {
+            "trending" -> SortOption(
+                name = key,
+                label = { Text(stringResource(R.string.sort_trending)) },
+                icon = { Icon(Icons.Outlined.LocalFireDepartment, null) },
+            )
+
+            "popularity" -> SortOption(
+                name = key,
+                label = { Text(stringResource(R.string.sort_popularity)) },
+                icon = { Icon(Icons.Outlined.Star, null) },
+            )
+
+            "views" -> SortOption(
+                name = key,
+                label = { Text(stringResource(R.string.sort_views)) },
+                icon = { Icon(Icons.Outlined.RemoveRedEye, null) },
+            )
+
+            "likes" -> SortOption(
+                name = key,
+                label = { Text(stringResource(R.string.sort_likes)) },
+                icon = { Icon(Icons.Outlined.Favorite, null) },
+            )
+
+            else -> SortOption(
+                name = key,
+                label = { Text(stringResource(R.string.sort_date)) },
+                icon = { Icon(Icons.Outlined.CalendarMonth, null) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun FilterAndSort(
+    sort: String,
+    onSortChange: (String) -> Unit,
+    filterValues: List<FilterValue>,
+    onFilterAdd: (FilterValue) -> Unit,
+    onFilterRemove: (FilterValue) -> Unit,
+    onFilterChooseDone: () -> Unit,
+    onFilterClear: () -> Unit,
+) {
+    val sortOptions = mediaSortOptions()
+    var showSortMenu by remember { mutableStateOf(false) }
+    var showFilterSheet by remember { mutableStateOf(false) }
+    val currentSort = sortOptions.firstOrNull { it.name == sort } ?: sortOptions.first()
+
+    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Box {
+            FilledTonalButton(onClick = { showSortMenu = !showSortMenu }) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    currentSort.icon()
+                    currentSort.label()
+                }
+            }
+
+            DropdownMenu(
+                expanded = showSortMenu,
+                onDismissRequest = { showSortMenu = false },
+            ) {
+                sortOptions.fastForEach { option ->
+                    DropdownMenuItem(
+                        text = { option.label() },
+                        leadingIcon = { option.icon() },
+                        onClick = {
+                            onSortChange(option.name)
+                            showSortMenu = false
+                        },
+                    )
+                }
+            }
+        }
+
+        Box {
+            FilledTonalButton(onClick = { showFilterSheet = true }) {
+                Icon(Icons.Outlined.FilterList, null)
+            }
+            if (filterValues.isNotEmpty()) {
+                Badge(modifier = Modifier.align(Alignment.TopEnd)) {
+                    Text(filterValues.size.toString())
+                }
+            }
+        }
+    }
+
+    if (showFilterSheet) {
+        FilterBottomSheet(
+            filterValues = filterValues,
+            onFilterAdd = onFilterAdd,
+            onFilterRemove = onFilterRemove,
+            onFilterChooseDone = {
+                showFilterSheet = false
+                onFilterChooseDone()
+            },
+            onFilterClear = onFilterClear,
+            onDismiss = { showFilterSheet = false },
+        )
+    }
+}
+
+@Composable
+private fun FilterBottomSheet(
+    filterValues: List<FilterValue>,
+    onFilterAdd: (FilterValue) -> Unit,
+    onFilterRemove: (FilterValue) -> Unit,
+    onFilterChooseDone: () -> Unit,
+    onFilterClear: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var selectedTab by remember { mutableStateOf(0) }
+
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            ScrollableTabRow(
+                selectedTabIndex = selectedTab,
+                edgePadding = 0.dp,
+                divider = {},
+            ) {
+                Tab(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    text = { Text(stringResource(R.string.tag)) },
+                )
+                Tab(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    text = { Text(stringResource(R.string.date)) },
+                )
+                Tab(
+                    selected = selectedTab == 2,
+                    onClick = { selectedTab = 2 },
+                    text = { Text(stringResource(R.string.rating)) },
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(420.dp),
+            ) {
+                when (selectedTab) {
+                    0 -> SearchTagFilter(
+                        values = filterValues,
+                        onValueAdd = onFilterAdd,
+                        onValueRemove = onFilterRemove,
+                    )
+
+                    1 -> SearchDateFilter(
+                        values = filterValues,
+                        onValueAdd = onFilterAdd,
+                        onValueRemove = onFilterRemove,
+                    )
+
+                    else -> SearchRatingFilter(
+                        values = filterValues,
+                        onValueAdd = onFilterAdd,
+                        onValueRemove = onFilterRemove,
+                    )
+                }
+            }
+
+            Row(
+                modifier = Modifier.align(Alignment.End),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                FilledTonalButton(onClick = onFilterClear) {
+                    Icon(Icons.Outlined.ClearAll, null)
+                }
+                FilledTonalButton(onClick = onFilterChooseDone) {
+                    Text(stringResource(R.string.confirm))
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SearchDateFilter(
+    values: List<FilterValue>,
+    onValueAdd: (FilterValue) -> Unit,
+    onValueRemove: (FilterValue) -> Unit,
+) {
+    val currentValue = values.firstOrNull { it.key == "date" }
+    val pickedYear = currentValue?.value?.split("-")?.getOrNull(0)?.toIntOrNull()
+    val pickedMonth = currentValue?.value?.split("-")?.getOrNull(1)?.toIntOrNull()
+    val currentYear = remember { Calendar.getInstance().get(Calendar.YEAR) }
+    val monthOfPickedYear = if (pickedYear != null) {
+        if (pickedYear == currentYear) Calendar.getInstance().get(Calendar.MONTH) + 1 else 12
+    } else {
+        0
+    }
+
+    FlowRow(
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        for (year in 2014..currentYear) {
+            if (year == pickedYear) {
+                SearchFilterChip(
+                    selected = true,
+                    label = year.toString(),
+                    onClick = { currentValue?.let(onValueRemove) },
+                )
+                for (month in 1..monthOfPickedYear) {
+                    SearchFilterChip(
+                        selected = month == pickedMonth,
+                        label = "$year-$month",
+                        onClick = {
+                            if (month != pickedMonth) {
+                                currentValue?.let(onValueRemove)
+                                onValueAdd(FilterValue("date", "$year-$month"))
+                            } else {
+                                currentValue?.let(onValueRemove)
+                            }
+                        },
+                    )
+                }
+            } else {
+                SearchFilterChip(
+                    selected = false,
+                    label = year.toString(),
+                    onClick = {
+                        currentValue?.let(onValueRemove)
+                        onValueAdd(FilterValue("date", "$year"))
+                    },
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SearchRatingFilter(
+    values: List<FilterValue>,
+    onValueAdd: (FilterValue) -> Unit,
+    onValueRemove: (FilterValue) -> Unit,
+) {
+    val currentValue = values.firstOrNull { it.key == "rating" }
+
+    FlowRow(
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        SearchFilterChip(
+            selected = currentValue?.value == "all",
+            label = stringResource(R.string.rating_all),
+            onClick = {
+                if (currentValue?.value == "all") {
+                    currentValue?.let(onValueRemove)
+                } else {
+                    currentValue?.let(onValueRemove)
+                    onValueAdd(FilterValue("rating", "all"))
+                }
+            },
+        )
+        SearchFilterChip(
+            selected = currentValue?.value == "general",
+            label = stringResource(R.string.rating_general),
+            onClick = {
+                if (currentValue?.value == "general") {
+                    currentValue?.let(onValueRemove)
+                } else {
+                    currentValue?.let(onValueRemove)
+                    onValueAdd(FilterValue("rating", "general"))
+                }
+            },
+        )
+        SearchFilterChip(
+            selected = currentValue?.value == "ecchi",
+            label = stringResource(R.string.rating_ecchi),
+            onClick = {
+                if (currentValue?.value == "ecchi") {
+                    currentValue?.let(onValueRemove)
+                } else {
+                    currentValue?.let(onValueRemove)
+                    onValueAdd(FilterValue("rating", "ecchi"))
+                }
+            },
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SearchTagFilter(
+    values: List<FilterValue>,
+    onValueAdd: (FilterValue) -> Unit,
+    onValueRemove: (FilterValue) -> Unit,
+) {
+    val searchRepository = get<SearchRepository>()
+    val scope = rememberCoroutineScope()
+    val defaultError = stringResource(R.string.search_error_default)
+    val currentTags = values.filter { it.key == "tags" }
+    var query by remember { mutableStateOf("") }
+    var queryLoading by remember { mutableStateOf(false) }
+    var queryActive by remember { mutableStateOf(false) }
+    var errorText by remember { mutableStateOf<String?>(null) }
+    val queryResult = remember { mutableStateListOf<String>() }
+
+    fun search() {
+        if (query.isBlank()) {
+            queryResult.clear()
+            return
+        }
+        scope.launch {
+            queryLoading = true
+            errorText = null
+            runCatching {
+                searchRepository.suggestTags(query)
+            }.onSuccess { result ->
+                queryResult.clear()
+                queryResult.addAll(result)
+            }.onFailure { throwable ->
+                errorText = throwable.localizedMessage ?: defaultError
+            }
+            queryLoading = false
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            currentTags.fastForEach { currentTag ->
+                SearchFilterChip(
+                    selected = true,
+                    label = currentTag.value,
+                    onClick = { onValueRemove(currentTag) },
+                )
+            }
+        }
+
+        DockedSearchBar(
+            query = query,
+            onQueryChange = { query = it },
+            onSearch = { search() },
+            active = queryActive,
+            onActiveChange = { queryActive = it },
+            modifier = Modifier.fillMaxWidth(),
+            trailingIcon = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (queryActive) {
+                        IconButton(onClick = { queryActive = false }) {
+                            Icon(Icons.Outlined.Close, null)
+                        }
+                    }
+                    if (!queryLoading) {
+                        IconButton(onClick = { search() }) {
+                            Icon(Icons.Outlined.Search, null)
+                        }
+                    } else {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    }
+                }
+            },
+        ) {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                if (!errorText.isNullOrBlank()) {
+                    item {
+                        Text(
+                            text = errorText.orEmpty(),
+                            modifier = Modifier.padding(12.dp),
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+                items(queryResult, key = { it }) { tag ->
+                    Text(
+                        text = tag,
+                        modifier = Modifier
+                            .clickable {
+                                onValueAdd(FilterValue("tags", tag))
+                                queryActive = false
+                                query = ""
+                            }
+                            .padding(8.dp)
+                            .fillMaxWidth(),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SearchFilterChip(
+    selected: Boolean,
+    label: String,
+    onClick: () -> Unit,
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label) },
+        colors = FilterChipDefaults.filterChipColors(
+            selectedContainerColor = MaterialTheme.colorScheme.primary,
+            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+        ),
+    )
+}
+
+@Composable
+private fun MediaListModeButton(
+    value: String,
+    onValueChange: (String) -> Unit,
+) {
+    SelectButton(
+        value = value,
+        options = listOf(
+            SelectOption(
+                value = MEDIA_LIST_MODE_DETAIL,
+                label = { Text(stringResource(R.string.media_list_mode_detail)) },
+            ),
+            SelectOption(
+                value = MEDIA_LIST_MODE_THUMBNAIL,
+                label = { Text(stringResource(R.string.media_list_mode_thumbnail)) },
+            ),
+        ),
+        onValueChange = onValueChange,
+    )
+}
+
+private fun mediaListGridCells(listMode: String): StaggeredGridCells = when (listMode) {
+    MEDIA_LIST_MODE_THUMBNAIL -> DynamicStaggeredGridCells(150.dp, 2, 4)
+    else -> StaggeredGridCells.Fixed(1)
+}
+
+private class DynamicStaggeredGridCells(
+    private val minSize: Dp = 150.dp,
+    private val min: Int = 2,
+    private val max: Int = 4,
+) : StaggeredGridCells {
+    override fun Density.calculateCrossAxisCellSizes(availableSize: Int, spacing: Int): IntArray {
+        val count = maxOf((availableSize + spacing) / (minSize.roundToPx() + spacing), 1)
+        val clampedCount = count.coerceIn(min, max)
+        return calculateCellsCrossAxisSizeImpl(availableSize, clampedCount, spacing)
+    }
+}
+
+private fun calculateCellsCrossAxisSizeImpl(
+    gridSize: Int,
+    slotCount: Int,
+    spacing: Int,
+): IntArray {
+    val gridSizeWithoutSpacing = gridSize - spacing * (slotCount - 1)
+    val slotSize = gridSizeWithoutSpacing / slotCount
+    val remainingPixels = gridSizeWithoutSpacing % slotCount
+    return IntArray(slotCount) { index ->
+        slotSize + if (index < remainingPixels) 1 else 0
+    }
+}
+
+@Composable
+private fun SearchMediaCard(
+    media: SearchMediaItem,
+    listMode: String,
+    onClick: () -> Unit,
+) {
+    Card(onClick = onClick) {
+        if (listMode == MEDIA_LIST_MODE_THUMBNAIL) {
+            Column {
+                SearchMediaCover(
+                    media = media,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(220f / 160f),
+                )
+                Column(modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)) {
+                    Text(
+                        text = media.title.trim(),
+                        maxLines = 2,
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = media.authorName,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Box(modifier = Modifier.weight(1f))
+                        Icon(
+                            imageVector = Icons.Outlined.Favorite,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Text(
+                            text = media.numLikes.toString(),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        } else {
+            Row(modifier = Modifier.fillMaxWidth()) {
+                SearchMediaCover(
+                    media = media,
+                    modifier = Modifier
+                        .width(164.dp)
+                        .aspectRatio(220f / 160f),
+                )
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text(
+                        text = media.title.trim(),
+                        maxLines = 3,
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Text(
+                        text = media.authorName,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                    )
+                    Text(
+                        text = media.createdAtLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(
+                            text = stringResource(R.string.num_views, media.numViews),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = stringResource(R.string.num_likes, media.numLikes),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    media.description?.takeIf { it.isNotEmpty() }?.let { description ->
+                        Text(
+                            text = description,
+                            maxLines = 3,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SearchMediaCover(
+    media: SearchMediaItem,
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier = modifier) {
+        AsyncImage(
+            model = media.thumbnailUrl,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
+        if (media.isPrivate) {
+            Badge(
+                modifier = Modifier
+                    .padding(4.dp)
+                    .align(Alignment.TopEnd),
+            ) {
+                Text(text = stringResource(R.string.private_badge))
+            }
+        }
+    }
+}
+
+@Composable
+private fun SearchUserCard(
+    user: SearchUserItem,
+    onClick: () -> Unit,
+) {
+    Card(
+        onClick = {
+            if (user.hasNavigableProfile) {
+                onClick()
+            }
+        },
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            AsyncImage(
+                model = user.avatarUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(52.dp)
+                    .clip(CircleShape),
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = user.displayName,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                )
+                Text(
+                    text = user.displayHandle,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                RoleBadge(text = user.role)
+                if (user.premium) {
+                    RoleBadge(text = stringResource(R.string.premium))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RoleBadge(text: String) {
+    Surface(
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        shape = RoundedCornerShape(999.dp),
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+        )
+    }
+}

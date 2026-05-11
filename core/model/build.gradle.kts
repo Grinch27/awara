@@ -3,6 +3,7 @@
 
 plugins {
     id("awara.android.library")
+    id("awara.android.compose")
     id("awara.kotlin.serialization")
 }
 
@@ -11,5 +12,6 @@ android {
 }
 
 dependencies {
+    implementation("androidx.compose.runtime:runtime:1.4.2")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0")
 }

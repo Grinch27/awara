@@ -70,6 +70,7 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":data"))
     implementation(project(":feature:player"))
+    implementation(project(":feature:search"))
 
     // Android KTX
     implementation("androidx.core:core-ktx:1.10.0")

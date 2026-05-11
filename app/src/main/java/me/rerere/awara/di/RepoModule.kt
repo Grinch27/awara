@@ -5,6 +5,8 @@ import me.rerere.awara.data.repo.CommentRepo
 import me.rerere.awara.data.repo.LocalDataRepo
 import me.rerere.awara.data.repo.MediaRepo
 import me.rerere.awara.data.repo.UserRepo
+import me.rerere.awara.ui.page.search.AppSearchRepository
+import me.rerere.awara.ui.page.search.SearchRepository
 import org.koin.dsl.module
 
 val repoModule = module {
@@ -14,6 +16,10 @@ val repoModule = module {
 
     single {
         MediaRepo(get(), get())
+    }
+
+    single<SearchRepository> {
+        AppSearchRepository(get())
     }
 
     single {

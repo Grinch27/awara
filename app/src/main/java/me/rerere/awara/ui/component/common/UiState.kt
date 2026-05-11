@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -18,17 +19,6 @@ import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieComposition
 import me.rerere.awara.R
-
-sealed interface UiState {
-    object Initial : UiState // 初始化状态, 什么都不显示
-    object Empty : UiState  // 空状态, 表示没有数据
-    object Loading : UiState // 加载状态, 表示正在加载数据
-    object Success : UiState // 成功状态, 表示加载成功
-    class Error(
-        val throwable: Throwable? = null,
-        val message: @Composable (() -> Unit)? = null
-    ) : UiState
-}
 
 @Composable
 fun UiStateBox(
@@ -66,6 +56,7 @@ fun UiStateBox(
             )
 
             errorState.message?.invoke()
+                ?: errorState.messageText?.let { Text(text = it) }
         }
     },
     onErrorRetry: () -> Unit = {},

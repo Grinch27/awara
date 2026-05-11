@@ -36,6 +36,7 @@ import me.rerere.awara.ui.page.message.MessagePage
 import me.rerere.awara.ui.page.playlist.PlaylistDetailPage
 import me.rerere.awara.ui.page.playlist.PlaylistsPage
 import me.rerere.awara.ui.page.search.SearchPage
+import me.rerere.awara.ui.page.search.SearchMediaType
 import me.rerere.awara.ui.page.setting.SettingPage
 import me.rerere.awara.ui.page.user.UserPage
 import me.rerere.awara.ui.page.video.VideoPage
@@ -171,7 +172,22 @@ class RouterActivity : ComponentActivity() {
                 }
 
                 composable("search") {
-                    SearchPage()
+                    SearchPage(
+                        onBack = {
+                            navController.popBackStack()
+                        },
+                        onOpenMedia = { media ->
+                            when (media.type) {
+                                SearchMediaType.VIDEO -> navController.navigate("video/${media.id}")
+                                SearchMediaType.IMAGE -> navController.navigate("image/${media.id}")
+                            }
+                        },
+                        onOpenUser = { user ->
+                            if (user.hasNavigableProfile) {
+                                navController.navigate("user/${user.username}")
+                            }
+                        },
+                    )
                 }
 
                 composable("history") {
