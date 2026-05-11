@@ -15,11 +15,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material3.Icon
@@ -56,6 +58,7 @@ fun CommentCard(
     val context = LocalContext.current
     val user = LocalUserStore.current.collectAsState()
     val router = LocalRouterProvider.current
+    val shouldShowThreadRail = nestingLevel > 0 || showParentContext
     Surface(
         modifier = modifier.padding(start = (nestingLevel * 14).dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (nestingLevel > 0) 0.3f else 0.2f),
@@ -77,12 +80,12 @@ fun CommentCard(
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            if (nestingLevel > 0) {
-                Box(
-                    modifier = Modifier
-                        .width(4.dp)
-                        .fillMaxHeight()
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.28f))
+            if (shouldShowThreadRail) {
+                CommentThreadRail(
+                    modifier = Modifier.padding(top = 2.dp),
+                    accentColor = MaterialTheme.colorScheme.primary.copy(
+                        alpha = if (nestingLevel > 0) 0.32f else 0.24f,
+                    ),
                 )
             }
 
@@ -138,7 +141,8 @@ fun CommentCard(
                     )
                     Column {
                         Text(
-                            text = comment.user?.displayName ?: "",
+                            text = comment.user?.displayName
+                                ?: stringResource(R.string.comment_reply_thread_title),
                             color = MaterialTheme.colorScheme.secondary,
                             style = MaterialTheme.typography.titleSmall,
                             modifier = Modifier.clickable {
@@ -147,10 +151,12 @@ fun CommentCard(
                                     ?.let { router.navigate("user/${it.username}") }
                             }
                         )
-                        Text(
-                            text = comment.user?.displayHandle ?: "",
-                            style = MaterialTheme.typography.labelSmall
-                        )
+                        if (!comment.user?.displayHandle.isNullOrBlank()) {
+                            Text(
+                                text = comment.user?.displayHandle.orEmpty(),
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
                     }
 
                     comment.user?.let {
@@ -225,5 +231,31 @@ fun CommentCard(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun CommentThreadRail(
+    modifier: Modifier = Modifier,
+    accentColor: androidx.compose.ui.graphics.Color,
+) {
+    Box(
+        modifier = modifier
+            .width(12.dp)
+            .fillMaxHeight(),
+        contentAlignment = Alignment.TopCenter,
+    ) {
+        Box(
+            modifier = Modifier
+                .padding(top = 8.dp)
+                .width(2.dp)
+                .fillMaxHeight()
+                .background(accentColor, RoundedCornerShape(999.dp))
+        )
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .background(accentColor, CircleShape)
+        )
     }
 }
