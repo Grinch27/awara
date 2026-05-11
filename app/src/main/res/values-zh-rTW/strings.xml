@@ -16,6 +16,8 @@
     <string name="cancel">取消</string>
     <string name="index_nav_subscription">訂閱</string>
     <string name="setting_title">設置</string>
+    <string name="setting_search_placeholder">搜尋設定</string>
+    <string name="setting_search_empty">沒有符合目前搜尋的設定項目</string>
     <string name="video">視頻</string>
     <string name="image">圖像</string>
     <string name="post">郵政</string>

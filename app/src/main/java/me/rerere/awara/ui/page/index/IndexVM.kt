@@ -85,9 +85,12 @@ class IndexVM(
         )
     }
 
-    fun loadSubscriptions() {
+    fun loadSubscriptions(replaceResults: Boolean = true) {
         viewModelScope.launch {
-            state = state.copy(subscriptionState = UiState.Loading)
+            state = state.copy(
+                subscriptionState = if (replaceResults) UiState.Loading else state.subscriptionState,
+                subscriptionLoadingMore = !replaceResults,
+            )
             runAPICatching {
                 val param = buildSubscriptionQuery().toApiParams()
                 when (state.subscriptionType) {
@@ -95,21 +98,28 @@ class IndexVM(
                     SubscriptionType.IMAGE -> mediaRepo.getImageList(param)
                 }
             }.onSuccess {
+                val mergedList = if (replaceResults) {
+                    it.results
+                } else {
+                    state.subscriptions + it.results
+                }
                 state = state.copy(
-                    subscriptions = it.results,
+                    subscriptions = mergedList,
                     subscriptionTotal = it.count,
-                    subscriptionState = if (it.results.isNotEmpty()) UiState.Success else UiState.Empty,
+                    subscriptionState = if (mergedList.isNotEmpty()) UiState.Success else UiState.Empty,
+                    subscriptionLoadingMore = false,
+                    subscriptionHasMore = mergedList.size < it.count,
                 )
             }.onError {
                 state = state.copy(subscriptionState = UiState.Error(
                     message = {
                         Text(stringResource(error = it))
                     }
-                ))
+                ), subscriptionLoadingMore = false)
             }.onException {
                 state = state.copy(subscriptionState = UiState.Error(message = {
                     Text(it.exception.localizedMessage ?: "Unknown Error")
-                }))
+                }), subscriptionLoadingMore = false)
             }
         }
     }
@@ -157,75 +167,84 @@ class IndexVM(
         }
     }
 
-    fun jumpToSubscriptionPage(page: Int) {
-        if (page == state.subscriptionPage || page < 1) return
-        state = state.copy(subscriptionPage = page)
-        loadSubscriptions()
-    }
-
     fun changeSubscriptionType(it: IndexVM.SubscriptionType) {
-        state = state.copy(subscriptionType = it)
+        state = state.copy(subscriptionType = it, subscriptionPage = 1)
         loadSubscriptions()
     }
 
-    fun loadVideoList() {
+    fun loadVideoList(replaceResults: Boolean = true) {
         viewModelScope.launch {
-            state = state.copy(videoState = UiState.Loading)
+            state = state.copy(
+                videoState = if (replaceResults) UiState.Loading else state.videoState,
+                videoLoadingMore = !replaceResults,
+            )
             runAPICatching {
                 mediaRepo.getVideoList(buildVideoQuery().toApiParams())
             }.onSuccess {
+                val mergedList = if (replaceResults) {
+                    it.results
+                } else {
+                    state.videoList + it.results
+                }
                 state = state.copy(
-                    videoList = it.results,
+                    videoList = mergedList,
                     videoCount = it.count,
-                    videoState = if (it.results.isNotEmpty()) UiState.Success else UiState.Empty,
+                    videoState = if (mergedList.isNotEmpty()) UiState.Success else UiState.Empty,
+                    videoLoadingMore = false,
+                    videoHasMore = mergedList.size < it.count,
                 )
             }.onError {
-                state = state.copy(subscriptionState = UiState.Error(
+                state = state.copy(videoState = UiState.Error(
                     message = {
                         Text(stringResource(error = it))
                     }
-                ))
+                ), videoLoadingMore = false)
             }.onException {
-                state = state.copy(subscriptionState = UiState.Error(message = {
+                state = state.copy(videoState = UiState.Error(message = {
                     Text(it.exception.localizedMessage ?: "Unknown Error")
-                }))
+                }), videoLoadingMore = false)
             }
         }
     }
 
-    fun loadImageList() {
+    fun loadImageList(replaceResults: Boolean = true) {
         viewModelScope.launch {
-            state = state.copy(imageState = UiState.Loading)
+            state = state.copy(
+                imageState = if (replaceResults) UiState.Loading else state.imageState,
+                imageLoadingMore = !replaceResults,
+            )
             runAPICatching {
                 mediaRepo.getImageList(buildImageQuery().toApiParams())
             }.onSuccess {
+                val mergedList = if (replaceResults) {
+                    it.results
+                } else {
+                    state.imageList + it.results
+                }
                 state = state.copy(
-                    imageList = it.results,
+                    imageList = mergedList,
                     imageCount = it.count,
-                    imageState = if (it.results.isNotEmpty()) UiState.Success else UiState.Empty,
+                    imageState = if (mergedList.isNotEmpty()) UiState.Success else UiState.Empty,
+                    imageLoadingMore = false,
+                    imageHasMore = mergedList.size < it.count,
                 )
             }.onError {
-                state = state.copy(subscriptionState = UiState.Error(
+                state = state.copy(imageState = UiState.Error(
                     message = {
                         Text(stringResource(error = it))
                     }
-                ))
+                ), imageLoadingMore = false)
             }.onException {
-                state = state.copy(subscriptionState = UiState.Error(message = {
+                state = state.copy(imageState = UiState.Error(message = {
                     Text(it.exception.localizedMessage ?: "Unknown Error")
-                }))
+                }), imageLoadingMore = false)
             }
         }
     }
 
     fun updateVideoSort(sort: String) {
         videoSort = sort
-        loadVideoList()
-    }
-
-    fun updateVideoPage(it: Int) {
-        if (it == state.videoPage || it < 1) return
-        state = state.copy(videoPage = it)
+        state = state.copy(videoPage = 1)
         loadVideoList()
     }
 
@@ -239,13 +258,32 @@ class IndexVM(
 
     fun updateImageSort(sort: String) {
         imageSort = sort
+        state = state.copy(imagePage = 1)
         loadImageList()
     }
 
-    fun updateImagePage(it: Int) {
-        if (it == state.imagePage || it < 1) return
-        state = state.copy(imagePage = it)
-        loadImageList()
+    fun loadNextSubscriptionPage() {
+        if (state.subscriptionLoadingMore || !state.subscriptionHasMore) {
+            return
+        }
+        state = state.copy(subscriptionPage = state.subscriptionPage + 1)
+        loadSubscriptions(replaceResults = false)
+    }
+
+    fun loadNextVideoPage() {
+        if (state.videoLoadingMore || !state.videoHasMore) {
+            return
+        }
+        state = state.copy(videoPage = state.videoPage + 1)
+        loadVideoList(replaceResults = false)
+    }
+
+    fun loadNextImagePage() {
+        if (state.imageLoadingMore || !state.imageHasMore) {
+            return
+        }
+        state = state.copy(imagePage = state.imagePage + 1)
+        loadImageList(replaceResults = false)
     }
 
     fun addImageFilter(filterValue: FilterValue) {
@@ -258,25 +296,33 @@ class IndexVM(
 
     fun clearImageFilter() {
         imageFilters.clear()
+        state = state.copy(imagePage = 1)
     }
 
     fun clearVideoFilter() {
         videoFilters.clear()
+        state = state.copy(videoPage = 1)
     }
 
     data class IndexState(
         val subscriptionState: UiState = UiState.Initial,
         val subscriptionPage: Int = 1,
         val subscriptionTotal: Int = 0,
+        val subscriptionLoadingMore: Boolean = false,
+        val subscriptionHasMore: Boolean = true,
         val subscriptionType: SubscriptionType = SubscriptionType.VIDEO,
         val subscriptions: List<Media> = emptyList(),
         val videoState: UiState = UiState.Initial,
         val videoPage: Int = 1,
         val videoCount: Int = 0,
+        val videoLoadingMore: Boolean = false,
+        val videoHasMore: Boolean = true,
         val videoList: List<Media> = emptyList(),
         val imageState: UiState = UiState.Initial,
         val imagePage: Int = 1,
         val imageCount: Int = 0,
+        val imageLoadingMore: Boolean = false,
+        val imageHasMore: Boolean = true,
         val imageList: List<Media> = emptyList(),
         val followingCount: Int = 0,
         val followerCount: Int = 0,

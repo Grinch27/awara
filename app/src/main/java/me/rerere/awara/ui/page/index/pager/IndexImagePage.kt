@@ -4,23 +4,32 @@ package me.rerere.awara.ui.page.index.pager
 // TODO(agent): Keep the pager footer focused on sort and list mode only.
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.collectLatest
+import me.rerere.awara.ui.component.common.Spin
 import me.rerere.awara.ui.component.common.UiStateBox
 import me.rerere.awara.ui.component.iwara.MediaCard
 import me.rerere.awara.ui.component.iwara.MediaListModeButton
 import me.rerere.awara.ui.component.iwara.mediaListGridCells
 import me.rerere.awara.ui.component.iwara.rememberMediaListModePreference
-import me.rerere.awara.ui.component.iwara.PaginationBar
 import me.rerere.awara.ui.component.iwara.param.FilterAndSort
 import me.rerere.awara.ui.component.iwara.param.sort.MediaSortOptions
 import me.rerere.awara.ui.page.index.IndexVM
@@ -29,8 +38,55 @@ import me.rerere.awara.ui.page.index.IndexVM
 fun IndexImagePage(vm: IndexVM) {
     val state = vm.state
     var listMode by rememberMediaListModePreference()
+    val gridState = rememberLazyStaggeredGridState()
+
+    LaunchedEffect(gridState, state.imageList.size, state.imageHasMore, state.imageLoadingMore) {
+        snapshotFlow {
+            gridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+        }.collectLatest { lastVisibleIndex ->
+            if (
+                state.imageHasMore &&
+                !state.imageLoadingMore &&
+                state.imageList.isNotEmpty() &&
+                lastVisibleIndex >= state.imageList.size - 6
+            ) {
+                vm.loadNextImagePage()
+            }
+        }
+    }
 
     Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            FilterAndSort(
+                sort = vm.imageSort,
+                onSortChange = {
+                    vm.updateImageSort(it)
+                },
+                sortOptions = MediaSortOptions,
+                filterValues = vm.imageFilters,
+                onFilterAdd = vm::addImageFilter,
+                onFilterRemove = vm::removeImageFilter,
+                onFilterChooseDone = {
+                    vm.loadImageList()
+                },
+                onFilterClear = {
+                    vm.clearImageFilter()
+                    vm.loadImageList()
+                },
+            )
+
+            MediaListModeButton(
+                value = listMode,
+                onValueChange = { listMode = it },
+            )
+        }
+
         UiStateBox(
             state = state.imageState,
             modifier = Modifier
@@ -41,6 +97,7 @@ fun IndexImagePage(vm: IndexVM) {
             }
         ) {
             LazyVerticalStaggeredGrid(
+                state = gridState,
                 columns = mediaListGridCells(listMode),
                 contentPadding = PaddingValues(8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -50,40 +107,20 @@ fun IndexImagePage(vm: IndexVM) {
                 items(state.imageList) {
                     MediaCard(media = it, listMode = listMode)
                 }
+
+                if (state.imageLoadingMore) {
+                    item(span = StaggeredGridItemSpan.FullLine) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 12.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Spin()
+                        }
+                    }
+                }
             }
         }
-
-        PaginationBar(
-            page = state.imagePage,
-            limit = 24,
-            total = state.imageCount,
-            onPageChange = {
-                vm.updateImagePage(it)
-            },
-            leading = {
-                FilterAndSort(
-                    sort = vm.imageSort,
-                    onSortChange = {
-                        vm.updateImageSort(it)
-                    },
-                    sortOptions = MediaSortOptions,
-                    filterValues = vm.imageFilters,
-                    onFilterAdd = vm::addImageFilter,
-                    onFilterRemove = vm::removeImageFilter,
-                    onFilterChooseDone = {
-                        vm.loadImageList()
-                    },
-                    onFilterClear = {
-                        vm.clearImageFilter()
-                    },
-                )
-            },
-            trailing = {
-                MediaListModeButton(
-                    value = listMode,
-                    onValueChange = { listMode = it },
-                )
-            }
-        )
     }
 }

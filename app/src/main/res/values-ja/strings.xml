@@ -16,6 +16,8 @@
     <string name="cancel">キャンセル</string>
     <string name="index_nav_subscription">サブスクリプション</string>
     <string name="setting_title">設定</string>
+    <string name="setting_search_placeholder">設定を検索</string>
+    <string name="setting_search_empty">検索に一致する設定項目がありません</string>
     <string name="video">動画</string>
     <string name="image">画像</string>
     <string name="post">投稿</string>

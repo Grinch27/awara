@@ -32,7 +32,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -128,18 +127,7 @@ fun SearchPage(vm: SearchVM = koinViewModel()) {
         searchBarActive = false
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(stringResource(R.string.search))
-                },
-                navigationIcon = {
-                    BackButton()
-                }
-            )
-        }
-    ) {
+    Scaffold {
         Column(
             modifier = Modifier
                 .padding(it)
@@ -156,6 +144,18 @@ fun SearchPage(vm: SearchVM = koinViewModel()) {
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        BackButton()
+                        Text(
+                            text = stringResource(R.string.search),
+                            style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+                        )
+                    }
+
                     DockedSearchBar(
                         modifier = Modifier.fillMaxWidth(),
                         query = vm.query,

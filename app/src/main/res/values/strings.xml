@@ -18,6 +18,8 @@
     <string name="cancel">Cancel</string>
     <string name="index_nav_subscription">Subscription</string>
     <string name="setting_title">Settings</string>
+    <string name="setting_search_placeholder">Search Settings</string>
+    <string name="setting_search_empty">No settings matched your search</string>
     <string name="video">Video</string>
     <string name="image">Image</string>
     <string name="post">Post</string>
