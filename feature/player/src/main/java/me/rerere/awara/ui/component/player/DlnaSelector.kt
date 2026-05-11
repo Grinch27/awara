@@ -19,7 +19,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
-import me.rerere.awara.ui.component.ext.onlyBottom
 import net.mm2d.upnp.Device
 
 @Composable
