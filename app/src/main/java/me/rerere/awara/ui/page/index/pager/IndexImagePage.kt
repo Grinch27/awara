@@ -110,13 +110,15 @@ fun IndexImagePage(vm: IndexVM) {
 
                 if (state.imageLoadingMore) {
                     item(span = StaggeredGridItemSpan.FullLine) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 12.dp),
-                            contentAlignment = Alignment.Center,
+                        Spin(
+                            show = true,
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Spin()
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 12.dp),
+                            )
                         }
                     }
                 }

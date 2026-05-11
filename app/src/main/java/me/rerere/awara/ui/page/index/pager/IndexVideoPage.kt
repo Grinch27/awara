@@ -110,13 +110,15 @@ fun IndexVideoPage(vm: IndexVM) {
 
                 if (state.videoLoadingMore) {
                     item(span = StaggeredGridItemSpan.FullLine) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 12.dp),
-                            contentAlignment = Alignment.Center,
+                        Spin(
+                            show = true,
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Spin()
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 12.dp),
+                            )
                         }
                     }
                 }
