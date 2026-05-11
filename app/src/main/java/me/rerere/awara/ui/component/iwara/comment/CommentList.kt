@@ -62,21 +62,15 @@ fun CommentList(
     onPostReply: (CommentCreationDto) -> Unit,
 ) {
     val currentComment = state.stack.last()
-    var repling by remember {
-        mutableStateOf(false)
-    }
-    var replyTo by remember {
-        mutableStateOf<Comment?>(null)
-    }
+    var replying by remember { mutableStateOf(false) }
+    var replyTo by remember { mutableStateOf<Comment?>(null) }
 
     BackHandler(state.stack.size > 1) {
         onBack()
         replyTo = null
     }
 
-    Column(
-        modifier = modifier,
-    ) {
+    Column(modifier = modifier) {
         CommentSectionHeader(
             showAlways = false,
             state = state,
@@ -91,13 +85,12 @@ fun CommentList(
             show = state.loading,
             modifier = Modifier
                 .weight(1f)
-                .fillMaxWidth()
+                .fillMaxWidth(),
         ) {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize(),
+                modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
-                contentPadding = PaddingValues(10.dp)
+                contentPadding = PaddingValues(10.dp),
             ) {
                 items(currentComment.comments) { comment ->
                     CommentCard(
@@ -109,20 +102,20 @@ fun CommentList(
                             replyTo = it
                         },
                         onReply = {
-                            repling = true
+                            replying = true
                             replyTo = it
-                        }
+                        },
                     )
                 }
             }
         }
 
         CommentReplyFooter(
-            replying = repling,
+            replying = replying,
             replyTo = replyTo,
             currentComment = currentComment,
             contentPadding = contentPadding,
-            onReplyingChange = { repling = it },
+            onReplyingChange = { replying = it },
             onPageChange = onPageChange,
             onPostReply = onPostReply,
         )
@@ -139,21 +132,17 @@ fun EmbeddedCommentSection(
     onPush: (String) -> Unit,
     onPostReply: (CommentCreationDto) -> Unit,
 ) {
-                    currentComment.comments.forEach { comment ->
-                        CommentCard(
-                            comment = comment,
-                            nestingLevel = if (state.stack.size > 1) 1 else 0,
-                            showParentContext = state.stack.size > 1,
-                            onLoadReplies = {
-                                onPush(it.id)
-                                replyTo = it
-                            },
-                            onReply = {
-                                repling = true
-                                replyTo = it
-                            },
-                        )
-                    }
+    val currentComment = state.stack.last()
+    var replying by remember { mutableStateOf(false) }
+    var replyTo by remember { mutableStateOf<Comment?>(null) }
+
+    BackHandler(state.stack.size > 1) {
+        onBack()
+        replyTo = null
+    }
+
+    Column(modifier = modifier) {
+        CommentSectionHeader(
             showAlways = true,
             state = state,
             currentComment = currentComment,
@@ -195,7 +184,7 @@ fun EmbeddedCommentSection(
                                 replyTo = it
                             },
                             onReply = {
-                                repling = true
+                                replying = true
                                 replyTo = it
                             },
                         )
@@ -205,11 +194,11 @@ fun EmbeddedCommentSection(
         }
 
         CommentReplyFooter(
-            replying = repling,
+            replying = replying,
             replyTo = replyTo,
             currentComment = currentComment,
             contentPadding = contentPadding,
-            onReplyingChange = { repling = it },
+            onReplyingChange = { replying = it },
             onPageChange = onPageChange,
             onPostReply = onPostReply,
         )
@@ -279,21 +268,13 @@ private fun CommentReplyFooter(
         label = "ReplyBar",
         transitionSpec = {
             if (targetState) {
-                slideInHorizontally(
-                    initialOffsetX = { -it }
-                ) with slideOutHorizontally(
-                    targetOffsetX = { -it }
-                )
+                slideInHorizontally(initialOffsetX = { -it }) with slideOutHorizontally(targetOffsetX = { -it })
             } else {
-                slideInHorizontally(
-                    initialOffsetX = { it }
-                ) with slideOutHorizontally(
-                    targetOffsetX = { it }
-                )
+                slideInHorizontally(initialOffsetX = { it }) with slideOutHorizontally(targetOffsetX = { it })
             }
-        }
-    ) {
-        if (it) {
+        },
+    ) { replyingActive ->
+        if (replyingActive) {
             Surface(
                 modifier = Modifier
                     .imePadding()
@@ -306,15 +287,13 @@ private fun CommentReplyFooter(
                         .padding(contentPadding)
                         .padding(6.dp)
                         .fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     IconButton(onClick = { onReplyingChange(false) }) {
                         Icon(Icons.Outlined.Close, null)
                     }
 
-                    var body by remember {
-                        mutableStateOf("")
-                    }
+                    var body by remember { mutableStateOf("") }
                     TextField(
                         value = body,
                         onValueChange = { body = it },
@@ -342,11 +321,11 @@ private fun CommentReplyFooter(
                                     CommentCreationDto(
                                         body = body,
                                         parentId = replyTo?.id,
-                                    )
+                                    ),
                                 )
                                 body = ""
-                            }
-                        )
+                            },
+                        ),
                     )
 
                     FilledTonalButton(
@@ -355,10 +334,10 @@ private fun CommentReplyFooter(
                                 CommentCreationDto(
                                     body = body,
                                     parentId = replyTo?.id,
-                                )
+                                ),
                             )
                             body = ""
-                        }
+                        },
                     ) {
                         Icon(Icons.Outlined.Send, null)
                     }
@@ -374,13 +353,11 @@ private fun CommentReplyFooter(
                 contentPadding = contentPadding,
                 trailing = {
                     FilledTonalButton(
-                        onClick = {
-                            onReplyingChange(true)
-                        },
+                        onClick = { onReplyingChange(true) },
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.ModeComment,
-                            contentDescription = null
+                            contentDescription = null,
                         )
                     }
                 },
