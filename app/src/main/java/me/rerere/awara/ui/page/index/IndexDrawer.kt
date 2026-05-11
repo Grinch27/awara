@@ -132,25 +132,21 @@ fun IndexDrawer(
                         )
                     }
 
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    Text(
+                        text = if (userState.user != null) {
+                            accountSubtitle
+                        } else {
+                            stringResource(R.string.login)
+                        },
+                        style = MaterialTheme.typography.labelMedium,
                         modifier = Modifier.padding(top = 8.dp),
-                    ) {
-                        DrawerHeaderChip(
-                            text = selectedNavigationTitle ?: stringResource(R.string.app_name),
-                        )
-                        DrawerHeaderChip(
-                            text = if (userState.user != null) {
-                                accountSubtitle
-                            } else {
-                                stringResource(R.string.saved_views_guest_state)
-                            },
-                        )
-                    }
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
 
                 if (userState.user != null) {
-                    IconButton(
+                    TextButton(
                         onClick = {
                             userStore(UserStoreAction.Logout)
                             message.info {
@@ -158,7 +154,7 @@ fun IndexDrawer(
                             }
                         },
                     ) {
-                        Icon(androidx.compose.material.icons.Icons.Outlined.ExitToApp, contentDescription = "Logout")
+                        Text(text = stringResource(R.string.logout))
                     }
                 }
             }
