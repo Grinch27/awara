@@ -8,16 +8,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Download
-import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.FeaturedPlayList
-import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Lens
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Message
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Badge
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
@@ -47,7 +42,6 @@ import me.rerere.awara.ui.LocalRouterProvider
 import me.rerere.awara.ui.component.common.TodoStatus
 import me.rerere.awara.ui.page.index.IndexDrawer
 import me.rerere.awara.ui.page.index.IndexHomeLandingPage
-import me.rerere.awara.ui.page.index.IndexQuickAction
 import me.rerere.awara.ui.page.index.SETTING_HOME_DEFAULT_SECTION
 import me.rerere.awara.ui.page.index.IndexVM
 import me.rerere.awara.ui.page.index.indexNavigations
@@ -90,70 +84,6 @@ fun IndexPagePhoneLayout(vm: IndexVM) {
     }
     val currentNavigation = navigations.firstOrNull { it.name == selectedNavigationName }
         ?: navigations.firstOrNull()
-    val drawerQuickActions = buildList {
-        add(
-            IndexQuickAction(
-                key = "history",
-                labelRes = R.string.drawer_history,
-                icon = Icons.Outlined.History,
-                onClick = {
-                    scope.launch { drawerState.close() }
-                    navController.navigate("history")
-                },
-            )
-        )
-        add(
-            IndexQuickAction(
-                key = "download",
-                labelRes = R.string.drawer_downloads,
-                icon = Icons.Outlined.Download,
-                onClick = {
-                    scope.launch { drawerState.close() }
-                    navController.navigate("download")
-                },
-            )
-        )
-        add(
-            IndexQuickAction(
-                key = "setting",
-                labelRes = R.string.drawer_setting,
-                icon = Icons.Outlined.Settings,
-                onClick = {
-                    scope.launch { drawerState.close() }
-                    navController.navigate("setting")
-                },
-            )
-        )
-    }
-    val homeQuickActions = buildList {
-        if (userState.user != null) {
-            add(
-                IndexQuickAction(
-                    key = "favorite",
-                    labelRes = R.string.drawer_favorite,
-                    icon = Icons.Outlined.FavoriteBorder,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate("favorites")
-                    },
-                )
-            )
-            add(
-                IndexQuickAction(
-                    key = "playlist",
-                    labelRes = R.string.drawer_playlists,
-                    icon = Icons.Outlined.FeaturedPlayList,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        userState.user?.id?.let { userId ->
-                            navController.navigate("playlists/$userId")
-                        }
-                    },
-                )
-            )
-        }
-        addAll(drawerQuickActions)
-    }
 
     ModalNavigationDrawer(
         drawerContent = {
@@ -163,19 +93,13 @@ fun IndexPagePhoneLayout(vm: IndexVM) {
                     navigations = navigations,
                     selectedNavigationName = currentNavigation?.name,
                     onNavigationSelected = { navigationName ->
-                        if (navigationName in setOf("history", "download", "setting")) {
-                            scope.launch {
-                                drawerState.close()
-                                navController.navigate(navigationName)
-                            }
-                        } else if (navigations.any { it.name == navigationName }) {
+                        if (navigations.any { it.name == navigationName }) {
                             selectedNavigationName = navigationName
                             scope.launch {
                                 drawerState.close()
                             }
                         }
                     },
-                    quickActions = drawerQuickActions,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -269,7 +193,6 @@ fun IndexPagePhoneLayout(vm: IndexVM) {
                                     selectedNavigationName = navigationName
                                 }
                             },
-                            quickActions = homeQuickActions,
                             modifier = Modifier.fillMaxSize(),
                         )
                     }

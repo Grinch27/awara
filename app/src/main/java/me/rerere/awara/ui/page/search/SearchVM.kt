@@ -63,64 +63,64 @@ class SearchVM(
         search()
     }
 
-    fun search() {
+    fun search(replaceResults: Boolean = true) {
         viewModelScope.launch {
-            state = state.copy(uiState = UiState.Loading)
+            state = state.copy(
+                uiState = if (replaceResults) UiState.Loading else state.uiState,
+                loadingMore = !replaceResults,
+            )
             runAPICatching {
                 when (state.searchType) {
                     "video" -> {
                         val pager = mediaRepo.getVideoList(
                             buildMediaSearchQuery(FeedScope.SEARCH_VIDEO).toApiParams()
                         )
-                        state = if (pager.results.isEmpty()) {
-                            state.copy(
-                                uiState = UiState.Empty,
-                                count = pager.count,
-                                videoList = emptyList()
-                            )
+                        val mergedList = if (replaceResults) {
+                            pager.results
                         } else {
-                            state.copy(
-                                uiState = UiState.Success,
-                                count = pager.count,
-                                videoList = pager.results
-                            )
+                            state.videoList + pager.results
                         }
+                        state = state.copy(
+                            uiState = if (mergedList.isNotEmpty()) UiState.Success else UiState.Empty,
+                            count = pager.count,
+                            videoList = mergedList,
+                            loadingMore = false,
+                            hasMore = mergedList.size < pager.count,
+                        )
                     }
 
                     "image" -> {
                         val pager = mediaRepo.getImageList(
                             buildMediaSearchQuery(FeedScope.SEARCH_IMAGE).toApiParams()
                         )
-                        state = if (pager.results.isEmpty()) {
-                            state.copy(
-                                uiState = UiState.Empty,
-                                count = pager.count,
-                                imageList = emptyList()
-                            )
+                        val mergedList = if (replaceResults) {
+                            pager.results
                         } else {
-                            state.copy(
-                                uiState = UiState.Success,
-                                count = pager.count,
-                                imageList = pager.results
-                            )
+                            state.imageList + pager.results
                         }
+                        state = state.copy(
+                            uiState = if (mergedList.isNotEmpty()) UiState.Success else UiState.Empty,
+                            count = pager.count,
+                            imageList = mergedList,
+                            loadingMore = false,
+                            hasMore = mergedList.size < pager.count,
+                        )
                     }
 
                     "user" -> {
                         val pager = mediaRepo.searchUser(query, state.page - 1)
-                        state = if (pager.results.isEmpty()) {
-                            state.copy(
-                                uiState = UiState.Empty,
-                                count = pager.count,
-                                userList = emptyList()
-                            )
+                        val mergedList = if (replaceResults) {
+                            pager.results
                         } else {
-                            state.copy(
-                                uiState = UiState.Success,
-                                count = pager.count,
-                                userList = pager.results
-                            )
+                            state.userList + pager.results
                         }
+                        state = state.copy(
+                            uiState = if (mergedList.isNotEmpty()) UiState.Success else UiState.Empty,
+                            count = pager.count,
+                            userList = mergedList,
+                            loadingMore = false,
+                            hasMore = mergedList.size < pager.count,
+                        )
                     }
 
                     else -> {}
@@ -139,6 +139,14 @@ class SearchVM(
                 ))
             }
         }
+    }
+
+    fun loadNextPage() {
+        if (state.loadingMore || !state.hasMore || query.isBlank()) {
+            return
+        }
+        state = state.copy(page = state.page + 1)
+        search(replaceResults = false)
     }
 
     fun jumpToPage(page: Int) {
@@ -198,6 +206,8 @@ class SearchVM(
         val searchType: String = "video",
         val page: Int = 1,
         val count: Int = 0,
+        val loadingMore: Boolean = false,
+        val hasMore: Boolean = true,
         val videoList: List<Video> = emptyList(),
         val imageList: List<Image> = emptyList(),
         val userList: List<User> = emptyList(),

@@ -1,14 +1,20 @@
 package me.rerere.awara.ui.component.iwara.comment
 
+// TODO(user): Decide whether nested reply cards should eventually collapse long branches or keep always-expanded excerpts.
+// TODO(agent): Keep reply depth visible with the left connector and parent excerpt, but avoid overcomplicating the card chrome.
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -64,143 +70,157 @@ fun CommentCard(
         ),
         shape = RoundedCornerShape(16.dp),
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .animateContentSize()
                 .padding(horizontal = 10.dp, vertical = 9.dp)
                 .fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            if (showParentContext && comment.parent != null) {
-                val parentLabel = comment.parent.user?.displayName
-                    ?: stringResource(R.string.comment_reply_thread_title)
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.Top,
+            if (nestingLevel > 0) {
+                Box(
+                    modifier = Modifier
+                        .width(4.dp)
+                        .fillMaxHeight()
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.28f))
+                )
+            }
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                if (showParentContext && comment.parent != null) {
+                    val parentLabel = comment.parent.user?.displayName
+                        ?: stringResource(R.string.comment_reply_thread_title)
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Spacer(modifier = Modifier.width(3.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = stringResource(R.string.comment_reply_to, parentLabel),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            )
-                            Text(
-                                text = comment.parent.body,
-                                style = MaterialTheme.typography.bodySmall,
-                                maxLines = 2,
-                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.Top,
+                        ) {
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(R.string.comment_reply_to, parentLabel),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                )
+                                Text(
+                                    text = comment.parent.body,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    maxLines = 2,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                )
+                            }
                         }
                     }
                 }
-            }
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Avatar(
-                    user = comment.user,
-                    modifier = Modifier.size(30.dp),
-                    onClick = {
-                        comment.user
-                            ?.takeIf { it.hasNavigableProfile }
-                            ?.let { router.navigate("user/${it.username}") }
-                    }
-                )
-                Column {
-                    Text(
-                        text = comment.user?.displayName ?: "",
-                        color = MaterialTheme.colorScheme.secondary,
-                        style = MaterialTheme.typography.titleSmall,
-                        modifier = Modifier.clickable {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Avatar(
+                        user = comment.user,
+                        modifier = Modifier.size(30.dp),
+                        onClick = {
                             comment.user
                                 ?.takeIf { it.hasNavigableProfile }
                                 ?.let { router.navigate("user/${it.username}") }
                         }
                     )
-                    Text(
-                        text = comment.user?.displayHandle ?: "",
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                }
-
-                comment.user?.let {
-                    UserStatus(user = it)
-                }
-
-                // "Me" Tag
-                if(comment.user?.id == user.user?.id) {
-                    Surface(
-                        shape = RoundedCornerShape(4.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                    ) {
+                    Column {
                         Text(
-                            text = stringResource(R.string.comment_me_badge),
-                            style = MaterialTheme.typography.labelMedium,
-                            modifier = Modifier.padding(vertical = 3.dp, horizontal = 7.dp)
+                            text = comment.user?.displayName ?: "",
+                            color = MaterialTheme.colorScheme.secondary,
+                            style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.clickable {
+                                comment.user
+                                    ?.takeIf { it.hasNavigableProfile }
+                                    ?.let { router.navigate("user/${it.username}") }
+                            }
+                        )
+                        Text(
+                            text = comment.user?.displayHandle ?: "",
+                            style = MaterialTheme.typography.labelSmall
                         )
                     }
+
+                    comment.user?.let {
+                        UserStatus(user = it)
+                    }
+
+                    // "Me" Tag
+                    if(comment.user?.id == user.user?.id) {
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                        ) {
+                            Text(
+                                text = stringResource(R.string.comment_me_badge),
+                                style = MaterialTheme.typography.labelMedium,
+                                modifier = Modifier.padding(vertical = 3.dp, horizontal = 7.dp)
+                            )
+                        }
+                    }
                 }
-            }
 
-            RichText(
-                text = comment.body,
-                onLinkClick = {
-                    context.openUrl(it)
-                },
-                style = MaterialTheme.typography.bodyMedium,
-            )
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
-            ) {
-                Text(
-                    text = comment.createdAt.toLocalDateTimeString(),
-                    style = MaterialTheme.typography.labelMedium
+                RichText(
+                    text = comment.body,
+                    onLinkClick = {
+                        context.openUrl(it)
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
                 )
 
-                Spacer(modifier = Modifier.weight(1f))
-
-                AnimatedVisibility(
-                    visible = comment.numReplies > 0
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
                 ) {
-                    TextButton(
-                        onClick = {
-                            onLoadReplies(comment)
-                        },
-                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.comment_replies_count, comment.numReplies),
-                            style = MaterialTheme.typography.labelMedium,
-                        )
-                        Icon(Icons.Outlined.KeyboardArrowDown, null)
-                    }
-                }
+                    Text(
+                        text = comment.createdAt.toLocalDateTimeString(),
+                        style = MaterialTheme.typography.labelMedium
+                    )
 
-                if(comment.parent == null) {
-                    TextButton(
-                        onClick = {
-                            onReply(comment)
-                        },
-                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    AnimatedVisibility(
+                        visible = comment.numReplies > 0
                     ) {
-                        Text(
-                            text = stringResource(R.string.comment_reply_action),
-                            style = MaterialTheme.typography.labelMedium,
-                        )
+                        TextButton(
+                            onClick = {
+                                onLoadReplies(comment)
+                            },
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.comment_replies_count, comment.numReplies),
+                                style = MaterialTheme.typography.labelMedium,
+                            )
+                            Icon(Icons.Outlined.KeyboardArrowDown, null)
+                        }
+                    }
+
+                    if(comment.parent == null) {
+                        TextButton(
+                            onClick = {
+                                onReply(comment)
+                            },
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.comment_reply_action),
+                                style = MaterialTheme.typography.labelMedium,
+                            )
+                        }
                     }
                 }
             }

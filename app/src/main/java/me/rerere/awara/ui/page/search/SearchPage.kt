@@ -3,20 +3,20 @@ package me.rerere.awara.ui.page.search
 // TODO(user): Decide whether saved views should surface here as first-class search presets once the search summary row settles.
 // TODO(agent): If search gains server-side suggestion APIs later, replace the local-only quick history chips with ranked mixed suggestions instead of stacking another row.
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.History
@@ -34,18 +34,22 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.collectLatest
 import me.rerere.awara.R
 import me.rerere.awara.ui.component.common.BackButton
+import me.rerere.awara.ui.component.common.Spin
 import me.rerere.awara.ui.component.common.SelectButton
 import me.rerere.awara.ui.component.common.SelectOption
 import me.rerere.awara.ui.component.common.UiState
@@ -54,7 +58,6 @@ import me.rerere.awara.ui.component.ext.DynamicStaggeredGridCells
 import me.rerere.awara.ui.component.iwara.MediaCard
 import me.rerere.awara.ui.component.iwara.MediaListModeButton
 import me.rerere.awara.ui.component.iwara.mediaListGridCells
-import me.rerere.awara.ui.component.iwara.PaginationBar
 import me.rerere.awara.ui.component.iwara.param.FilterAndSort
 import me.rerere.awara.ui.component.iwara.param.FilterChipCloseIcon
 import me.rerere.awara.ui.component.iwara.param.FilterValue
@@ -69,6 +72,7 @@ fun SearchPage(vm: SearchVM = koinViewModel()) {
     var listMode by rememberMediaListModePreference()
     var recentQueriesRaw by rememberStringPreference(key = "search.recent_queries", default = "")
     var searchBarActive by rememberSaveable { mutableStateOf(false) }
+    val gridState = rememberLazyStaggeredGridState()
     val recentQueries = remember(recentQueriesRaw) {
         recentQueriesRaw.lineSequence()
             .map(String::trim)
@@ -90,6 +94,22 @@ fun SearchPage(vm: SearchVM = koinViewModel()) {
     val showSearchSummary = vm.query.isNotBlank() || activeFilters.isNotEmpty() || (
         vm.state.searchType != "user" && vm.state.uiState != UiState.Initial
     )
+
+    val currentItemCount = when (vm.state.searchType) {
+        "image" -> vm.state.imageList.size
+        "user" -> vm.state.userList.size
+        else -> vm.state.videoList.size
+    }
+
+    LaunchedEffect(gridState, vm.state.searchType, currentItemCount, vm.state.hasMore, vm.state.loadingMore) {
+        snapshotFlow {
+            gridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+        }.collectLatest { lastVisibleIndex ->
+            if (vm.state.hasMore && !vm.state.loadingMore && currentItemCount > 0 && lastVisibleIndex >= currentItemCount - 6) {
+                vm.loadNextPage()
+            }
+        }
+    }
 
     fun persistRecentQuery() {
         val trimmedQuery = vm.query.trim()
@@ -118,69 +138,12 @@ fun SearchPage(vm: SearchVM = koinViewModel()) {
                     BackButton()
                 }
             )
-        },
-        bottomBar = {
-            PaginationBar(
-                page = vm.state.page,
-                limit = 32,
-                total = vm.state.count,
-                onPageChange = {
-                     vm.jumpToPage(it)
-                },
-                leading = {
-                    if (vm.state.searchType != "user") {
-                        FilterAndSort(
-                            sort = if (vm.state.searchType == "image") vm.imageSort else vm.videoSort,
-                            onSortChange = {
-                                if (vm.state.searchType == "image") {
-                                    vm.updateImageSort(it)
-                                } else {
-                                    vm.updateVideoSort(it)
-                                }
-                            },
-                            sortOptions = MediaSortOptions,
-                            filterValues = if (vm.state.searchType == "image") vm.imageFilters else vm.videoFilters,
-                            onFilterAdd = {
-                                if (vm.state.searchType == "image") {
-                                    vm.addImageFilter(it)
-                                } else {
-                                    vm.addVideoFilter(it)
-                                }
-                            },
-                            onFilterRemove = {
-                                if (vm.state.searchType == "image") {
-                                    vm.removeImageFilter(it)
-                                } else {
-                                    vm.removeVideoFilter(it)
-                                }
-                            },
-                            onFilterChooseDone = {
-                                vm.submitSearch()
-                            },
-                            onFilterClear = {
-                                if (vm.state.searchType == "image") {
-                                    vm.clearImageFilter()
-                                } else {
-                                    vm.clearVideoFilter()
-                                }
-                            },
-                        )
-                    }
-                },
-                contentPadding = WindowInsets.navigationBars.asPaddingValues(),
-                trailing = {
-                    if (vm.state.searchType != "user") {
-                        MediaListModeButton(
-                            value = listMode,
-                            onValueChange = { listMode = it },
-                        )
-                    }
-                }
-            )
         }
     ) {
         Column(
-            modifier = Modifier.padding(it),
+            modifier = Modifier
+                .padding(it)
+                .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
@@ -307,6 +270,56 @@ fun SearchPage(vm: SearchVM = koinViewModel()) {
                         )
                     }
 
+                    if (vm.state.searchType != "user") {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            FilterAndSort(
+                                sort = if (vm.state.searchType == "image") vm.imageSort else vm.videoSort,
+                                onSortChange = {
+                                    if (vm.state.searchType == "image") {
+                                        vm.updateImageSort(it)
+                                    } else {
+                                        vm.updateVideoSort(it)
+                                    }
+                                },
+                                sortOptions = MediaSortOptions,
+                                filterValues = if (vm.state.searchType == "image") vm.imageFilters else vm.videoFilters,
+                                onFilterAdd = {
+                                    if (vm.state.searchType == "image") {
+                                        vm.addImageFilter(it)
+                                    } else {
+                                        vm.addVideoFilter(it)
+                                    }
+                                },
+                                onFilterRemove = {
+                                    if (vm.state.searchType == "image") {
+                                        vm.removeImageFilter(it)
+                                    } else {
+                                        vm.removeVideoFilter(it)
+                                    }
+                                },
+                                onFilterChooseDone = {
+                                    vm.submitSearch()
+                                },
+                                onFilterClear = {
+                                    if (vm.state.searchType == "image") {
+                                        vm.clearImageFilter()
+                                    } else {
+                                        vm.clearVideoFilter()
+                                    }
+                                },
+                            )
+
+                            MediaListModeButton(
+                                value = listMode,
+                                onValueChange = { listMode = it },
+                            )
+                        }
+                    }
+
                     if (recentQueries.isNotEmpty() && !searchBarActive) {
                         Text(
                             text = stringResource(R.string.search_recent_quick_title),
@@ -384,6 +397,7 @@ fun SearchPage(vm: SearchVM = koinViewModel()) {
                     }
                 ) {
                     LazyVerticalStaggeredGrid(
+                        state = gridState,
                         columns = if (vm.state.searchType == "user") {
                             DynamicStaggeredGridCells(180.dp, 1, 2)
                         } else {
@@ -410,6 +424,21 @@ fun SearchPage(vm: SearchVM = koinViewModel()) {
                             "user" -> {
                                 items(vm.state.userList) {
                                     UserCard(user = it)
+                                }
+                            }
+                        }
+
+                        if (vm.state.loadingMore) {
+                            item(span = StaggeredGridItemSpan.FullLine) {
+                                Spin(
+                                    show = true,
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 12.dp),
+                                    )
                                 }
                             }
                         }

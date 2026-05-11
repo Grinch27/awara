@@ -25,7 +25,7 @@
 3. 设置页的数据入口不再只覆盖日志与保存视图：当前已经补上统一的本地数据备份包，覆盖保存视图、历史、下载记录和不含登录态的安全设置；应用日志仍保持单独的脱敏导出通道。
 4. 首页壳已经继续按 EhViewer 的使用习惯收敛：手机首页改为抽屉优先、平板首页改为常驻左侧主导航，频道切换、快捷入口和固定保存视图都统一收进首页左侧壳层，不再依赖底部导航或顶部标签条作为主入口。
 5. 首页左侧壳层已经继续往 EhViewer / FreshRSS 的信息组织方式靠拢：主浏览、社区、快捷入口和保存视图分段展示，选中态和保存视图条目都已经改成更高信息密度的两行布局。
-6. 保存视图已经继续进入“标签化 + 智能订阅 + 独立管理”阶段：本地模型、导出导入和首页保存入口都已经补上 tags / smartSubscription / pinned 元数据，同时已经新增显式 `pinOrder`、标签过滤、固定顺序调整和独立保存视图管理页。
+6. 保存视图功能已经从当前代码中移除，相关本地模型、导出导入入口和管理页不再作为本阶段目标；后续只保留统一的 `FeedQuery` / `FeedFilter` 查询模型。
 7. 网络栈已经补上第一层共享边界：DoH 偏好现在继续保持全局生效，并通过统一的 `NetworkTransportPolicy` 接口应用到共享客户端；ECH 方案已经明确下线，不再保留占位偏好或未落地的传输分支。
 
 这意味着后续阶段不应再把“保存视图导出导入”或“基础本地数据备份”当成待设计项，而应该继续往“跨页面复用、固定入口、搜索模板复用、类型化查询模型收敛”推进。
@@ -158,7 +158,7 @@
 4. `FeedQuery`
    一个完整查询对象，包含 `scope`、`keyword`、`sort`、`filters`、`page`、`pageSize`。
 
-5. `SavedFeedView`
+5. `SavedFeedView`（已移除）
    表示“保存的订阅视图”，包含名称、描述、图标、默认排序、筛选集和是否固定到首页。
 
 ## 5.3 数据层设计
@@ -183,7 +183,7 @@
 可以抽一个 `FeedQueryMapper`，专门负责：
 
 1. `FeedQuery -> Map<String, String>`
-2. `SavedFeedView + page -> FeedQuery`
+2. `FeedQuery -> Map<String, String>`
 3. `FilterValue legacy -> FeedFilter`
 
 这样做可以先兼容现有 UI，再逐步把旧的 `FilterValue` 调用点迁走。
@@ -307,7 +307,7 @@
    当前 [.github/workflows/build-apk.yml](../.github/workflows/build-apk.yml)、[.github/workflows/build-apk-docker.yml](../.github/workflows/build-apk-docker.yml) 都会执行 [scripts/sync-gradle-wrapper.sh](../scripts/sync-gradle-wrapper.sh)，因此远端构建已经不是固定死在 `9.1.0`。
 
 4. `FeedQuery` 相关领域对象已经开始存在，只是还没有完成真正的模块迁移和持久化接线。
-   当前 [app/src/main/java/me/rerere/awara/domain/feed/FeedQuery.kt](../app/src/main/java/me/rerere/awara/domain/feed/FeedQuery.kt) 已经有 `FeedQuery`、`FeedScope`、`FeedFilter`、`SavedFeedView`，并且 [app/src/main/java/me/rerere/awara/domain/feed/LegacyFeedQueryMapper.kt](../app/src/main/java/me/rerere/awara/domain/feed/LegacyFeedQueryMapper.kt) 也已经开始承担旧 `FilterValue` 到新查询模型的过渡。因此第一阶段更准确的目标不是“新增模型”，而是把这些模型迁到 `:core:model` / `:data`，再接上 Room 和页面状态。
+   当前 [app/src/main/java/me/rerere/awara/domain/feed/FeedQuery.kt](../app/src/main/java/me/rerere/awara/domain/feed/FeedQuery.kt) 已经保留 `FeedQuery`、`FeedScope`、`FeedFilter`，而 `SavedFeedView` 相关实现已移除。因此第一阶段更准确的目标不是继续补救保存视图，而是继续把统一查询模型迁到 `:core:model` / `:data`，再接上 Room 和页面状态。
 
 ### 9.2 当前不建议立刻改动的点
 

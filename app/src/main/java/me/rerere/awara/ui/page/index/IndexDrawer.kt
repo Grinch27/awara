@@ -49,7 +49,6 @@ fun IndexDrawer(
     navigations: List<IndexNavigation>,
     selectedNavigationName: String?,
     onNavigationSelected: (String) -> Unit,
-    quickActions: List<IndexQuickAction>,
     modifier: Modifier = Modifier,
 ) {
     val userStore = LocalUserStore.current
@@ -198,7 +197,6 @@ fun IndexDrawer(
             navigations = navigations,
             selectedNavigationName = selectedNavigationName,
             onNavigationSelected = onNavigationSelected,
-            quickActions = quickActions,
         )
     }
 }
@@ -209,9 +207,8 @@ private fun DrawerNavigationSection(
     navigations: List<IndexNavigation>,
     selectedNavigationName: String?,
     onNavigationSelected: (String) -> Unit,
-    quickActions: List<IndexQuickAction>,
 ) {
-    if (navigations.isEmpty() && quickActions.isEmpty()) {
+    if (navigations.isEmpty()) {
         return
     }
 
@@ -232,31 +229,6 @@ private fun DrawerNavigationSection(
             onClick = {
                 onNavigationSelected(navigation.name)
             },
-        )
-    }
-
-    quickActions.forEach { action ->
-        DrawerItem(
-            icon = {
-                Icon(action.icon, stringResource(action.labelRes))
-            },
-            label = {
-                Text(
-                    text = stringResource(action.labelRes),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            },
-            tail = if (action.badgeCount > 0) {
-                {
-                    Badge {
-                        Text(action.badgeCount.toString())
-                    }
-                }
-            } else {
-                null
-            },
-            onClick = action.onClick,
         )
     }
 }
