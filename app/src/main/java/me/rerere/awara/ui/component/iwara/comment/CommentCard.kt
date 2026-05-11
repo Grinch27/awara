@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -50,11 +51,11 @@ fun CommentCard(
     val user = LocalUserStore.current.collectAsState()
     val router = LocalRouterProvider.current
     Surface(
-        modifier = modifier.padding(start = (nestingLevel * 12).dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.22f),
+        modifier = modifier.padding(start = (nestingLevel * 14).dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (nestingLevel > 0) 0.3f else 0.2f),
         tonalElevation = 1.dp,
         border = BorderStroke(
-            width = 1.dp,
+            width = if (nestingLevel > 0) 1.2.dp else 1.dp,
             color = if (nestingLevel > 0) {
                 MaterialTheme.colorScheme.primary.copy(alpha = 0.28f)
             } else {
@@ -70,6 +71,40 @@ fun CommentCard(
                 .fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
+            if (showParentContext && comment.parent?.user != null) {
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.Top,
+                    ) {
+                        Spacer(
+                            modifier = Modifier
+                                .width(3.dp)
+                                .size(height = 36.dp, width = 3.dp)
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.comment_reply_to, comment.parent.user.displayName),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            )
+                            Text(
+                                text = comment.parent.body,
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 2,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            )
+                        }
+                    }
+                }
+            }
+
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth(),
@@ -117,22 +152,6 @@ fun CommentCard(
                             modifier = Modifier.padding(vertical = 3.dp, horizontal = 7.dp)
                         )
                     }
-                }
-            }
-
-            if (showParentContext && comment.parent?.user != null) {
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
-                    shape = RoundedCornerShape(999.dp),
-                ) {
-                    Text(
-                        text = stringResource(
-                            R.string.comment_reply_to,
-                            comment.parent.user.displayName,
-                        ),
-                        style = MaterialTheme.typography.labelMedium,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    )
                 }
             }
 

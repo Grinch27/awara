@@ -139,21 +139,21 @@ fun EmbeddedCommentSection(
     onPush: (String) -> Unit,
     onPostReply: (CommentCreationDto) -> Unit,
 ) {
-    val currentComment = state.stack.last()
-    var repling by remember {
-        mutableStateOf(false)
-    }
-    var replyTo by remember {
-        mutableStateOf<Comment?>(null)
-    }
-
-    BackHandler(state.stack.size > 1) {
-        onBack()
-        replyTo = null
-    }
-
-    Column(modifier = modifier) {
-        CommentSectionHeader(
+                    currentComment.comments.forEach { comment ->
+                        CommentCard(
+                            comment = comment,
+                            nestingLevel = if (state.stack.size > 1) 1 else 0,
+                            showParentContext = state.stack.size > 1,
+                            onLoadReplies = {
+                                onPush(it.id)
+                                replyTo = it
+                            },
+                            onReply = {
+                                repling = true
+                                replyTo = it
+                            },
+                        )
+                    }
             showAlways = true,
             state = state,
             currentComment = currentComment,

@@ -32,7 +32,7 @@ class MediaRepo(
         id: String
     ) = iwaraAPI.getVideo(id)
 
-    suspend fun parseVideoUrl(
+    suspend fun getVideoStreamManifest(
         video: Video
     ): List<VideoFile> {
         val hash = video.signature
@@ -46,6 +46,10 @@ class MediaRepo(
         val bodyString = body.string()
         return JsonInstance.decodeFromString(bodyString)
     }
+
+    suspend fun parseVideoUrl(
+        video: Video
+    ): List<VideoFile> = getVideoStreamManifest(video)
 
     suspend fun getRelatedVideos(id: String) = iwaraAPI.getRelatedVideo(id)
 

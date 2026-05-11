@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
@@ -183,7 +184,11 @@ fun SearchPage(vm: SearchVM = koinViewModel()) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Surface(modifier = Modifier.fillMaxWidth()) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.24f),
+                shape = androidx.compose.material3.MaterialTheme.shapes.extraLarge,
+            ) {
                 Column(
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -364,42 +369,48 @@ fun SearchPage(vm: SearchVM = koinViewModel()) {
                 }
             }
 
-            UiStateBox(
+            Surface(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
-                state = vm.state.uiState,
-                onErrorRetry = {
-                    vm.search()
-                }
+                color = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.12f),
+                shape = androidx.compose.material3.MaterialTheme.shapes.extraLarge,
             ) {
-                LazyVerticalStaggeredGrid(
-                    columns = if (vm.state.searchType == "user") {
-                        DynamicStaggeredGridCells(180.dp, 1, 2)
-                    } else {
-                        mediaListGridCells(listMode)
-                    },
-                    contentPadding = PaddingValues(8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalItemSpacing = 8.dp,
-                    modifier = Modifier.matchParentSize()
+                UiStateBox(
+                    modifier = Modifier.fillMaxSize(),
+                    state = vm.state.uiState,
+                    onErrorRetry = {
+                        vm.search()
+                    }
                 ) {
-                    when (vm.state.searchType) {
-                        "video" -> {
-                            items(vm.state.videoList) {
-                                MediaCard(media = it, listMode = listMode)
+                    LazyVerticalStaggeredGrid(
+                        columns = if (vm.state.searchType == "user") {
+                            DynamicStaggeredGridCells(180.dp, 1, 2)
+                        } else {
+                            mediaListGridCells(listMode)
+                        },
+                        contentPadding = PaddingValues(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalItemSpacing = 8.dp,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        when (vm.state.searchType) {
+                            "video" -> {
+                                items(vm.state.videoList) {
+                                    MediaCard(media = it, listMode = listMode)
+                                }
                             }
-                        }
 
-                        "image" -> {
-                            items(vm.state.imageList) {
-                                MediaCard(media = it, listMode = listMode)
+                            "image" -> {
+                                items(vm.state.imageList) {
+                                    MediaCard(media = it, listMode = listMode)
+                                }
                             }
-                        }
 
-                        "user" -> {
-                            items(vm.state.userList) {
-                                UserCard(user = it)
+                            "user" -> {
+                                items(vm.state.userList) {
+                                    UserCard(user = it)
+                                }
                             }
                         }
                     }
@@ -458,74 +469,84 @@ private fun SearchSummarySection(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        Surface(
+            color = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+            shape = androidx.compose.material3.MaterialTheme.shapes.large,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            if (query.isNotBlank()) {
-                item {
-                    FilterChip(
-                        selected = true,
-                        onClick = onEditQuery,
-                        label = {
-                            Text(
-                                text = stringResource(R.string.search_summary_query, query),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        },
-                    )
-                }
-            }
+            Column(
+                modifier = Modifier.padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.search_summary_filters_title),
+                    style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
+                )
 
-            if (searchType != "user") {
-                item {
-                    FilterChip(
-                        selected = true,
-                        onClick = {},
-                        label = {
-                            Text(
-                                text = stringResource(
-                                    R.string.search_summary_sort,
-                                    mediaSortLabel(activeSort)
-                                ),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    if (query.isNotBlank()) {
+                        item {
+                            FilterChip(
+                                selected = true,
+                                onClick = onEditQuery,
+                                label = {
+                                    Text(
+                                        text = stringResource(R.string.search_summary_query, query),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                },
                             )
-                        },
-                    )
+                        }
+                    }
+
+                    if (searchType != "user") {
+                        item {
+                            FilterChip(
+                                selected = true,
+                                onClick = {},
+                                label = {
+                                    Text(
+                                        text = stringResource(
+                                            R.string.search_summary_sort,
+                                            mediaSortLabel(activeSort)
+                                        ),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                },
+                            )
+                        }
+                    }
                 }
             }
         }
 
-        if (activeFilters.isNotEmpty()) {
-            Text(
-                text = stringResource(R.string.search_summary_filters_title),
-                style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
-            )
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                items(
-                    items = activeFilters,
-                    key = { "${it.key}:${it.value}" },
-                ) { filterValue ->
-                    FilterChip(
-                        selected = true,
-                        onClick = {
-                            onRemoveFilter(filterValue)
-                        },
-                        label = {
-                            Text(
-                                text = formatSearchFilterValue(filterValue),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        },
-                        leadingIcon = FilterChipCloseIcon,
-                    )
-                }
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            items(
+                items = activeFilters,
+                key = { "${it.key}:${it.value}" },
+            ) { filterValue ->
+                FilterChip(
+                    selected = true,
+                    onClick = {
+                        onRemoveFilter(filterValue)
+                    },
+                    label = {
+                        Text(
+                            text = formatSearchFilterValue(filterValue),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    },
+                    leadingIcon = FilterChipCloseIcon,
+                )
             }
         }
     }
