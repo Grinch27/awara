@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import me.rerere.awara.data.entity.VideoFile
 import me.rerere.awara.data.entity.fixUrl
+import me.rerere.awara.data.entity.playbackUrl
 import me.rerere.awara.data.entity.thumbnailUrl
 import me.rerere.awara.data.source.stringResource
 import me.rerere.awara.ui.LocalMessageProvider
@@ -124,7 +125,7 @@ fun  VideoPage(vm: VideoVM = koinViewModel()) {
                 PlayerState.PlayerItem(
                     quality = it.name,
                     mediaItem = MediaItem.Builder()
-                        .setUri(it.src.view.fixUrl())
+                        .setUri(it.playbackUrl().fixUrl())
                         .setMediaMetadata(
                             MediaMetadata.Builder()
                                 .setTitle(vm.state.video?.title)

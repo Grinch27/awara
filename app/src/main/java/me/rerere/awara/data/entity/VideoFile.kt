@@ -16,4 +16,8 @@ data class VideoSrc(
     val view: String,
 )
 
+fun VideoFile.playbackUrl(): String = src.view.ifBlank {
+    src.download
+}
+
 fun String.fixUrl() = if (startsWith("//")) "https:$this" else this

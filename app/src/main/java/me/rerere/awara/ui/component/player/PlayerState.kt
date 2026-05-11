@@ -120,6 +120,20 @@ class PlayerState(val player: Player) {
     )
     var currentMediaItem by mutableStateOf<MediaItem?>(null)
 
+    private fun preferredQuality(): String = mmkvPreference.getString(
+        "setting.player_quality",
+        "Source"
+    )!!
+
+    private fun selectPlayerItem(item: PlayerItem, persistPreference: Boolean) {
+        currentQuality = item.quality
+        if (persistPreference) {
+            mmkvPreference.putString("setting.player_quality", item.quality)
+        }
+        player.setMediaItem(item.mediaItem)
+        currentMediaItem = item.mediaItem
+    }
+
     fun prepare() {
         player.prepare()
     }
@@ -131,25 +145,23 @@ class PlayerState(val player: Player) {
 
     fun updatePlayerItems(items: List<PlayerItem>) {
         playerItems = items
+        currentMediaItem = null
         if (playerItems.isNotEmpty()) {
-            val item = playerItems.find { it.quality == currentQuality }
-            if (item != null) {
-                player.setMediaItem(item.mediaItem)
-                currentMediaItem = item.mediaItem
-            }
+            val preferredItem = playerItems.find { it.quality == preferredQuality() }
+            val fallbackItem = playerItems.last()
+            selectPlayerItem(
+                item = preferredItem ?: fallbackItem,
+                persistPreference = false,
+            )
         }
     }
 
     fun updateCurrentQuality(quality: String) {
-        currentQuality = quality
-        mmkvPreference.putString("setting.player_quality", quality)
         if (playerItems.isNotEmpty()) {
             val item = playerItems.find { it.quality == quality }
             if (item != null) {
-                player.setMediaItem(item.mediaItem)
+                selectPlayerItem(item, persistPreference = true)
                 player.prepare()
-
-                currentMediaItem = item.mediaItem
             }
         }
     }
