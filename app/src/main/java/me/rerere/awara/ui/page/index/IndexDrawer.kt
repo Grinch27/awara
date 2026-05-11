@@ -136,7 +136,7 @@ fun IndexDrawer(
                         text = if (userState.user != null) {
                             accountSubtitle
                         } else {
-                            stringResource(R.string.login)
+                            stringResource(R.string.login_button)
                         },
                         style = MaterialTheme.typography.labelMedium,
                         modifier = Modifier.padding(top = 8.dp),

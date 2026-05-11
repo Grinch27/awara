@@ -6,8 +6,8 @@ package me.rerere.awara.ui.page.index.pager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.runtime.Composable
@@ -45,7 +45,7 @@ fun IndexVideoPage(vm: IndexVM) {
                 contentPadding = PaddingValues(8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalItemSpacing = 8.dp,
-                modifier = Modifier.matchParentSize()
+                modifier = Modifier.fillMaxSize()
             ) {
                 items(state.videoList) {
                     MediaCard(media = it, listMode = listMode)

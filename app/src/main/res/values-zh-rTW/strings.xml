@@ -1,6 +1,7 @@
 <resources>
     <string name="login_title">登錄</string>
     <string name="login_button">登錄</string>
+    <string name="logout">登出</string>
     <string name="login_user">用戶名或電子郵件</string>
     <string name="login_password">密碼</string>
     <string name="index_nav_video">視頻</string>

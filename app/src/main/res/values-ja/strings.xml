@@ -1,6 +1,7 @@
 <resources>
     <string name="login_title">ログイン</string>
     <string name="login_button">ログイン</string>
+    <string name="logout">ログアウト</string>
     <string name="login_user">ユーザー名/メールアドレス</string>
     <string name="login_password">パスワード</string>
     <string name="index_nav_video">動画</string>
