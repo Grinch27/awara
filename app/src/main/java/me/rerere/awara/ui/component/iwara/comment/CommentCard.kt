@@ -71,7 +71,9 @@ fun CommentCard(
                 .fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            if (showParentContext && comment.parent?.user != null) {
+            if (showParentContext && comment.parent != null) {
+                val parentLabel = comment.parent.user?.displayName
+                    ?: stringResource(R.string.comment_reply_thread_title)
                 Surface(
                     color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
                     shape = RoundedCornerShape(12.dp),
@@ -82,14 +84,10 @@ fun CommentCard(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.Top,
                     ) {
-                        Spacer(
-                            modifier = Modifier
-                                .width(3.dp)
-                                .size(height = 36.dp, width = 3.dp)
-                        )
+                        Spacer(modifier = Modifier.width(3.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = stringResource(R.string.comment_reply_to, comment.parent.user.displayName),
+                                text = stringResource(R.string.comment_reply_to, parentLabel),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                             )
