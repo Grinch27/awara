@@ -1170,7 +1170,7 @@ private class DynamicStaggeredGridCells(
     private val min: Int = 2,
     private val max: Int = 4,
 ) : StaggeredGridCells {
-    override fun Density.calculateCrossAxisCellSizes(availableSize: Int, spacing: Int): IntArray {
+    override fun Density.calculateCrossAxisCellSizes(availableSize: Int, spacing: Int): List<Int> {
         val count = maxOf((availableSize + spacing) / (minSize.roundToPx() + spacing), 1)
         val clampedCount = count.coerceIn(min, max)
         return calculateCellsCrossAxisSizeImpl(availableSize, clampedCount, spacing)
@@ -1181,11 +1181,11 @@ private fun calculateCellsCrossAxisSizeImpl(
     gridSize: Int,
     slotCount: Int,
     spacing: Int,
-): IntArray {
+): List<Int> {
     val gridSizeWithoutSpacing = gridSize - spacing * (slotCount - 1)
     val slotSize = gridSizeWithoutSpacing / slotCount
     val remainingPixels = gridSizeWithoutSpacing % slotCount
-    return IntArray(slotCount) { index ->
+    return List(slotCount) { index ->
         slotSize + if (index < remainingPixels) 1 else 0
     }
 }
