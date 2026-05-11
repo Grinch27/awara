@@ -1,7 +1,7 @@
 package me.rerere.awara.ui.page.index
 
-// TODO(user): Keep the home shell optimized for fast section switching and one-tap recovery of frequently used views, closer to EhViewer than a generic bottom-nav app.
-// TODO(agent): If pinned saved views become editable from home, move the quick-entry chrome into a dedicated feature component instead of growing this file.
+// TODO(user): Decide whether home should stay a simple landing shell or become the single place for section shortcuts.
+// TODO(agent): Keep the chrome dense and EhViewer-like, but do not bring back saved-view strips here.
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Badge
 import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
@@ -26,7 +25,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import me.rerere.awara.R
-import me.rerere.awara.domain.feed.SavedFeedView
 import me.rerere.awara.ui.component.common.BetterTabBar
 
 data class IndexQuickAction(
@@ -186,58 +184,6 @@ private fun IndexNavigationCardStrip(
                         )
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-fun IndexSavedViewStrip(
-    savedViews: List<SavedFeedView>,
-    selectedSavedViewId: String?,
-    onSavedViewSelected: (String?) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    if (savedViews.isEmpty()) {
-        return
-    }
-
-    Column(
-        modifier = modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(
-            text = stringResource(R.string.saved_views_title),
-            style = MaterialTheme.typography.titleSmall,
-        )
-
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            item {
-                FilterChip(
-                    selected = selectedSavedViewId == null,
-                    onClick = {
-                        onSavedViewSelected(null)
-                    },
-                    label = {
-                        Text(stringResource(R.string.saved_view_chip_all))
-                    },
-                )
-            }
-
-            items(items = savedViews, key = { savedView -> savedView.id }) { savedView ->
-                FilterChip(
-                    selected = selectedSavedViewId == savedView.id,
-                    onClick = {
-                        onSavedViewSelected(savedView.id)
-                    },
-                    label = {
-                        Text(
-                            text = savedView.name,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    },
-                )
             }
         }
     }

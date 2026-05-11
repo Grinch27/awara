@@ -1,7 +1,7 @@
 package me.rerere.awara.ui.component.iwara.param
 
-// TODO(user): Decide whether saved view creation should stay in the filter sheet or move into a dedicated saved-views surface.
-// TODO(agent): If saved views gain icons, pinned ordering, or sharing metadata, split this footer action row into its own composable instead of growing this sheet inline.
+// TODO(user): Decide whether the filter sheet should later add presets, or stay limited to sort/filter only.
+// TODO(agent): Keep this sheet focused on query controls; avoid reintroducing saved-view or current-state summaries here.
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,7 +25,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,7 +38,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import me.rerere.awara.R
-import me.rerere.awara.domain.feed.SavedFeedView
 import me.rerere.awara.ui.component.common.BetterTabBar
 import me.rerere.awara.ui.component.iwara.param.filter.DateFilter
 import me.rerere.awara.ui.component.iwara.param.filter.RatingFilter
@@ -56,11 +54,6 @@ fun FilterAndSort(
     onFilterRemove: (FilterValue) -> Unit,
     onFilterChooseDone: () -> Unit,
     onFilterClear: () -> Unit,
-    savedViews: List<SavedFeedView> = emptyList(),
-    selectedSavedViewId: String? = null,
-    onSavedViewSelected: ((String?) -> Unit)? = null,
-    onSaveCurrentView: (() -> Unit)? = null,
-    onManageSavedViews: (() -> Unit)? = null,
 ) {
     var showFilter by remember {
         mutableStateOf(false)
@@ -114,45 +107,6 @@ fun FilterAndSort(
                 ),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                if (savedViews.isNotEmpty() && onSavedViewSelected != null) {
-                    Text(
-                        text = stringResource(R.string.saved_views_title),
-                        style = MaterialTheme.typography.titleSmall,
-                    )
-
-                    LazyRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        item {
-                            FilterChip(
-                                selected = selectedSavedViewId == null,
-                                onClick = {
-                                    onSavedViewSelected(null)
-                                },
-                                label = {
-                                    Text(stringResource(R.string.saved_view_chip_all))
-                                },
-                            )
-                        }
-
-                        items(
-                            items = savedViews,
-                            key = { it.id },
-                        ) { savedView ->
-                            FilterChip(
-                                selected = savedView.id == selectedSavedViewId,
-                                onClick = {
-                                    onSavedViewSelected(savedView.id)
-                                },
-                                label = {
-                                    Text(savedView.name)
-                                },
-                            )
-                        }
-                    }
-                }
-
                 BetterTabBar(
                     selectedTabIndex = pagerState.currentPage
                 ) {
@@ -214,28 +168,6 @@ fun FilterAndSort(
                     modifier = Modifier.align(Alignment.End),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    if (onManageSavedViews != null) {
-                        TextButton(
-                            onClick = {
-                                showFilter = false
-                                onManageSavedViews()
-                            },
-                        ) {
-                            Text(stringResource(R.string.saved_views_manage_action))
-                        }
-                    }
-
-                    if (onSaveCurrentView != null) {
-                        FilledTonalButton(
-                            onClick = {
-                                showFilter = false
-                                onSaveCurrentView()
-                            },
-                        ) {
-                            Text(stringResource(R.string.save_current_view_action))
-                        }
-                    }
-
                     FilledTonalButton(
                         onClick = {
                             onFilterClear()

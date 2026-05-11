@@ -1,7 +1,7 @@
 package me.rerere.awara.ui.page.index.layout
 
-// TODO(user): The phone home page now uses a drawer-first workflow closer to EhViewer; decide later whether search/filter also deserves a dedicated primary action here.
-// TODO(agent): If the sidebar starts carrying too many quick tools, split utility entries from main home navigation before adding more home controls.
+// TODO(user): Decide whether the phone home page should default to subscription, video, image, or forum.
+// TODO(agent): Keep the phone shell drawer-first and avoid restoring the old swipe-based section switcher.
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -43,20 +43,20 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import me.rerere.awara.BuildConfig
 import me.rerere.awara.R
-import me.rerere.awara.domain.feed.FeedScope
 import me.rerere.awara.ui.LocalRouterProvider
 import me.rerere.awara.ui.component.common.TodoStatus
 import me.rerere.awara.ui.page.index.IndexDrawer
 import me.rerere.awara.ui.page.index.IndexHomeLandingPage
 import me.rerere.awara.ui.page.index.IndexQuickAction
+import me.rerere.awara.ui.page.index.SETTING_HOME_DEFAULT_SECTION
 import me.rerere.awara.ui.page.index.IndexVM
 import me.rerere.awara.ui.page.index.indexNavigations
 import me.rerere.awara.ui.page.index.pager.IndexImagePage
 import me.rerere.awara.ui.page.index.pager.IndexSubscriptionPage
 import me.rerere.awara.ui.page.index.pager.IndexVideoPage
-import me.rerere.awara.ui.page.savedview.savedFeedViewsRoute
 import me.rerere.awara.ui.stores.LocalUserStore
 import me.rerere.awara.ui.stores.collectAsState
+import me.rerere.compose_setting.preference.rememberStringPreference
 
 @Composable
 fun IndexPagePhoneLayout(vm: IndexVM) {
@@ -68,7 +68,16 @@ fun IndexPagePhoneLayout(vm: IndexVM) {
             !it.needLogin || userState.user != null
         }
     }
-    val defaultNavigationName = navigations.firstOrNull()?.name ?: "video"
+    val preferredHomeSection = rememberStringPreference(
+        key = SETTING_HOME_DEFAULT_SECTION,
+        default = "subscription",
+    )
+    val defaultNavigationName = when {
+        navigations.any { it.name == preferredHomeSection.value } -> preferredHomeSection.value
+        userState.user != null && navigations.any { it.name == "subscription" } -> "subscription"
+        navigations.any { it.name == "video" } -> "video"
+        else -> navigations.firstOrNull()?.name ?: "home"
+    }
     var selectedNavigationName by rememberSaveable(userState.user != null) {
         mutableStateOf(defaultNavigationName)
     }
@@ -81,29 +90,6 @@ fun IndexPagePhoneLayout(vm: IndexVM) {
     }
     val currentNavigation = navigations.firstOrNull { it.name == selectedNavigationName }
         ?: navigations.firstOrNull()
-    val savedViews = when (currentNavigation?.name) {
-        "video" -> vm.state.savedVideoViews
-        "image" -> vm.state.savedImageViews
-        else -> emptyList()
-    }
-    val selectedSavedViewId = when (currentNavigation?.name) {
-        "video" -> vm.state.selectedVideoSavedViewId
-        "image" -> vm.state.selectedImageSavedViewId
-        else -> null
-    }
-    val savedViewScope = when (currentNavigation?.name) {
-        "image" -> FeedScope.HOME_IMAGE
-        else -> FeedScope.HOME_VIDEO
-    }
-    val onSavedViewSelected: (String?) -> Unit = { savedViewId ->
-        when (currentNavigation?.name) {
-            "video" -> vm.applyVideoSavedView(savedViewId)
-            "image" -> vm.applyImageSavedView(savedViewId)
-        }
-        scope.launch {
-            drawerState.close()
-        }
-    }
     val drawerQuickActions = buildList {
         add(
             IndexQuickAction(
@@ -177,21 +163,19 @@ fun IndexPagePhoneLayout(vm: IndexVM) {
                     navigations = navigations,
                     selectedNavigationName = currentNavigation?.name,
                     onNavigationSelected = { navigationName ->
-                        if (navigations.any { it.name == navigationName }) {
+                        if (navigationName in setOf("history", "download", "setting")) {
+                            scope.launch {
+                                drawerState.close()
+                                navController.navigate(navigationName)
+                            }
+                        } else if (navigations.any { it.name == navigationName }) {
                             selectedNavigationName = navigationName
-                        }
-                        scope.launch {
-                            drawerState.close()
+                            scope.launch {
+                                drawerState.close()
+                            }
                         }
                     },
                     quickActions = drawerQuickActions,
-                    savedViews = savedViews,
-                    selectedSavedViewId = selectedSavedViewId,
-                    onSavedViewSelected = onSavedViewSelected,
-                    onManageSavedViews = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate(savedFeedViewsRoute(savedViewScope))
-                    },
                     modifier = Modifier.fillMaxSize(),
                 )
             }

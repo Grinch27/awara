@@ -36,8 +36,6 @@ import me.rerere.awara.ui.page.message.MessagePage
 import me.rerere.awara.ui.page.playlist.PlaylistDetailPage
 import me.rerere.awara.ui.page.playlist.PlaylistsPage
 import me.rerere.awara.ui.page.search.SearchPage
-import me.rerere.awara.ui.page.savedview.SAVED_FEED_VIEWS_ROUTE
-import me.rerere.awara.ui.page.savedview.SavedFeedViewsPage
 import me.rerere.awara.ui.page.setting.SettingPage
 import me.rerere.awara.ui.page.user.UserPage
 import me.rerere.awara.ui.page.video.VideoPage
@@ -178,20 +176,6 @@ class RouterActivity : ComponentActivity() {
 
                 composable("history") {
                     HistoryPage()
-                }
-
-                composable(
-                    route = SAVED_FEED_VIEWS_ROUTE,
-                    arguments = listOf(
-                        navArgument("scope") {
-                            type = NavType.StringType
-                            defaultValue = "HOME_VIDEO"
-                        }
-                    )
-                ) { backStackEntry ->
-                    SavedFeedViewsPage(
-                        initialScopeName = backStackEntry.arguments?.getString("scope") ?: "HOME_VIDEO",
-                    )
                 }
 
                 composable("download") {

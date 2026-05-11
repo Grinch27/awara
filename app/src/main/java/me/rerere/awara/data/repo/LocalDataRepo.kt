@@ -12,7 +12,6 @@ import me.rerere.awara.data.entity.DownloadType
 import me.rerere.awara.data.entity.HistoryItem
 import me.rerere.awara.data.entity.HistoryType
 import me.rerere.awara.di.AppDatabase
-import me.rerere.awara.domain.feed.SavedFeedView
 import me.rerere.awara.util.DEFAULT_NETWORK_DOH_ENDPOINT
 import me.rerere.awara.util.DEFAULT_NETWORK_DOH_UPSTREAM
 import me.rerere.awara.util.InstantSerializer
@@ -34,14 +33,12 @@ data class LocalDataBackupBundle(
     val version: Int = 2,
     @Serializable(with = InstantSerializer::class)
     val exportedAt: Instant = Instant.now(),
-    val savedViews: List<SavedFeedView> = emptyList(),
     val historyItems: List<HistoryBackupItem> = emptyList(),
     val downloadItems: List<DownloadBackupItem> = emptyList(),
     val settings: SafeAppSettingsBackup = SafeAppSettingsBackup(),
 )
 
 data class LocalDataSummary(
-    val savedViewCount: Int = 0,
     val historyCount: Int = 0,
     val downloadCount: Int = 0,
 )
@@ -82,11 +79,9 @@ data class SafeAppSettingsBackup(
 
 class LocalDataRepo(
     private val appDatabase: AppDatabase,
-    private val savedFeedViewRepo: SavedFeedViewRepo,
 ) {
     suspend fun getSummary(): LocalDataSummary {
         return LocalDataSummary(
-            savedViewCount = savedFeedViewRepo.count(),
             historyCount = appDatabase.historyDao().countHistory(),
             downloadCount = appDatabase.downloadDao().countDownloadedItems(),
         )
@@ -94,7 +89,6 @@ class LocalDataRepo(
 
     suspend fun exportBackupJson(): String {
         val bundle = LocalDataBackupBundle(
-            savedViews = savedFeedViewRepo.getAll(),
             historyItems = appDatabase.historyDao().getAllHistory().map(HistoryItem::toBackupItem),
             downloadItems = appDatabase.downloadDao().getAllDownloadedItems().map(DownloadItem::toBackupItem),
             settings = SafeAppSettingsBackup.fromPreferences(),
@@ -104,7 +98,6 @@ class LocalDataRepo(
 
     suspend fun importBackupJson(content: String): LocalDataSummary {
         val bundle = JsonInstance.decodeFromString<LocalDataBackupBundle>(content)
-        savedFeedViewRepo.replaceAll(bundle.savedViews)
         appDatabase.historyDao().replaceAllHistory(
             bundle.historyItems.mapNotNull(HistoryBackupItem::toEntity),
         )

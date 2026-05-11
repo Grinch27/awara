@@ -10,12 +10,9 @@ import androidx.room.migration.Migration
 import me.rerere.awara.data.dao.AppLogDao
 import me.rerere.awara.data.dao.DownloadDao
 import me.rerere.awara.data.dao.HistoryDao
-import me.rerere.awara.data.dao.SavedFeedViewDao
 import me.rerere.awara.data.entity.AppLogEntry
 import me.rerere.awara.data.entity.DownloadItem
 import me.rerere.awara.data.entity.HistoryItem
-import me.rerere.awara.data.entity.SavedFeedFilterEntity
-import me.rerere.awara.data.entity.SavedFeedViewEntity
 import androidx.sqlite.db.SupportSQLiteDatabase
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
@@ -26,7 +23,7 @@ val databaseModule = module {
             androidContext(),
             AppDatabase::class.java,
             "awara.db"
-        ).addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+        ).addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
             .build()
     }
 }
@@ -70,15 +67,22 @@ private val MIGRATION_4_5 = object : Migration(4, 5) {
     }
 }
 
+private val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL("DROP INDEX IF EXISTS `index_saved_feed_filter_viewId_orderIndex`")
+        database.execSQL("DROP INDEX IF EXISTS `index_saved_feed_filter_viewId`")
+        database.execSQL("DROP TABLE IF EXISTS `saved_feed_filter`")
+        database.execSQL("DROP TABLE IF EXISTS `saved_feed_view`")
+    }
+}
+
 @Database(
     entities = [
         HistoryItem::class,
         DownloadItem::class,
         AppLogEntry::class,
-        SavedFeedViewEntity::class,
-        SavedFeedFilterEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -90,6 +94,4 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun downloadDao(): DownloadDao
 
     abstract fun appLogDao(): AppLogDao
-
-    abstract fun savedFeedViewDao(): SavedFeedViewDao
 }

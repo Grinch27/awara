@@ -8,11 +8,11 @@ import androidx.compose.runtime.Composable
 import me.rerere.awara.ui.LocalRouterProvider
 
 @Composable
-fun BackButton() {
+fun BackButton(onClick: (() -> Unit)? = null) {
     val router = LocalRouterProvider.current
     IconButton(
         onClick = {
-            router.popBackStack()
+            onClick?.invoke() ?: router.popBackStack()
         }
     ) {
         Icon(Icons.Outlined.ArrowBack, "Back")

@@ -1,10 +1,13 @@
 package me.rerere.awara.ui.page.index
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Forum
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Subscriptions
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.VideoLabel
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -43,6 +46,7 @@ fun IndexPage(
 }
 
 private const val DOWNLOAD_LINK = "https://github.com/awara-app/awara/releases"
+const val SETTING_HOME_DEFAULT_SECTION = "setting.home_default_section"
 
 @Composable
 private fun UpdateCheck(vm: IndexVM) {
@@ -135,6 +139,36 @@ val indexNavigations = listOf(
         },
         icon = {
             Icon(Icons.Outlined.Forum, "Forum")
+        },
+    ),
+    IndexNavigation(
+        name = "history",
+        titleRes = R.string.drawer_history,
+        title = {
+            Text(stringResource(R.string.drawer_history), maxLines = 1)
+        },
+        icon = {
+            Icon(Icons.Outlined.History, "History")
+        },
+    ),
+    IndexNavigation(
+        name = "download",
+        titleRes = R.string.drawer_downloads,
+        title = {
+            Text(stringResource(R.string.drawer_downloads), maxLines = 1)
+        },
+        icon = {
+            Icon(Icons.Outlined.Download, "Downloads")
+        },
+    ),
+    IndexNavigation(
+        name = "setting",
+        titleRes = R.string.drawer_setting,
+        title = {
+            Text(stringResource(R.string.drawer_setting), maxLines = 1)
+        },
+        icon = {
+            Icon(Icons.Outlined.Settings, "Settings")
         },
     ),
 )

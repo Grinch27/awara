@@ -4,7 +4,6 @@ import me.rerere.awara.data.repo.AppLogRepo
 import me.rerere.awara.data.repo.CommentRepo
 import me.rerere.awara.data.repo.LocalDataRepo
 import me.rerere.awara.data.repo.MediaRepo
-import me.rerere.awara.data.repo.SavedFeedViewRepo
 import me.rerere.awara.data.repo.UserRepo
 import org.koin.dsl.module
 
@@ -26,10 +25,6 @@ val repoModule = module {
     }
 
     single {
-        SavedFeedViewRepo(get())
-    }
-
-    single {
-        LocalDataRepo(get(), get())
+        LocalDataRepo(get())
     }
 }

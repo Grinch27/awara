@@ -1,27 +1,23 @@
 package me.rerere.awara.ui.page.index
 
-// TODO(user): Decide whether the phone home toolbar also needs a one-tap filter/search entry, or if keeping navigation-focused actions there is enough.
-// TODO(agent): If the left sidebar keeps growing, split it into account, home navigation, and utility sections instead of letting this file become another mini-shell.
+// TODO(user): Decide whether the drawer should keep only primary navigation and utility actions, or also host a future home preset rail.
+// TODO(agent): Keep this drawer aligned with the EhViewer-style primary nav; avoid reintroducing saved-view management here.
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ExitToApp
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -39,7 +35,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import me.rerere.awara.R
-import me.rerere.awara.domain.feed.SavedFeedView
 import me.rerere.awara.ui.LocalMessageProvider
 import me.rerere.awara.ui.LocalRouterProvider
 import me.rerere.awara.ui.component.iwara.Avatar
@@ -55,10 +50,6 @@ fun IndexDrawer(
     selectedNavigationName: String?,
     onNavigationSelected: (String) -> Unit,
     quickActions: List<IndexQuickAction>,
-    savedViews: List<SavedFeedView>,
-    selectedSavedViewId: String?,
-    onSavedViewSelected: (String?) -> Unit,
-    onManageSavedViews: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val userStore = LocalUserStore.current
@@ -167,7 +158,7 @@ fun IndexDrawer(
                             }
                         },
                     ) {
-                        Icon(Icons.Outlined.ExitToApp, contentDescription = "Logout")
+                        Icon(androidx.compose.material.icons.Icons.Outlined.ExitToApp, contentDescription = "Logout")
                     }
                 }
             }
@@ -213,106 +204,6 @@ fun IndexDrawer(
             onNavigationSelected = onNavigationSelected,
             quickActions = quickActions,
         )
-
-        if (savedViews.isNotEmpty() || onManageSavedViews != null) {
-            DrawerSectionTitle(
-                text = stringResource(R.string.saved_views_title),
-                supportingText = stringResource(
-                    R.string.saved_views_manage_summary,
-                    savedViews.size,
-                    savedViews.count(SavedFeedView::pinned),
-                ),
-                actionLabel = if (onManageSavedViews != null) {
-                    stringResource(R.string.saved_views_manage_action)
-                } else {
-                    null
-                },
-                onActionClick = onManageSavedViews,
-            )
-            DrawerItem(
-                label = {
-                    Text(stringResource(R.string.saved_view_chip_all))
-                },
-                supporting = {
-                    Text(stringResource(R.string.saved_view_meta_current_filters))
-                },
-                selected = selectedSavedViewId == null,
-                onClick = {
-                    onSavedViewSelected(null)
-                },
-            )
-            val smartViews = savedViews.filter { it.smartSubscription }
-            val standardViews = savedViews.filterNot { it.smartSubscription }
-
-            if (smartViews.isNotEmpty()) {
-                DrawerSectionTitle(stringResource(R.string.saved_views_smart_title))
-            }
-            smartViews.forEach { savedView ->
-                val supportingText = buildSavedViewSupportingText(savedView)
-                DrawerItem(
-                    label = {
-                        Text(
-                            text = savedView.name,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    },
-                    supporting = supportingText.takeIf(String::isNotEmpty)?.let { text ->
-                        {
-                            Text(
-                                text = text,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                    },
-                    selected = selectedSavedViewId == savedView.id,
-                    onClick = {
-                        onSavedViewSelected(savedView.id)
-                    },
-                )
-            }
-
-            if (standardViews.isNotEmpty()) {
-                DrawerSectionTitle(stringResource(R.string.saved_views_manual_title))
-            }
-            standardViews.forEach { savedView ->
-                val supportingText = buildList {
-                    if (savedView.pinned) {
-                        add(stringResource(R.string.saved_view_meta_pinned))
-                    }
-                    if (savedView.filters.isNotEmpty()) {
-                        add(stringResource(R.string.saved_view_meta_filters, savedView.filters.size))
-                    }
-                    if (savedView.tags.isNotEmpty()) {
-                        add(savedView.tags.joinToString(separator = "  ") { tag -> "#$tag" })
-                    }
-                    savedView.description.trim().takeIf(String::isNotEmpty)?.let(::add)
-                }.joinToString(separator = " · ")
-                DrawerItem(
-                    label = {
-                        Text(
-                            text = savedView.name,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    },
-                    supporting = supportingText.takeIf(String::isNotEmpty)?.let { text ->
-                        {
-                            Text(
-                                text = text,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                    },
-                    selected = selectedSavedViewId == savedView.id,
-                    onClick = {
-                        onSavedViewSelected(savedView.id)
-                    },
-                )
-            }
-        }
     }
 }
 
@@ -372,22 +263,6 @@ private fun DrawerNavigationSection(
             onClick = action.onClick,
         )
     }
-}
-
-@Composable
-private fun buildSavedViewSupportingText(savedView: SavedFeedView): String {
-    return buildList {
-        if (savedView.pinned) {
-            add(stringResource(R.string.saved_view_meta_pinned))
-        }
-        if (savedView.filters.isNotEmpty()) {
-            add(stringResource(R.string.saved_view_meta_filters, savedView.filters.size))
-        }
-        if (savedView.tags.isNotEmpty()) {
-            add(savedView.tags.joinToString(separator = "  ") { tag -> "#$tag" })
-        }
-        savedView.description.trim().takeIf(String::isNotEmpty)?.let(::add)
-    }.joinToString(separator = " · ")
 }
 
 @Composable
@@ -540,49 +415,17 @@ private fun DrawerItem(
                     Spacer(modifier = Modifier.width(36.dp))
                 }
 
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                    modifier = Modifier.weight(1f),
-                ) {
+                Column(modifier = Modifier.weight(1f)) {
                     label()
-                    supporting?.let {
-                        ProvideTextStyle(MaterialTheme.typography.labelSmall) {
-                            it()
+                    supporting?.let { content ->
+                        ProvideTextStyle(MaterialTheme.typography.bodySmall) {
+                            content()
                         }
                     }
                 }
+
                 tail?.invoke()
-                if (selected) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .padding(end = 2.dp)
-                    ) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.primary,
-                            shape = CircleShape,
-                            modifier = Modifier.fillMaxSize(),
-                        ) {}
-                    }
-                }
             }
         }
-    }
-}
-
-@Composable
-private fun DrawerHeaderChip(text: String) {
-    Surface(
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-        shape = RoundedCornerShape(999.dp),
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-        )
     }
 }

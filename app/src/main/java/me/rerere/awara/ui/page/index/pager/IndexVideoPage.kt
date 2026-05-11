@@ -1,7 +1,7 @@
 package me.rerere.awara.ui.page.index.pager
 
-// TODO(user): Decide whether video saved views should support pinning directly from the home feed.
-// TODO(agent): If home feed saved views turn into a primary navigation model, lift this action out of the pager footer and into a shared saved-view entry point.
+// TODO(user): Decide whether home feed filters should later gain presets or remain ad hoc.
+// TODO(agent): Keep the pager footer focused on sort and list mode only.
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,20 +10,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.material3.Text
-import kotlinx.coroutines.launch
-import me.rerere.awara.R
-import me.rerere.awara.ui.LocalDialogProvider
-import me.rerere.awara.ui.LocalMessageProvider
-import me.rerere.awara.ui.LocalRouterProvider
 import me.rerere.awara.ui.component.common.UiStateBox
 import me.rerere.awara.ui.component.iwara.MediaCard
 import me.rerere.awara.ui.component.iwara.MediaListModeButton
@@ -31,23 +20,12 @@ import me.rerere.awara.ui.component.iwara.mediaListGridCells
 import me.rerere.awara.ui.component.iwara.PaginationBar
 import me.rerere.awara.ui.component.iwara.rememberMediaListModePreference
 import me.rerere.awara.ui.component.iwara.param.FilterAndSort
-import me.rerere.awara.ui.page.savedview.savedFeedViewsRoute
-import me.rerere.awara.domain.feed.FeedScope
 import me.rerere.awara.ui.component.iwara.param.sort.MediaSortOptions
-import me.rerere.awara.ui.page.index.SavedFeedViewDraft
-import me.rerere.awara.ui.page.index.SavedFeedViewEditor
 import me.rerere.awara.ui.page.index.IndexVM
-import me.rerere.awara.ui.page.index.normalizedTags
-import me.rerere.awara.util.AppLogger
 
 @Composable
 fun IndexVideoPage(vm: IndexVM) {
     val state = vm.state
-    val dialog = LocalDialogProvider.current
-    val message = LocalMessageProvider.current
-    val router = LocalRouterProvider.current
-    val coroutineScope = rememberCoroutineScope()
-    var saveDraft by remember { mutableStateOf(SavedFeedViewDraft()) }
     var listMode by rememberMediaListModePreference()
 
     Column {
@@ -95,54 +73,6 @@ fun IndexVideoPage(vm: IndexVM) {
                     },
                     onFilterClear = {
                         vm.clearVideoFilter()
-                    },
-                    savedViews = state.savedVideoViews,
-                    selectedSavedViewId = state.selectedVideoSavedViewId,
-                    onSavedViewSelected = vm::applyVideoSavedView,
-                    onManageSavedViews = {
-                        router.navigate(savedFeedViewsRoute(FeedScope.HOME_VIDEO))
-                    },
-                    onSaveCurrentView = {
-                        saveDraft = SavedFeedViewDraft()
-                        dialog.show(
-                            title = {
-                                Text(stringResource(R.string.save_current_video_view_title))
-                            },
-                            content = {
-                                SavedFeedViewEditor(
-                                    draft = saveDraft,
-                                    onDraftChange = { saveDraft = it },
-                                )
-                            },
-                            positiveText = {
-                                Text(stringResource(R.string.confirm))
-                            },
-                            positiveAction = {
-                                coroutineScope.launch {
-                                    runCatching {
-                                        vm.saveCurrentVideoView(
-                                            name = saveDraft.name,
-                                            description = saveDraft.description,
-                                            tags = saveDraft.normalizedTags(),
-                                            pinned = saveDraft.pinned,
-                                            smartSubscription = saveDraft.smartSubscription,
-                                        )
-                                    }.onSuccess { savedView ->
-                                        message.success {
-                                            Text(stringResource(R.string.save_current_view_success, savedView.name))
-                                        }
-                                    }.onFailure {
-                                        AppLogger.e("IndexVideoPage", "Failed to save video feed view", it)
-                                        message.error {
-                                            Text(stringResource(R.string.save_current_view_failure))
-                                        }
-                                    }
-                                }
-                            },
-                            negativeText = {
-                                Text(stringResource(R.string.cancel))
-                            }
-                        )
                     },
                 )
             },
