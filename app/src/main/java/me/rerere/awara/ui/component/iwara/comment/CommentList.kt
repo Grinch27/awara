@@ -26,10 +26,13 @@ import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.ModeComment
 import androidx.compose.material.icons.outlined.Send
+import androidx.compose.material3.BorderStroke
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -45,6 +48,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
 import me.rerere.awara.R
 import me.rerere.awara.data.entity.Comment
 import me.rerere.awara.data.entity.CommentCreationDto
@@ -164,13 +168,16 @@ fun EmbeddedCommentSection(
             ) {
                 if (currentComment.comments.isEmpty()) {
                     Surface(
-                        color = Color.Transparent,
+                        color = CommentPanelSurface,
+                        border = BorderStroke(1.dp, CommentCardBorder),
+                        shape = RoundedCornerShape(18.dp),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(
                             text = stringResource(R.string.comment_empty),
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp),
+                            color = CommentMetaColor,
                         )
                     }
                 } else {
@@ -215,18 +222,24 @@ private fun CommentSectionHeader(
     AnimatedVisibility(visible = showAlways || state.stack.size > 1) {
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            color = Color.Transparent,
+            color = CommentPanelSurface,
+            border = BorderStroke(1.dp, CommentCardBorder),
+            shape = RoundedCornerShape(18.dp),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 4.dp, vertical = 2.dp),
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
             ) {
                 if (state.stack.size > 1) {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, null)
+                        Icon(
+                            Icons.Outlined.ArrowBack,
+                            null,
+                            tint = CommentBodyColor,
+                        )
                     }
                 }
 
@@ -240,11 +253,13 @@ private fun CommentSectionHeader(
                             }
                         ),
                         style = MaterialTheme.typography.titleMedium,
+                        color = CommentBodyColor,
                     )
                     if (showAlways) {
                         Text(
                             text = stringResource(R.string.comment_meta_count, currentComment.total),
                             style = MaterialTheme.typography.labelMedium,
+                            color = CommentMetaColor,
                         )
                     }
                 }
@@ -279,7 +294,10 @@ private fun CommentReplyFooter(
                 modifier = Modifier
                     .imePadding()
                     .fillMaxWidth(),
-                tonalElevation = 4.dp,
+                color = CommentPanelSurface,
+                border = BorderStroke(1.dp, CommentCardBorder),
+                shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+                tonalElevation = 0.dp,
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -290,7 +308,7 @@ private fun CommentReplyFooter(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     IconButton(onClick = { onReplyingChange(false) }) {
-                        Icon(Icons.Outlined.Close, null)
+                        Icon(Icons.Outlined.Close, null, tint = CommentBodyColor)
                     }
 
                     var body by remember { mutableStateOf("") }
@@ -308,6 +326,10 @@ private fun CommentReplyFooter(
                             )
                         },
                         colors = TextFieldDefaults.textFieldColors(
+                            textColor = CommentBodyColor,
+                            placeholderColor = CommentMetaColor,
+                            containerColor = Color.Transparent,
+                            cursorColor = MaterialTheme.colorScheme.primary,
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent,
                         ),
@@ -338,6 +360,10 @@ private fun CommentReplyFooter(
                             )
                             body = ""
                         },
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        ),
                     ) {
                         Icon(Icons.Outlined.Send, null)
                     }

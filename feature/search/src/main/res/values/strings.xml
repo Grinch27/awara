@@ -18,6 +18,7 @@
     <string name="search_recent_clear">Clear</string>
     <string name="search_apply_recent_action">Search</string>
     <string name="search_results_count">Results: %1$d</string>
+    <string name="search_user_mode_hint">Searching public user profiles</string>
     <string name="search_recent_quick_title">Quick Search</string>
     <string name="search_summary_query">Query: %1$s</string>
     <string name="search_summary_sort">Sort: %1$s</string>

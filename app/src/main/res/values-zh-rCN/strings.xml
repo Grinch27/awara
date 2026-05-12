@@ -108,7 +108,7 @@
     <string name="setting_look_work_mode_title">工作模式</string>
     <string name="setting_look_work_mode_text">视频封面会模糊</string>
     <string name="setting_look_home_default_title">默认入口页面</string>
-    <string name="setting_look_home_default_text">选择启动后优先进入视频、图片或论坛页面。</string>
+    <string name="setting_look_home_default_text">选择启动后优先进入订阅、视频、图片或论坛页面。</string>
     <string name="setting_look_media_list_mode_title">媒体列表模式</string>
     <string name="setting_look_media_list_mode_text">在媒体列表中切换详情和缩略图布局。</string>
     <string name="setting_player">播放器设置</string>
@@ -139,6 +139,9 @@
     <string name="forum_landing_message">原生论坛流还没有接通，你可以先从这里在浏览器中打开 Iwara 论坛。</string>
     <string name="forum_landing_open_action">打开 Iwara 论坛</string>
     <string name="forum_landing_tip">提示：如果你希望默认入口保持纯应用内浏览，建议继续选择视频或图片。</string>
+    <string name="user_guestbook_message">原生留言流还没有接通。</string>
+    <string name="user_guestbook_open_action">打开 Iwara 个人页</string>
+    <string name="user_guestbook_tip">你仍然可以在应用内浏览该创作者的视频和图片，留言墙目前先走浏览器回退。</string>
     <string name="setting_data_local_backup_export_title">导出本地数据备份</string>
     <string name="setting_data_local_backup_export_text">导出 %1$d 条历史、%2$d 条下载记录和不含登录态的应用设置 JSON</string>
     <string name="setting_data_local_backup_export_success">本地数据备份已导出</string>

@@ -1,11 +1,9 @@
 package me.rerere.awara.ui.page.search
 
-// TODO(user): Decide whether user search should return as a separate route or remain hidden behind a dedicated switch in this page.
-// TODO(agent): Keep the header layout aligned with the three-row EhViewer-style structure before adding extra controls.
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -19,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -43,9 +42,10 @@ import androidx.compose.material.icons.outlined.RemoveRedEye
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Badge
+import androidx.compose.material3.BorderStroke
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
 import androidx.compose.material3.DockedSearchBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -151,12 +151,6 @@ fun SearchPage(
         }
     }
 
-    LaunchedEffect(vm.state.searchType) {
-        if (vm.state.searchType == "user") {
-            vm.updateSearchType("video")
-        }
-    }
-
     fun persistRecentQuery() {
         val trimmedQuery = vm.query.trim()
         if (trimmedQuery.isBlank()) {
@@ -207,20 +201,27 @@ fun SearchPage(
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.24f),
-                shape = MaterialTheme.shapes.extraLarge,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                color = MaterialTheme.colorScheme.surface,
+                border = BorderStroke(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
+                ),
+                shape = RoundedCornerShape(24.dp),
+                tonalElevation = 2.dp,
             ) {
                 Column(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        IconButton(onClick = onBack) {
+                        SearchHeaderIconButton(onClick = onBack) {
                             Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
                         }
                         DockedSearchBar(
@@ -230,6 +231,8 @@ fun SearchPage(
                             onSearch = { submitSearch() },
                             active = searchBarActive,
                             onActiveChange = { searchBarActive = it },
+                            shape = RoundedCornerShape(18.dp),
+                            tonalElevation = 0.dp,
                             placeholder = {
                                 Text(stringResource(R.string.search_hint_media))
                             },
@@ -307,17 +310,25 @@ fun SearchPage(
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         SearchTypeChip(
+                            modifier = Modifier.weight(1f),
                             selected = vm.state.searchType == "video",
                             label = stringResource(R.string.video),
                             onClick = { vm.updateSearchType("video") },
                         )
                         SearchTypeChip(
+                            modifier = Modifier.weight(1f),
                             selected = vm.state.searchType == "image",
                             label = stringResource(R.string.image),
                             onClick = { vm.updateSearchType("image") },
+                        )
+                        SearchTypeChip(
+                            modifier = Modifier.weight(1f),
+                            selected = vm.state.searchType == "user",
+                            label = stringResource(R.string.user),
+                            onClick = { vm.updateSearchType("user") },
                         )
                     }
 
@@ -327,6 +338,8 @@ fun SearchPage(
                             selectedDateValue = currentDateFilterValue,
                             onValueChange = ::updateDateFilter,
                         )
+                    } else {
+                        UserSearchHintBanner(modifier = Modifier.fillMaxWidth())
                     }
                 }
             }
@@ -335,7 +348,9 @@ fun SearchPage(
                 text = stringResource(R.string.search_results_count, vm.state.count),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp),
+                    .padding(horizontal = 20.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelLarge,
             )
 
             Surface(
@@ -432,15 +447,96 @@ private fun searchOptions(): List<SelectOption<String>> {
 
 @Composable
 private fun SearchTypeChip(
+    modifier: Modifier = Modifier,
     selected: Boolean,
     label: String,
     onClick: () -> Unit,
 ) {
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        label = { Text(label) },
-    )
+    val shape = RoundedCornerShape(16.dp)
+    val containerColor = if (selected) {
+        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f)
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.16f)
+    }
+    val contentColor = if (selected) {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    Surface(
+        modifier = modifier,
+        color = containerColor,
+        contentColor = contentColor,
+        border = BorderStroke(
+            width = 1.dp,
+            color = if (selected) {
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.32f)
+            } else {
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)
+            },
+        ),
+        shape = shape,
+        tonalElevation = if (selected) 2.dp else 0.dp,
+    ) {
+        Box(
+            modifier = Modifier
+                .clip(shape)
+                .clickable(onClick = onClick)
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SearchHeaderIconButton(
+    onClick: () -> Unit,
+    content: @Composable BoxScope.() -> Unit,
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.16f),
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f),
+        ),
+        shape = RoundedCornerShape(18.dp),
+    ) {
+        IconButton(onClick = onClick) {
+            Box(contentAlignment = Alignment.Center, content = content)
+        }
+    }
+}
+
+@Composable
+private fun UserSearchHintBanner(modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.18f),
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f),
+        ),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Outlined.Search, null, tint = MaterialTheme.colorScheme.primary)
+            Text(
+                text = stringResource(R.string.search_user_mode_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+    }
 }
 
 @Composable
@@ -468,9 +564,23 @@ private fun DateDropdown(
         ?: stringResource(R.string.date_any)
 
     Box(modifier = modifier) {
-        FilledTonalButton(onClick = { expanded = true }) {
+        FilledTonalButton(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = { expanded = true },
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.filledTonalButtonColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.72f),
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            ),
+        ) {
             Icon(Icons.Outlined.CalendarMonth, null)
-            Text(text = currentLabel, modifier = Modifier.padding(start = 6.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = currentLabel,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
 
         DropdownMenu(

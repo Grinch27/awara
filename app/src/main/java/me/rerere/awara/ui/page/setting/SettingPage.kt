@@ -631,10 +631,11 @@ private fun AppearanceSettingsSection(
         if (showHomeDefault) {
             SettingPickerItem(
                 state = homeDefaultSection,
-                items = listOf("video", "image", "forum"),
+                items = listOf("subscription", "video", "image", "forum"),
                 itemLabel = { section ->
                     Text(
                         text = when (section) {
+                            "subscription" -> stringResource(R.string.index_nav_subscription)
                             "video" -> stringResource(R.string.index_nav_video)
                             "image" -> stringResource(R.string.index_nav_image)
                             "forum" -> stringResource(R.string.index_nav_forum)

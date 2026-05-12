@@ -29,9 +29,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -45,6 +47,14 @@ import me.rerere.awara.ui.stores.LocalUserStore
 import me.rerere.awara.ui.stores.collectAsState
 import me.rerere.awara.util.openUrl
 import me.rerere.awara.util.toLocalDateTimeString
+
+internal val CommentPanelSurface = Color(0xFF151A21)
+internal val CommentCardSurface = Color(0xFF1B222C)
+internal val CommentNestedCardSurface = Color(0xFF212B36)
+internal val CommentReplyContextSurface = Color(0xFF243140)
+internal val CommentCardBorder = Color(0xFF314051)
+internal val CommentBodyColor = Color(0xFFF2F5F8)
+internal val CommentMetaColor = Color(0xFFB7C1CE)
 
 @Composable
 fun CommentCard(
@@ -61,31 +71,30 @@ fun CommentCard(
     val shouldShowThreadRail = nestingLevel > 0 || showParentContext
     Surface(
         modifier = modifier.padding(start = (nestingLevel * 14).dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (nestingLevel > 0) 0.3f else 0.2f),
-        tonalElevation = 1.dp,
+        color = if (nestingLevel > 0) CommentNestedCardSurface else CommentCardSurface,
+        contentColor = CommentBodyColor,
+        tonalElevation = 0.dp,
         border = BorderStroke(
             width = if (nestingLevel > 0) 1.2.dp else 1.dp,
             color = if (nestingLevel > 0) {
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.28f)
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
             } else {
-                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
+                CommentCardBorder
             },
         ),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(18.dp),
     ) {
         Row(
             modifier = Modifier
                 .animateContentSize()
-                .padding(horizontal = 10.dp, vertical = 9.dp)
+                .padding(horizontal = 12.dp, vertical = 10.dp)
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             if (shouldShowThreadRail) {
                 CommentThreadRail(
                     modifier = Modifier.padding(top = 2.dp),
-                    accentColor = MaterialTheme.colorScheme.primary.copy(
-                        alpha = if (nestingLevel > 0) 0.32f else 0.24f,
-                    ),
+                    accentColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.58f),
                 )
             }
 
@@ -97,8 +106,12 @@ fun CommentCard(
                     val parentLabel = comment.parent.user?.displayName
                         ?: stringResource(R.string.comment_reply_thread_title)
                     Surface(
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
-                        shape = RoundedCornerShape(12.dp),
+                        color = CommentReplyContextSurface,
+                        border = BorderStroke(
+                            width = 1.dp,
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f),
+                        ),
+                        shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Row(
@@ -111,14 +124,14 @@ fun CommentCard(
                                 Text(
                                     text = stringResource(R.string.comment_reply_to, parentLabel),
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    color = CommentMetaColor,
                                 )
                                 Text(
                                     text = comment.parent.body,
                                     style = MaterialTheme.typography.bodySmall,
                                     maxLines = 2,
                                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    color = CommentBodyColor,
                                 )
                             }
                         }
@@ -143,7 +156,7 @@ fun CommentCard(
                         Text(
                             text = comment.user?.displayName
                                 ?: stringResource(R.string.comment_reply_thread_title),
-                            color = MaterialTheme.colorScheme.secondary,
+                            color = CommentBodyColor,
                             style = MaterialTheme.typography.titleSmall,
                             modifier = Modifier.clickable {
                                 comment.user
@@ -154,7 +167,8 @@ fun CommentCard(
                         if (!comment.user?.displayHandle.isNullOrBlank()) {
                             Text(
                                 text = comment.user?.displayHandle.orEmpty(),
-                                style = MaterialTheme.typography.labelSmall
+                                style = MaterialTheme.typography.labelSmall,
+                                color = CommentMetaColor,
                             )
                         }
                     }
@@ -166,12 +180,13 @@ fun CommentCard(
                     // "Me" Tag
                     if(comment.user?.id == user.user?.id) {
                         Surface(
-                            shape = RoundedCornerShape(4.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shape = RoundedCornerShape(999.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.78f),
                         ) {
                             Text(
                                 text = stringResource(R.string.comment_me_badge),
                                 style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
                                 modifier = Modifier.padding(vertical = 3.dp, horizontal = 7.dp)
                             )
                         }
@@ -183,7 +198,7 @@ fun CommentCard(
                     onLinkClick = {
                         context.openUrl(it)
                     },
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyMedium.copy(color = CommentBodyColor),
                 )
 
                 Row(
@@ -193,7 +208,8 @@ fun CommentCard(
                 ) {
                     Text(
                         text = comment.createdAt.toLocalDateTimeString(),
-                        style = MaterialTheme.typography.labelMedium
+                        style = MaterialTheme.typography.labelMedium,
+                        color = CommentMetaColor,
                     )
 
                     Spacer(modifier = Modifier.weight(1f))
@@ -206,6 +222,9 @@ fun CommentCard(
                                 onLoadReplies(comment)
                             },
                             contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                            colors = TextButtonDefaults.textButtonColors(
+                                contentColor = MaterialTheme.colorScheme.primary,
+                            ),
                         ) {
                             Text(
                                 text = stringResource(R.string.comment_replies_count, comment.numReplies),
@@ -220,7 +239,10 @@ fun CommentCard(
                             onClick = {
                                 onReply(comment)
                             },
-                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                            colors = TextButtonDefaults.textButtonColors(
+                                contentColor = MaterialTheme.colorScheme.primary,
+                            ),
                         ) {
                             Text(
                                 text = stringResource(R.string.comment_reply_action),

@@ -21,12 +21,15 @@ import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.BorderStroke
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -42,6 +45,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -56,7 +60,6 @@ import me.rerere.awara.ui.component.common.Button
 import me.rerere.awara.ui.component.common.ButtonType
 import me.rerere.awara.ui.component.common.EmptyStatus
 import me.rerere.awara.ui.component.common.ImageAppBar
-import me.rerere.awara.ui.component.common.TodoStatus
 import me.rerere.awara.ui.component.common.pullrefresh.SwipeRefresh
 import me.rerere.awara.ui.component.common.pullrefresh.rememberSwipeRefreshState
 import me.rerere.awara.ui.component.ext.excludeBottom
@@ -184,10 +187,59 @@ fun UserPage(
                         }
 
                         2 -> {
-                            Box(modifier = Modifier.fillMaxSize()) {
-                                TodoStatus()
-                            }
+                            UserGuestbookFallbackPage(profileState = profileState)
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun UserGuestbookFallbackPage(profileState: ProfileDto?) {
+    val context = LocalContext.current
+    val username = profileState?.user?.username?.takeIf { it.isNotBlank() }
+    val browserUrl = username?.let { "https://www.iwara.tv/profile/$it" }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.18f),
+            border = BorderStroke(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f),
+            ),
+            shape = RoundedCornerShape(24.dp),
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.user_guestbook_message),
+                    style = MaterialTheme.typography.titleMedium,
+                    textAlign = TextAlign.Center,
+                )
+
+                Text(
+                    text = stringResource(R.string.user_guestbook_tip),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+
+                if (browserUrl != null) {
+                    Button(
+                        onClick = { context.openUrl(browserUrl) },
+                        type = ButtonType.Default,
+                    ) {
+                        Text(stringResource(R.string.user_guestbook_open_action))
                     }
                 }
             }

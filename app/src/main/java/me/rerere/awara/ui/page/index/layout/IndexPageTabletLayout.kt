@@ -1,8 +1,5 @@
 package me.rerere.awara.ui.page.index.layout
 
-// TODO(user): Decide whether subscription should rejoin the tablet default entry choices after video/image/forum stabilizes.
-// TODO(agent): Keep the tablet shell EhViewer-like and route utility entries directly instead of page-level placeholders.
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -39,7 +36,6 @@ import kotlinx.coroutines.launch
 import me.rerere.awara.BuildConfig
 import me.rerere.awara.R
 import me.rerere.awara.ui.LocalRouterProvider
-import me.rerere.awara.ui.component.common.TodoStatus
 import me.rerere.awara.ui.page.index.IndexDrawer
 import me.rerere.awara.ui.page.index.SETTING_HOME_DEFAULT_SECTION
 import me.rerere.awara.ui.page.index.IndexVM
@@ -53,7 +49,7 @@ import me.rerere.awara.ui.stores.collectAsState
 import me.rerere.compose_setting.preference.rememberStringPreference
 
 private val externalRouteNavigations = setOf("history", "download", "setting")
-private val defaultEntryNavigations = setOf("video", "image", "forum")
+private val defaultEntryNavigations = setOf("subscription", "video", "image", "forum")
 
 @Composable
 fun IndexPageTabletLayout(vm: IndexVM) {
@@ -65,19 +61,23 @@ fun IndexPageTabletLayout(vm: IndexVM) {
             !it.needLogin || userState.user != null
         }
     }
+    val contentNavigations = remember(navigations) {
+        navigations.filterNot { it.name in externalRouteNavigations }
+    }
     val preferredHomeSection = rememberStringPreference(
         key = SETTING_HOME_DEFAULT_SECTION,
         default = "video",
     )
     val preferredDefaultEntry = preferredHomeSection.value.takeIf { preferredName ->
-        preferredName in defaultEntryNavigations && navigations.any { it.name == preferredName }
+        preferredName in defaultEntryNavigations && contentNavigations.any { it.name == preferredName }
     }
     val defaultNavigationName = when {
         preferredDefaultEntry != null -> preferredDefaultEntry
-        navigations.any { it.name == "video" } -> "video"
-        navigations.any { it.name == "image" } -> "image"
-        navigations.any { it.name == "forum" } -> "forum"
-        else -> navigations.firstOrNull()?.name ?: "video"
+        contentNavigations.any { it.name == "video" } -> "video"
+        contentNavigations.any { it.name == "image" } -> "image"
+        contentNavigations.any { it.name == "forum" } -> "forum"
+        contentNavigations.any { it.name == "subscription" } -> "subscription"
+        else -> contentNavigations.firstOrNull()?.name ?: "video"
     }
     var selectedNavigationName by rememberSaveable(userState.user != null) {
         mutableStateOf(defaultNavigationName)
@@ -88,12 +88,12 @@ fun IndexPageTabletLayout(vm: IndexVM) {
         }
     }
     LaunchedEffect(defaultNavigationName, navigations, selectedNavigationName) {
-        if (navigations.none { it.name == selectedNavigationName }) {
+        if (contentNavigations.none { it.name == selectedNavigationName }) {
             selectedNavigationName = defaultNavigationName
         }
     }
-    val currentNavigation = navigations.firstOrNull { it.name == selectedNavigationName }
-        ?: navigations.firstOrNull()
+    val currentNavigation = contentNavigations.firstOrNull { it.name == selectedNavigationName }
+        ?: contentNavigations.firstOrNull()
 
     Scaffold(
         topBar = {
@@ -220,9 +220,7 @@ fun IndexPageTabletLayout(vm: IndexVM) {
                     }
 
                     else -> {
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            TodoStatus()
-                        }
+                        IndexVideoPage(vm)
                     }
                 }
             }
