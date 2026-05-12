@@ -82,5 +82,5 @@ fun IndexForumPage(
             }
         }
     }
-}package me.rerere.awara.ui.page.index.pager
+}
 
