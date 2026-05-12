@@ -136,6 +136,9 @@
     <string name="setting_data_logs_export_title">导出应用日志</string>
     <string name="setting_data_logs_export_text">导出最近 10000 条脱敏后的行为日志 JSON</string>
     <string name="setting_data_logs_export_success">应用日志已导出</string>
+    <string name="forum_landing_message">原生论坛流还没有接通，你可以先从这里在浏览器中打开 Iwara 论坛。</string>
+    <string name="forum_landing_open_action">打开 Iwara 论坛</string>
+    <string name="forum_landing_tip">提示：如果你希望默认入口保持纯应用内浏览，建议继续选择视频或图片。</string>
     <string name="setting_data_local_backup_export_title">导出本地数据备份</string>
     <string name="setting_data_local_backup_export_text">导出 %1$d 条历史、%2$d 条下载记录和不含登录态的应用设置 JSON</string>
     <string name="setting_data_local_backup_export_success">本地数据备份已导出</string>

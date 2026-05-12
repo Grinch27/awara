@@ -1,21 +1,43 @@
 <!--
 关键待你决策（请在评审时明确）：
-1) subscription 是否在后续版本重新回到“默认入口页面”的可选项，还是永久退回抽屉内二级入口。
-2) forum 是本阶段直接做最小可用列表页，还是继续保留入口但在设置页标明“尚未完成”。
+1) forum 后续是继续保留“浏览器落地页 + 回到视频/图片”的最小方案，还是直接进入原生列表页开发。
+2) subscription 是否在后续版本重新回到“默认入口页面”的可选项，还是永久退回抽屉内二级入口。
 3) 搜索页的 user 搜索是否拆成独立入口，还是保留底层能力但继续隐藏主切换标签。
 
 后续代码研究方向（建议优先级从高到低）：
-1) Forum 数据链路补齐：API -> repo -> VM -> 页面最小闭环，替换当前 forum 占位态。
-2) FeedQuery 全链路统一：Index/Search/Favorites/Follow 统一 mapper、分页、重试与错误文案。
-3) 播放诊断标准化：登录态 -> 视频详情 -> manifest -> stream URL -> ExoPlayer 事件，统一脱敏日志。
+1) Forum 数据链路补齐：API -> repo -> VM -> 页面最小闭环，替换当前浏览器落地页。
+2) 播放诊断标准化：登录态 -> 视频详情 -> manifest -> stream URL -> ExoPlayer 事件，统一脱敏日志。
+3) FeedQuery 全链路统一：Index/Search/Favorites/Follow 统一 mapper、分页、重试与错误文案。
 
 可继续优化点（可并行推进）：
-1) 搜索页头部三行做折叠态，滚动时保留返回键、搜索框和日期入口。
-2) 默认入口迁移增加一次性自修复埋点，统计 legacy subscription/home 偏好是否仍有残留。
+1) 搜索页三行头部继续贴近 EhViewer 的视觉细节，包括间距、圆角和标签按钮样式。
+2) forum 落地页增加一次性埋点，统计默认入口为 forum 的真实使用频率和跳转去向。
 3) GH Actions 失败日志抓取脚本化：run 级为空时自动切 job 级并提取首个阻塞错误。
 -->
 
-# Awara 导航、搜索与播放链路执行蓝图（2026-05-12）
+# Awara 导航、搜索、详情与播放链路执行蓝图（2026-05-12）
+
+这份文档服务三类读者：
+
+1. 工程负责人：快速判断当前状态是否可上线、可回滚、是否还存在显著占位风险。
+2. 开发者：直接定位当前控制导航、搜索、详情页顶栏和播放链路的关键文件。
+3. GPT/Agent：拿到上下文后直接进入“提取首个阻塞错误 -> 最小改动 -> push -> gh run watch -> 修首个错误”的闭环。
+
+本版文档已经替换掉“home 聚合页优先”的旧叙事。当前约束是：
+
+1. 启动后不再进入 home 聚合页，而是进入默认入口页面。
+2. 默认入口页面只允许 video、image、forum。
+3. 搜索页头部必须向 EhViewer 收敛为三行结构。
+4. forum 当前不能再显示 Still in developing，占位页已替换为可操作的最小落地页。
+5. 本地调试遵循隐私优先，不落盘凭据、不输出 token/cookie、不在本地构建 APK。
+
+## 0. 当前状态
+
+1. 设置页、历史页、下载页已经从首页壳分离，不再走页面内占位 section。
+2. forum 默认入口不再显示开发中占位文案，而是进入可操作的最小落地页。
+3. 搜索页已经删除顶部旧的“日期/详情”工具行，头部只保留三行结构。
+4. 视频详情页手机布局已经移除重复顶栏，播放器顶栏统一负责状态栏避让。
+5. forum 仍然不是原生数据页，特殊视频场景的播放链路诊断也还需要继续补齐。
 
 ## 1. 文档定位
 
@@ -24,13 +46,6 @@
 1. 工程负责人：快速判断当前变更是否可上线、可回滚、可继续拆分。
 2. 开发者：按模块边界定位代码，不再围绕“主页/默认分区/搜索头部”反复猜测。
 3. GPT/Agent：拿到上下文后能直接进入“读首个阻塞错误 -> 最小改动 -> push -> gh run watch -> 修首个错误”的闭环。
-
-本版文档替代“主页聚合页优先”的旧叙事，核心约束已经改为：
-
-1. 启动后不再进入 home 聚合页，而是进入默认入口页面。
-2. 默认入口页面当前仅允许 video、image、forum。
-3. 搜索页头部向 EhViewer 收敛，固定为三行结构。
-4. 本地调试遵循隐私优先，不落盘凭据、不输出 token/cookie、不在本地构建 APK。
 
 ## 2. 本次已确认结论
 
@@ -41,27 +56,33 @@
 3. 默认入口偏好语义已经从“首页默认分区”收敛为“默认入口页面”。
 4. 设置页选项目前只保留 video、image、forum。
 5. 旧用户如果本地还残留 subscription 等 legacy 偏好值，应用启动时会被迁移回当前允许的默认入口集合，避免继续落到非目标入口。
+6. forum 当前使用的是最小可用落地页，而不是 TodoStatus：
+   - 可直接打开 Iwara forum 浏览器页面。
+   - 可直接回到 video 或 image，避免默认入口陷入死路。
 
 ### 2.2 搜索页
 
-1. 搜索页头部已经收敛到三行：
+1. 搜索页头部已经收敛为三行：
    - 第一行：返回键 + 搜索框。
    - 第二行：Video / Image 标签切换。
    - 第三行：日期下拉。
-2. 排序、过滤器和列表模式仍保留，但已移出头部三行主体，避免头部结构继续偏离 EhViewer 风格。
-3. user 搜索能力仍留在 VM/数据层，但主入口不再暴露为并列搜索标签。
+2. 旧的“日期/详情”常驻工具行已经从顶部移除，不再构成第四行伪顶栏。
+3. recent query 仍保留在搜索框展开内容内部，但不再常驻头部下方。
+4. user 搜索能力仍留在 VM/数据层，但主入口不再暴露为并列搜索标签。
 
 ### 2.3 播放与隐私
 
 1. 本地脱敏接口扫测已确认：测试视频详情接口可以拿到 fileUrl，manifest 请求可以返回 200。
 2. 旧的播放失败高风险点之一是清晰度偏好默认值为 Source，而 manifest 常返回 360/540 等名称；该问题此前已通过 PlayerState 的可用清晰度回退逻辑规避。
-3. 本轮又补了一处隐私修复：登录成功后不再把 token 打到标准输出。
-4. MediaRepo 的 manifest 请求已切换到 Iwara 专用 OkHttpClient，避免媒体链路绕开统一的 Iwara 头部策略。
+3. 本轮 UI 修复里又补了一处详情页安全区问题：播放器顶栏统一负责状态栏避让，手机详情页不再重复叠一层返回栏。
+4. 隐私与媒体链路修复继续保留：
+   - 登录成功后不再把 token 打到标准输出。
+   - MediaRepo 的 manifest 请求继续使用 Iwara 专用 OkHttpClient。
 
 ### 2.4 仍然存在的风险
 
-1. forum 入口仍无真实数据链路，当前仍不是最小可用页。
-2. 搜索页虽然已满足三行头部要求，但底部增强区仍比 EhViewer 更重。
+1. forum 入口仍无原生真实数据链路，当前只是浏览器落地页。
+2. 搜索页虽然已经满足三行头部要求，但视觉细节还没有完全像素级贴齐 EhViewer。
 3. 私有视频、年龄限制视频、地区限制视频仍需补一轮专门的播放链路脱敏扫测。
 
 ## 3. 强约束
@@ -84,11 +105,13 @@
 
 ### 3.3 代码风格
 
-1. Kotlin/Compose 遵循 Google Android 风格，优先显式状态流与最小副作用。
+1. Kotlin/Compose 遵循 [Google Android Kotlin Style Guide](https://developer.android.com/kotlin/style-guide)，优先显式状态流与最小副作用。
 2. Shell 遵循 Google Shell Style，默认 set -euo pipefail。
 3. Python 若用于工具脚本或排障，兼容 Python 3.8，复杂类型使用 Any 或省略复杂类型声明。
 4. 关键待决事项、研究方向、可选优化点统一写在文件开头注释块，便于 Agent 与人工共读。
 5. 提交说明保持一句话，格式为“修复点 + 触发场景 + 结果”。
+6. markdown 遵循 [Google Markdown Style Guide](https://google.github.io/styleguide/docguide/style.html)。
+7. JSON 遵循 [Google JSON Style Guide](https://google.github.io/styleguide/jsoncstyleguide.xml)。
 
 ## 4. 当前实现地图
 
@@ -106,9 +129,11 @@
 2. app/src/main/java/me/rerere/awara/ui/page/index/IndexPage.kt
 3. app/src/main/java/me/rerere/awara/ui/page/index/layout/IndexPagePhoneLayout.kt
 4. app/src/main/java/me/rerere/awara/ui/page/index/layout/IndexPageTabletLayout.kt
-5. app/src/main/java/me/rerere/awara/ui/page/setting/SettingPage.kt
-6. app/src/main/java/me/rerere/awara/ui/page/video/VideoPage.kt
-7. app/src/main/java/me/rerere/awara/ui/page/video/VideoVM.kt
+5. app/src/main/java/me/rerere/awara/ui/page/index/pager/IndexForumPage.kt
+6. app/src/main/java/me/rerere/awara/ui/page/setting/SettingPage.kt
+7. app/src/main/java/me/rerere/awara/ui/page/video/VideoPage.kt
+8. app/src/main/java/me/rerere/awara/ui/page/video/layout/VideoPagePhoneLayout.kt
+9. app/src/main/java/me/rerere/awara/ui/page/video/pager/VideoOverviewPage.kt
 
 ### 4.2 feature/search
 
@@ -136,6 +161,7 @@
 1. feature/player/src/main/java/me/rerere/awara/ui/component/player/PlayerState.kt
 2. feature/player/src/main/java/me/rerere/awara/ui/component/player/PlayerCache.kt
 3. feature/player/src/main/java/me/rerere/awara/ui/component/player/Player.kt
+4. feature/player/src/main/java/me/rerere/awara/ui/component/player/PlayerScaffold.kt
 
 ### 4.4 data 与 network
 
@@ -177,14 +203,14 @@
 原因：
 
 1. 用户明确要求按 EhViewer 风格收敛为三行结构。
-2. 现有搜索功能比 EhViewer 更重，无法直接删掉排序/过滤器而不伤功能。
-3. 最小改法是在不破坏数据逻辑的前提下，仅重排布局层。
+2. 原实现虽然已经有三行头部，但三行下方还常驻一行“日期/详情”工具区，用户体感上仍然不是 EhViewer 式头部。
+3. 最小改法不是推翻搜索逻辑，而是先删除这条顶部旧工具行，并把 recent query 保留在搜索框展开内容内部。
 
 结果：
 
 1. 头部核心结构符合目标。
-2. 排序、过滤器、列表模式仍可用。
-3. 后续若需要再极简，可以继续把增强区折叠或抽屉化。
+2. 旧的“日期/详情”视觉干扰已经消失。
+3. 后续若要继续极简，只需要继续处理视觉细节，而不是再拆一层顶栏。
 
 ### 5.3 视频为什么曾经“能看到详情但不能播”
 
@@ -203,29 +229,29 @@
 
 ## 6. 下一阶段模块化目标
 
-### 阶段 A：完成导航与入口语义收敛
+### 阶段 A：完成 EhViewer 风格收敛
 
 目标：
 
-1. 首页只承接浏览内容，不承接工具页占位态。
-2. 默认入口配置与实际落地页面完全一致。
+1. 搜索页头部结构与视觉继续向 EhViewer 靠拢。
+2. 详情页手机顶部不再出现重复顶栏或安全区错位。
 
 验收：
 
-1. 从抽屉进入 setting/history/download 不再出现 Still in developing。
-2. 启动后落点仅可能是 video、image、forum。
+1. 搜索页顶部不再出现旧的“日期/详情”工具行。
+2. 手机详情页顶部控制区稳定显示在状态栏下方，不再超出屏幕。
 
-### 阶段 B：完成查询模型统一
+### 阶段 B：完成 forum 最小可用页升级
 
 目标：
 
-1. Index/Search/Favorites/Follow 使用统一 FeedQuery 语义。
-2. UI 不再散落 queryMap 字符串拼装。
+1. forum 从“浏览器落地页”升级为“原生列表页”。
+2. forum 作为默认入口时具有完整的加载、错误和空态。
 
 验收：
 
-1. 同一组筛选条件在 Index/Search 下发出的 API 参数一致。
-2. 分页和重试不重复拉相同页。
+1. forum 至少具备最小列表页。
+2. 不再依赖外部浏览器作为主路径。
 
 ### 阶段 C：完成播放链路诊断化
 
@@ -239,17 +265,17 @@
 1. 播放失败时可以精确指出失败阶段。
 2. 日志不包含 token/cookie/Authorization 原文。
 
-### 阶段 D：补齐 forum 最小可用页
+### 阶段 D：完成 FeedQuery 统一
 
 目标：
 
-1. forum 不再是空占位。
-2. 允许把 forum 作为真实默认入口。
+1. Index/Search/Favorites/Follow 使用统一 FeedQuery 语义。
+2. UI 不再散落 queryMap 字符串拼装。
 
 验收：
 
-1. forum 至少具备最小列表页。
-2. 论坛页加载失败时提供真实错误态而不是开发中占位态。
+1. 同一组筛选条件在 Index/Search 下发出的 API 参数一致。
+2. 分页和重试不重复拉相同页。
 
 ## 7. 本地接口扫测建议顺序
 
@@ -287,9 +313,9 @@
 
 ## 9. 回滚预案
 
-1. 若导航改动引发入口错乱，优先回滚首页壳路由分发，不回滚底层 FeedQuery 与数据层整理。
-2. 若搜索页布局收敛影响交互，优先回滚搜索页头部布局，不回滚底层搜索仓储与分页。
-3. 若播放链路修复引发额外副作用，优先回滚 manifest 客户端选择或播放器选择策略，不回滚脱敏日志与 token 输出修复。
+1. 若搜索页风格收敛影响交互，优先回滚搜索页头部布局，不回滚底层搜索仓储与分页逻辑。
+2. 若详情页顶部修复引发播放器控制异常，优先回滚手机详情页重复顶栏删除或播放器状态栏避让实现，不回滚媒体链路修复。
+3. 若 forum 落地页引发默认入口争议，优先回滚 forum 入口页实现，不回滚 setting/history/download 的直接路由修复。
 
 ## 10. Awesome Prompt 模板
 
@@ -322,7 +348,7 @@
 
 ## 11. 建议执行顺序
 
-1. 先让当前导航、搜索、隐私和媒体客户端修复通过 build-apk.yml。
-2. 再补 forum 最小可用页，消除默认入口的最后一个占位风险。
-3. 再做播放链路的结构化脱敏日志，把“不可播”定位从猜测变成阶段化诊断。
+1. 先让当前搜索页、forum 落地页和详情页顶部修复通过 build-apk.yml。
+2. 再补 forum 原生数据链路，彻底移除浏览器落地页过渡方案。
+3. 再补播放链路的结构化脱敏日志，把“不可播”定位从猜测变成阶段化诊断。
 4. 最后统一 FeedQuery mapper，把首页、搜索、收藏、关注页纳入同一查询协议。

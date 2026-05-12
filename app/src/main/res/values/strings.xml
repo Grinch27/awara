@@ -134,6 +134,9 @@
     <string name="setting_data">Data</string>
         <string name="status_in_developing">Still in developing</string>
         <string name="status_nothing_here">Nothing here</string>
+    <string name="forum_landing_message">The native forum feed is not ready yet. You can open the Iwara forum in your browser from here.</string>
+    <string name="forum_landing_open_action">Open Iwara Forum</string>
+    <string name="forum_landing_tip">Tip: keep Video or Image as the default entry if you want to stay fully in-app.</string>
     <string name="setting_data_logs_export_title">Export App Logs</string>
     <string name="setting_data_logs_export_text">Export up to 10000 recent sanitized behavior logs as JSON</string>
     <string name="setting_data_logs_export_success">App logs exported</string>

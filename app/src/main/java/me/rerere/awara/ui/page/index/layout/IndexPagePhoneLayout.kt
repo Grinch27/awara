@@ -44,6 +44,7 @@ import me.rerere.awara.ui.page.index.IndexDrawer
 import me.rerere.awara.ui.page.index.SETTING_HOME_DEFAULT_SECTION
 import me.rerere.awara.ui.page.index.IndexVM
 import me.rerere.awara.ui.page.index.indexNavigations
+import me.rerere.awara.ui.page.index.pager.IndexForumPage
 import me.rerere.awara.ui.page.index.pager.IndexImagePage
 import me.rerere.awara.ui.page.index.pager.IndexSubscriptionPage
 import me.rerere.awara.ui.page.index.pager.IndexVideoPage
@@ -213,9 +214,10 @@ fun IndexPagePhoneLayout(vm: IndexVM) {
                     }
 
                     "forum" -> {
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            TodoStatus()
-                        }
+                        IndexForumPage(
+                            onBrowseVideo = { selectedNavigationName = "video" },
+                            onBrowseImage = { selectedNavigationName = "image" },
+                        )
                     }
 
                     else -> {

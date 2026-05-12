@@ -128,15 +128,7 @@ fun SearchPage(
         "video" -> vm.videoFilters.toList()
         else -> emptyList()
     }
-    val activeSort = when (vm.state.searchType) {
-        "image" -> vm.imageSort
-        "video" -> vm.videoSort
-        else -> DEFAULT_MEDIA_SORT
-    }
     val currentDateFilterValue = activeFilters.firstOrNull { it.key == "date" }?.value
-    val showSearchSummary = vm.query.isNotBlank() || activeFilters.isNotEmpty() || (
-        vm.state.searchType != "user" && vm.state.uiState != UiState.Initial
-    )
     val currentItemCount = when (vm.state.searchType) {
         "image" -> vm.state.imageList.size
         "user" -> vm.state.userList.size
@@ -336,121 +328,6 @@ fun SearchPage(
                             onValueChange = ::updateDateFilter,
                         )
                     }
-                }
-            }
-
-            if (vm.state.searchType != "user") {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    FilterAndSort(
-                        sort = if (vm.state.searchType == "image") vm.imageSort else vm.videoSort,
-                        onSortChange = {
-                            if (vm.state.searchType == "image") {
-                                vm.updateImageSort(it)
-                            } else {
-                                vm.updateVideoSort(it)
-                            }
-                        },
-                        filterValues = if (vm.state.searchType == "image") vm.imageFilters else vm.videoFilters,
-                        onFilterAdd = {
-                            if (vm.state.searchType == "image") {
-                                vm.addImageFilter(it)
-                            } else {
-                                vm.addVideoFilter(it)
-                            }
-                        },
-                        onFilterRemove = {
-                            if (vm.state.searchType == "image") {
-                                vm.removeImageFilter(it)
-                            } else {
-                                vm.removeVideoFilter(it)
-                            }
-                        },
-                        onFilterChooseDone = vm::submitSearch,
-                        onFilterClear = {
-                            if (vm.state.searchType == "image") {
-                                vm.clearImageFilter()
-                            } else {
-                                vm.clearVideoFilter()
-                            }
-                        },
-                    )
-
-                    MediaListModeButton(
-                        value = listMode,
-                        onValueChange = { listMode = it },
-                    )
-                }
-            }
-
-            if (recentQueries.isNotEmpty() && !searchBarActive) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.search_recent_quick_title),
-                        style = MaterialTheme.typography.labelMedium,
-                    )
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        items(items = recentQueries, key = { it }) { recentQuery ->
-                            FilterChip(
-                                selected = recentQuery == vm.query,
-                                onClick = {
-                                    vm.query = recentQuery
-                                    submitSearch()
-                                },
-                                label = {
-                                    Text(
-                                        text = recentQuery,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                },
-                                leadingIcon = {
-                                    Icon(Icons.Outlined.History, null)
-                                },
-                            )
-                        }
-                    }
-                }
-            }
-
-            if (showSearchSummary) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Divider()
-                    SearchSummarySection(
-                        query = vm.query,
-                        searchType = vm.state.searchType,
-                        activeSort = activeSort,
-                        activeFilters = activeFilters,
-                        onEditQuery = {
-                            searchBarActive = true
-                        },
-                        onRemoveFilter = { filterValue ->
-                            if (vm.state.searchType == "image") {
-                                vm.removeImageFilter(filterValue)
-                            } else {
-                                vm.removeVideoFilter(filterValue)
-                            }
-                            vm.submitSearch()
-                        },
-                    )
                 }
             }
 
