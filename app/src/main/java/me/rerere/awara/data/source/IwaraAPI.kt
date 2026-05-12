@@ -222,9 +222,11 @@ interface IwaraAPI {
         @Query("page") page: Int
     ): Pager<Image>
 
-    @GET("/profiles")
+    @GET("/search")
     suspend fun searchUser(
+        @Query("type") type: String = "users",
         @Query("query") query: String,
-        @Query("page") page: Int
+        @Query("page") page: Int,
+        @Query("sort") sort: String = "relevance",
     ): Pager<User>
 }

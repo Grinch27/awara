@@ -52,6 +52,8 @@ class SearchVM(
     }
 
     fun search(replaceResults: Boolean = true) {
+        val requestedPage = state.page
+        val previousUiState = state.uiState
         viewModelScope.launch {
             state = state.copy(
                 uiState = if (replaceResults) UiState.Loading else state.uiState,
@@ -113,10 +115,15 @@ class SearchVM(
                 }
             }.onFailure { throwable ->
                 state = state.copy(
-                    uiState = UiState.Error(
-                        throwable = throwable,
-                        messageText = throwable.localizedMessage ?: "Unknown Error",
-                    ),
+                    page = if (replaceResults) 1 else (requestedPage - 1).coerceAtLeast(1),
+                    uiState = if (replaceResults) {
+                        UiState.Error(
+                            throwable = throwable,
+                            messageText = throwable.localizedMessage ?: "Unknown Error",
+                        )
+                    } else {
+                        previousUiState
+                    },
                     loadingMore = false,
                 )
             }
