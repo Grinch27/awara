@@ -129,6 +129,8 @@
     <string name="setting_about_summary">项目来源、作者信息与应用说明</string>
     <string name="index_home_shortcuts_title">快捷入口</string>
     <string name="index_drawer_primary_section_title">浏览</string>
+    <string name="status_in_developing">开发中</string>
+    <string name="status_nothing_here">暂无内容</string>
     <string name="index_drawer_community_section_title">社区</string>
     <string name="setting_data">数据</string>
     <string name="setting_data_logs_export_title">导出应用日志</string>

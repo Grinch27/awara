@@ -104,4 +104,6 @@
     <string name="friend_requests">友達リクエスト</string>
     <string name="friends_pending">同意待ち</string>
     <string name="friends_friends">既に友達</string>
+    <string name="status_in_developing">開発中</string>
+    <string name="status_nothing_here">まだ内容はありません</string>
 </resources>

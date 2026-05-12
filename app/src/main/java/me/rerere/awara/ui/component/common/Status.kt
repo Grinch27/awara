@@ -12,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.airbnb.lottie.compose.LottieAnimation
@@ -39,7 +40,10 @@ fun BoxScope.TodoStatus(modifier: Modifier = Modifier) {
             contentScale = ContentScale.Crop
         )
 
-        Text("Still in Developing", style = MaterialTheme.typography.titleLarge)
+        Text(
+            text = stringResource(R.string.status_in_developing),
+            style = MaterialTheme.typography.titleLarge,
+        )
     }
 }
 
@@ -91,7 +95,10 @@ fun BoxScope.EmptyStatus(modifier: Modifier = Modifier) {
             contentScale = ContentScale.Crop
         )
 
-        Text("Nothing Here", style = MaterialTheme.typography.titleLarge)
+        Text(
+            text = stringResource(R.string.status_nothing_here),
+            style = MaterialTheme.typography.titleLarge,
+        )
     }
 }
 

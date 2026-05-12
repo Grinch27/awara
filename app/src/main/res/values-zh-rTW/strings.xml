@@ -99,4 +99,6 @@
     <string name="friend_requests">好友請求</string>
     <string name="friends_pending">等待同意</string>
     <string name="friends_friends">已是朋友</string>
+    <string name="status_in_developing">開發中</string>
+    <string name="status_nothing_here">暫無內容</string>
 </resources>

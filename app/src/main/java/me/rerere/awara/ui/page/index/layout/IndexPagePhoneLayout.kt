@@ -52,6 +52,8 @@ import me.rerere.awara.ui.stores.LocalUserStore
 import me.rerere.awara.ui.stores.collectAsState
 import me.rerere.compose_setting.preference.rememberStringPreference
 
+private val externalRouteNavigations = setOf("history", "download", "setting")
+
 @Composable
 fun IndexPagePhoneLayout(vm: IndexVM) {
     val userStore = LocalUserStore.current
@@ -94,7 +96,11 @@ fun IndexPagePhoneLayout(vm: IndexVM) {
                     selectedNavigationName = currentNavigation?.name,
                     onNavigationSelected = { navigationName ->
                         if (navigations.any { it.name == navigationName }) {
-                            selectedNavigationName = navigationName
+                            if (externalRouteNavigations.contains(navigationName)) {
+                                navController.navigate(navigationName)
+                            } else {
+                                selectedNavigationName = navigationName
+                            }
                             scope.launch {
                                 drawerState.close()
                             }

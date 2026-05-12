@@ -1,342 +1,237 @@
 <!--
-需要你决定：
-1. 第一阶段是否接受把单体 :app 拆成 6 到 8 个 Gradle 模块。
-2. 订阅视图是否允许纯本地“智能订阅”能力，不要求服务端新增接口。
-3. 下载、播放、搜索是否接受分阶段迁移，而不是一次性重构。
+关键待你决策（请在评审时明确）：
+1) 首页默认频道是否继续固定为 subscription，还是按用户行为动态推荐（video/image/subscription）。
+2) feature:home 是否本阶段就落地，还是先完成 search/player 的查询模型收敛后再拆。
+3) Iwara 接口回归测试是否引入“只本地执行”的脚本模板（默认禁网日志脱敏、禁止凭据落盘）。
 
-后续代码研究方向：
-1. 先抽 build-logic 和 core/data，还是先把 player/download 作为独立 feature 落地。
-2. 当前筛选模型是否要继续兼容 key/value 字符串参数，还是直接升级为类型化查询对象。
+后续代码研究方向（建议优先级从高到低）：
+1) FeedQuery 全链路收敛：Index/Search/Favorites/Follow 统一查询入参与分页重试策略。
+2) 抽屉导航拆分：主浏览导航与工具路由（history/download/setting）分组，减少误选和占位态。
+3) 播放链路排障标准化：按“鉴权 -> 媒体源 -> m3u8/直链 -> ExoPlayer”建立统一诊断事件。
 
-可继续优化点：
-1. 用统一的 FeedQuery 模型覆盖首页、搜索页、收藏页、关注页的筛选与排序。
-2. 给订阅视图补上本地持久化、导出导入、回滚恢复和分享链接能力。
-3. 把外联端点、隐私说明、调试开关和发布说明整理成单独文档并纳入发版流程。
+可继续优化点（可并行推进）：
+1) 设置页增加诊断卡片：最近一次 DoH 失败原因、最后一次日志导出时间、最近构建 commit 信息。
+2) GH Actions 失败采集标准化：run 级失败日志拉取失败时自动降级到 job 级日志。
+3) 文档工程化：把本文件拆成“架构总览 + 迁移路线图 + 验收清单 + 回滚预案”四份短文档。
 -->
 
-# Awara 模块拆分与订阅筛选改造方案
+# Awara 模块化与查询体系重构总方案（Agent + 人工双读版）
 
-## 0. 现状校正（2026-05-08）
+## 1. 文档目的
 
-当前分阶段改造已经先落下了几块基础能力，这里先校正一次状态，避免后续继续按旧前提推进：
+本文档用于统一三类读者的执行语义：
 
-1. `:build-logic`、`:core:model`、`:data` 已经落地，并且在提交 `4240d0f753eb8252d0be3c25a79b08d519345632` 对应的 `build-apk.yml` 中验证通过。
-2. 保存视图不再只是“能保存”：当前首页视频/图片筛选面板已经可以读取本地保存视图，并直接复用到当前排序和筛选条件；保存视图的 JSON 导出导入能力也已经接上。
-3. 设置页的数据入口不再只覆盖日志与保存视图：当前已经补上统一的本地数据备份包，覆盖保存视图、历史、下载记录和不含登录态的安全设置；应用日志仍保持单独的脱敏导出通道。
-4. 首页壳已经继续按 EhViewer 的使用习惯收敛：手机首页改为抽屉优先、平板首页改为常驻左侧主导航，频道切换、快捷入口和固定保存视图都统一收进首页左侧壳层，不再依赖底部导航或顶部标签条作为主入口。
-5. 首页左侧壳层已经继续往 EhViewer / FreshRSS 的信息组织方式靠拢：主浏览、社区、快捷入口和保存视图分段展示，选中态和保存视图条目都已经改成更高信息密度的两行布局。
-6. 保存视图功能已经从当前代码中移除，相关本地模型、导出导入入口和管理页不再作为本阶段目标；后续只保留统一的 `FeedQuery` / `FeedFilter` 查询模型。
-7. 网络栈已经补上第一层共享边界：DoH 偏好现在继续保持全局生效，并通过统一的 `NetworkTransportPolicy` 接口应用到共享客户端；ECH 方案已经明确下线，不再保留占位偏好或未落地的传输分支。
+1. 工程负责人：快速判断当前阶段是否可上线、可回滚、可追责。
+2. 开发者：按任务切片直接落代码，不再反复猜测边界。
+3. GPT/Agent：拿到上下文后可连续执行“改代码 -> 提交 -> 远端构建 -> 修错”闭环。
 
-这意味着后续阶段不应再把“保存视图导出导入”或“基础本地数据备份”当成待设计项，而应该继续往“跨页面复用、固定入口、搜索模板复用、类型化查询模型收敛”推进。
+本文档替代旧版“保存视图”为中心的方案，转为以 `FeedQuery` 统一查询模型为主轴，聚焦当前代码现状。
 
-## 1. 当前结构判断
+## 2. 当前现状（2026-05-12 校正）
 
-基于当前仓库实现，可以先把问题归纳成两类：
+### 2.1 已落地能力
 
-1. 结构过于集中。
-   当前只有一个 [settings.gradle.kts](../settings.gradle.kts) 中声明的 `:app` 模块，而仓库里已经同时承载了网络、数据库、下载、播放器、搜索、首页、消息、用户和设置等职责。
+1. 基础模块已拆出：`:build-logic`、`:core:model`、`:data`。
+2. feature 化已启动：`:feature:player`、`:feature:search` 已接入并参与主流程。
+3. 查询模型已进入主干：`FeedQuery` / `FeedScope` / `FeedFilter` 可在首页与搜索链路中使用。
+4. 搜索边界已抽象：`feature/search` 通过 `SearchRepository` 与 app 适配层解耦。
+5. 手机视频详情页已去除滚动后残留 TopAppBar 壳，主内容流更接近 EhViewer 风格。
 
-2. 订阅筛选模型过于轻量。
-   当前筛选核心只有 [app/src/main/java/me/rerere/awara/ui/component/iwara/param/Filter.kt](../app/src/main/java/me/rerere/awara/ui/component/iwara/param/Filter.kt) 里的 `FilterValue(key, value)`，并由 [app/src/main/java/me/rerere/awara/ui/page/index/IndexVM.kt](../app/src/main/java/me/rerere/awara/ui/page/index/IndexVM.kt) 在内存里分别维护 `videoFilters` 和 `imageFilters`。这能工作，但不利于保存视图、跨页面复用、导入导出与后续扩展。
+### 2.2 当前风险点
 
-## 2. 第一阶段目标
+1. 首页抽屉存在“路由型入口 + 页面内入口”混合，容易出现误选后落占位态。
+2. 部分公共状态文案仍存在硬编码，跨语言体验不一致。
+3. CI 失败时 `gh run view --log-failed` 偶发无输出，若无降级策略会阻塞修复节奏。
+4. Iwara 接口排障缺少统一脚本约束，容易出现“临时命令有效、复现链路不可复用”。
 
-第一阶段不追求大规模业务改写，只追求三件事：
+### 2.3 本阶段不再推进的方向
 
-1. 把构建逻辑和基础层先拆出来，降低 `:app` 的依赖压力。
-2. 把订阅筛选从“页面内临时状态”提升为“可持久化的领域模型”。
-3. 保持现有 UI 行为基本不变，优先做结构迁移而不是交互重设计。
+1. 不恢复“保存视图”旧模型。
+2. 不引入 ECH 实验分支。
+3. 不在本地进行 APK 构建验证（构建仅依赖 GH Actions）。
 
-## 3. 目标模块图
+## 3. 目标架构（最终形态）
 
-建议先按下面这张最小可落地图来拆，而不是一步拆成几十个模块。
-
-### 3.1 第一批必须模块
+## 3.1 模块分层
 
 1. `:app`
-   只保留 Application、导航装配、顶层依赖注入入口和发布配置。
+职责：Application、导航装配、DI 装配、发布配置。
 
-2. `:build-logic`
-   放 Android application/library、Compose、Kotlin、KSP、Lint、Detekt 或 Ktlint 约定插件。这个方向直接参考 EhViewer 的 `build-logic`。
+2. `:core:model`
+职责：领域模型、查询模型、跨 feature 可复用 UI 状态模型。
 
-3. `:core:model`
-   放通用 entity、dto、分页模型、错误模型、排序和筛选领域对象。
+3. `:core:network`（下一阶段新增）
+职责：Iwara API、OkHttp/Retrofit、传输策略、鉴权头组装。
 
-4. `:core:network`
-   放 `IwaraAPI`、OkHttp、Retrofit、拦截器和序列化工厂，把当前 [app/src/main/java/me/rerere/awara/di/NetworkModule.kt](../app/src/main/java/me/rerere/awara/di/NetworkModule.kt) 中的网络配置迁出去。
+4. `:core:database`（下一阶段新增）
+职责：Room、DAO、分页本地缓存与清理策略。
 
-5. `:core:database`
-   放 Room 数据库、DAO、实体映射和本地查询定义。
+5. `:data`
+职责：仓储实现、远端/本地聚合、参数映射、错误归一化。
 
-6. `:data`
-   放 `MediaRepo`、`UserRepo`、`CommentRepo` 等仓储实现，作为 network/database 的组合层。当前 [app/src/main/java/me/rerere/awara/data/repo/MediaRepo.kt](../app/src/main/java/me/rerere/awara/data/repo/MediaRepo.kt) 已经是很直接的拆分起点。
+6. `:ui`（按需新增）
+职责：主题、通用组件、分页壳、状态壳。
 
-7. `:ui`
-   放通用 Compose 组件、主题、公共状态组件、分页组件、筛选弹窗组件。
+7. `:feature:*`
+职责：页面编排、ViewModel、feature 级模型映射、交互状态。
 
-### 3.2 第二批 feature 模块
+## 3.2 查询模型统一边界
 
-第一批稳定后，再拆这几个 feature：
+统一入口对象：
 
-1. `:feature:home`
-   首页、推荐、订阅流、首页筛选。
-
-2. `:feature:search`
-   搜索、搜索结果、搜索筛选。
-
-3. `:feature:player`
-   播放器、播放页、相关视频、播放偏好。
-
-4. `:feature:download`
-   下载页、下载任务、下载通知、下载数据库映射。
-
-5. `:feature:user`
-   登录、用户页、关注、好友、消息。
-
-6. `:feature:library`
-   收藏、历史、播放列表、稍后看。
-
-## 4. 模块拆分顺序
-
-建议按下面顺序迁移，避免一次性动太多页面。
-
-### 阶段 A：只拆工具链和基础层
-
-1. 新增 `:build-logic`，把 `build.gradle.kts` 和 `app/build.gradle.kts` 中重复的 Android/Kotlin/Compose 约定抽成插件。
-2. 新增 `:core:model`，先迁移 entity、dto、分页模型、错误模型。
-3. 新增 `:core:network`，迁移网络配置和 API 声明。
-4. 新增 `:data`，迁移 `MediaRepo`、`UserRepo`、`CommentRepo`。
-
-这一阶段结束后，`IndexVM`、`SearchVM`、`DownloadVM` 仍可在 `:app` 内，但依赖的 repo 已从 `:data` 提供。
-
-### 阶段 B：先拆高收益 feature
-
-1. 先拆 `:feature:player`
-   播放器依赖最重，且单独拆出后最利于后续升级媒体栈和缓存策略。
-
-2. 再拆 `:feature:download`
-   下载链路天然适合隔离，因为它已经有 `DownloadVM`、`DownloadWorker` 和本地数据库查询。
-
-3. 然后拆 `:feature:home` 与 `:feature:search`
-   这两块和筛选体系耦合最深，适合在订阅视图设计稳定后一起迁移。
-
-## 5. 订阅筛选体系改造方案
-
-## 5.1 当前问题
-
-当前实现的主要问题有四个：
-
-1. 筛选对象无类型。
-   `FilterValue` 只有字符串键值，缺少日期区间、标签逻辑、评分区间、媒体类型、已读状态等语义。
-
-2. 页面之间不能复用。
-   首页筛选、搜索筛选、收藏筛选未来都会走类似查询，但当前每个页面更像自己拼参数。
-
-3. 筛选不可持久化。
-   `IndexVM` 的 `videoFilters`、`imageFilters` 都只活在当前 ViewModel 生命周期内，不能保存为“订阅视图”。
-
-4. 参数转换散落在页面层。
-   当前由 `toParams()` 直接把 UI 层对象转换成 API 查询参数，不利于扩展到本地数据库筛选与导出导入。
-
-## 5.2 目标模型
-
-建议新增一套明确的查询领域对象。
-
-### 核心领域对象
-
-1. `FeedScope`
-   表示查询作用域，例如首页视频、首页图片、订阅视频、订阅图片、搜索结果、收藏、历史。
-
-2. `FeedSort`
-   替代当前裸字符串排序值，统一首页和搜索页排序定义。
-
+1. `FeedQuery`
+2. `FeedScope`
 3. `FeedFilter`
-   使用密封类表达不同筛选语义，例如：
-   标签、日期范围、评分范围、时长范围、作者、是否订阅、是否已下载、是否已观看、是否 NSFW。
+4. `FeedSort`（建议补齐，替代裸字符串排序）
 
-4. `FeedQuery`
-   一个完整查询对象，包含 `scope`、`keyword`、`sort`、`filters`、`page`、`pageSize`。
+统一约束：
 
-5. `SavedFeedView`（已移除）
-   表示“保存的订阅视图”，包含名称、描述、图标、默认排序、筛选集和是否固定到首页。
+1. UI 层不再直接拼 `Map<String, String>`。
+2. 参数转换集中在 data 层 mapper。
+3. legacy `FilterValue` 仅作为过渡输入，不作为长期模型。
 
-## 5.3 数据层设计
+## 4. 与 EhViewer / FreshRSS 的对齐策略
 
-建议在 Room 里新增两张表：
+### 4.1 对齐 EhViewer 的工程实践
 
-1. `saved_feed_view`
-   保存视图基本信息，如 `id`、`name`、`scope`、`sort`、`pinned`、`createdAt`、`updatedAt`。
+1. 先稳定 build-logic，再扩 feature。
+2. 先抽共享边界，再改页面表现。
+3. 迁移按“可编译 + 可回滚 + 可观察”最小步前进。
 
-2. `saved_feed_filter`
-   保存视图下的筛选条目，如 `viewId`、`type`、`operator`、`value`、`extraValue`。
+### 4.2 借鉴 FreshRSS 的产品思路
 
-这样做有两个好处：
+1. 查询条件是资产，不是临时 UI 状态。
+2. 结构化查询优先于按钮堆叠。
+3. 导入导出与恢复能力要服务排障和迁移，而非仅服务设置页。
 
-1. 本地保存的智能视图不依赖服务端支持。
-2. 同一套视图既能驱动远端 API 参数，也能驱动本地数据库筛选。
+## 5. 迁移路线图（可执行）
 
-## 5.4 参数转换边界
+### 阶段 A：稳定当前 feature 化结果
 
-建议把“领域查询对象 -> API 参数”的转换集中到 `:data` 层，而不是继续放在 UI 层。
+目标：消除用户可见占位态与路由歧义。
 
-可以抽一个 `FeedQueryMapper`，专门负责：
+任务：
 
-1. `FeedQuery -> Map<String, String>`
-2. `FeedQuery -> Map<String, String>`
-3. `FilterValue legacy -> FeedFilter`
+1. 抽屉中路由型入口（history/download/setting）直接导航，不再占用首页分区内容槽。
+2. 公共状态文案全部资源化，补齐多语言最低覆盖。
+3. 设置页聚合入口保留平铺结构，继续支持搜索过滤。
 
-这样做可以先兼容现有 UI，再逐步把旧的 `FilterValue` 调用点迁走。
+验收：
 
-## 5.5 首页与搜索页的统一方式
+1. 用户从首页进入设置、历史、下载不再看到“开发中”占位文案。
+2. `build-apk.yml` release/debug 均通过。
 
-建议不要继续让首页和搜索页各写一套查询状态，而是引入统一状态容器。
+### 阶段 B：查询模型收敛
 
-### 建议的 ViewModel 责任划分
+目标：Index/Search 共用一套查询拼装和分页协议。
 
-1. `HomeFeedVM`
-   只负责首页推荐、订阅、图片、视频等首页分区的视图状态。
+任务：
 
-2. `FeedFilterVM`
-   只负责筛选、排序、保存视图、恢复视图。
+1. 提供 `FeedQueryMapper`（query -> API params）统一实现。
+2. 首页与搜索页 VM 移除自管字符串筛选拼接逻辑。
+3. 错误态统一输出 `UiState.Error(messageText=...)` 文本兜底。
 
-3. `SearchVM`
-   只负责搜索输入和结果分页，但查询模型与首页共用 `FeedQuery`。
+验收：
 
-当前 [app/src/main/java/me/rerere/awara/ui/page/search/SearchVM.kt](../app/src/main/java/me/rerere/awara/ui/page/search/SearchVM.kt) 与 [app/src/main/java/me/rerere/awara/ui/page/index/IndexVM.kt](../app/src/main/java/me/rerere/awara/ui/page/index/IndexVM.kt) 都是自己拼接查询条件，后面应该改为共同依赖 `FeedQueryUseCase`。
+1. Index/Search 同筛选条件下请求参数一致。
+2. 关键分页入口支持幂等重试，不出现重复页。
 
-## 5.6 第一版用户可见能力
+### 阶段 C：网络与数据库边界正式拆出
 
-第一版不需要一口气做完所有高级筛选，建议先交付这 6 个能力：
+目标：让 `:data` 成为唯一聚合层，feature 不直连网络细节。
 
-1. 保存当前视频筛选为订阅视图。
-2. 保存当前图片筛选为订阅视图。
-3. 首页固定显示若干个保存视图入口。
-4. 订阅视图支持导出和导入。
-5. 视图支持一键重置到默认排序。
-6. 搜索页可以读取保存视图作为初始筛选模板。
+任务：
 
-## 6. 具体落地任务拆分
+1. 新建 `:core:network` 并迁出 `NetworkModule` 主体。
+2. 新建 `:core:database` 并迁出数据库定义与 DAO。
+3. data 层补齐 repo 接口测试桩，减少页面级联回归。
 
-### 任务 1：提取基础查询模型
+验收：
 
-影响范围：
+1. app 模块不再持有网络与数据库实现细节。
+2. feature 模块仅依赖 data 接口/模型。
 
-1. `:core:model`
-2. 当前 `FilterValue`、排序选项、分页模型
+## 6. CI 驱动开发规范（强约束）
 
-完成标志：
+1. 不在本地构建 APK。
+2. 每次修复都提交最小改动并推送。
+3. 使用 `gh workflow run` 触发后，必须 `gh run watch --interval 10 --exit-status`。
+4. `gh run view --log-failed` 无输出时，降级为 `gh run view --job <job_id> --log` 抓首个可执行错误。
+5. 只修首个阻塞错误，避免一次改动过大导致回归面扩大。
 
-1. `FeedQuery`、`FeedFilter`、`FeedSort` 已存在。
-2. 旧 `FilterValue` 仍可兼容，但只作为 UI 过渡层。
+## 7. 本地接口扫测规范（隐私优先）
 
-### 任务 2：新增保存视图数据库
+以下规范仅用于本地排障，不上传账户敏感数据：
 
-影响范围：
+1. 凭据不得写入仓库文件、脚本明文或日志文件。
+2. curl 响应落盘前必须脱敏（cookie/token/user identifier）。
+3. 接口测试仅执行在本地终端环境，不进入 CI artifact。
+4. 排障结论记录“现象与接口路径”，不记录账号明文。
+5. 如需复测视频播放，优先记录链路阶段失败点，不记录完整私密头信息。
 
-1. `:core:database`
-2. 导出导入逻辑
-3. 订阅视图仓储
+建议排障顺序：
 
-完成标志：
+1. 登录与 cookie 获取是否成功。
+2. 视频详情接口是否返回可播放媒体源。
+3. 媒体源 URL 是否 2xx 与可持续读取。
+4. 播放器数据源组装是否携带必要请求头。
+5. 失败时写入结构化日志（匿名化）。
 
-1. 能保存、读取、删除和排序保存视图。
-2. 能把视图导出为 JSON。
+## 8. 代码规范约束
 
-### 任务 3：首页接入保存视图
+1. Kotlin/Compose：遵循 Google Android 风格，状态提升优先，避免隐式副作用。
+2. Shell：遵循 Google Shell Style，默认 `set -euo pipefail`，避免明文凭据。
+3. Python：兼容 3.8，复杂变量可用 `Any` 或省略变量类型声明。
+4. 提交说明：一句话说明“修复点 + 触发场景 + 结果”。
 
-影响范围：
+## 9. Agent 执行模板（Awesome Prompt）
 
-1. `:feature:home`
-2. 首页顶部入口和筛选弹窗
+将以下模板作为后续 agent 执行输入骨架：
 
-完成标志：
+```text
+你是仓库内执行型工程代理，请严格按以下闭环：
+1) 读取当前失败 run 的首个阻塞错误。
+2) 仅修改与首个错误相关的最小代码。
+3) 本地只做静态检查与错误面检查，不做本地构建。
+4) 提交并 push 到当前工作分支。
+5) 触发 build-apk.yml。
+6) 每 10 秒 watch 一次，直到 run 结束。
+7) 失败则回到步骤 1，成功则输出变更清单与风险。
 
-1. 首页可以切换多个保存视图。
-2. 切换视图后自动刷新列表。
+输出要求：
+- 先给结论，再列文件与原因。
+- 任何敏感信息（账号、cookie、token）禁止出现在输出中。
+- 引用日志时仅保留错误摘要，不贴完整敏感请求头。
+```
 
-### 任务 4：搜索页复用查询模型
+## 10. 里程碑与验收清单
 
-影响范围：
+M1（已完成）：
 
-1. `:feature:search`
-2. 查询到参数映射
+1. `feature/search` 接入主导航。
+2. 搜索核心 VM 迁移并可运行。
+3. build-apk.yml 多轮修复后重新绿。
 
-完成标志：
+M2（进行中）：
 
-1. 搜索页排序和筛选不再自管裸字符串。
-2. 搜索结果页可从保存视图初始化。
+1. 首页抽屉路由歧义清理。
+2. 设置页与公共占位态文案一致化。
+3. FeedQuery 与 legacy FilterValue 过渡点继续收口。
 
-## 7. 与 EhViewer 和 FreshRSS 的对应关系
+M3（待开始）：
 
-## 7.1 借鉴 EhViewer 的点
+1. `:core:network` / `:core:database` 拆分。
+2. Iwara 全接口本地扫测脚本模板化（脱敏、禁落盘凭据）。
+3. 视频播放失败链路诊断事件标准化。
 
-1. 先拆 `build-logic`，再拆 feature。
-2. 先统一工具链和约定，再升级依赖。
-3. 用模块边界而不是包目录来降低回归面。
+## 11. 回滚预案
 
-## 7.2 借鉴 FreshRSS 的点
+1. 任何 feature 模块迁移失败时，优先回滚“路由接入层”而非回滚底层模型。
+2. 查询模型变更导致参数异常时，保留 legacy mapper 作为临时兜底。
+3. CI 连续两轮失败且错误不收敛时，冻结新增需求，仅做编译恢复。
 
-1. 查询和视图是长期资产，不是一次性 UI 状态。
-2. 保存视图、标签视图、导入导出、同步恢复比“多几个筛选按钮”更值钱。
-3. 扩展点和数据边界要先定义清楚，再往上叠功能。
+## 12. 下一步建议（执行顺序）
 
-## 8. 建议的下一个提交顺序
-
-如果你要继续往前推进，建议直接按这个顺序做：
-
-1. 新增 `:build-logic`，把 Android/Kotlin/Compose 约定抽离。
-2. 新增 `:core:model` 和 `FeedQuery` 相关领域对象。
-3. 新增保存视图的 Room 表与仓储接口。
-4. 把首页视频/图片筛选从 `FilterValue` 改接 `FeedQuery`。
-5. 再把搜索页接入同一套查询模型。
-
-## 9. 现状校正与优先级修正
-
-这一节是结合当前仓库代码、现有工作流和对 EhViewer / FreshRSS 的参考后，对上面方案做的校正，避免把已经完成的事情继续当成待办。
-
-### 9.1 已经存在的能力
-
-1. 全局内置 DoH 已经落地，而且默认值已经与本次目标一致。
-   当前 [app/src/main/java/me/rerere/awara/util/ConfigurableDohDns.kt](../app/src/main/java/me/rerere/awara/util/ConfigurableDohDns.kt) 已经实现全局 DNS 解析器，默认 endpoint 是 `doh.opendns.com/dns-query`，默认上游是 `dns.alidns.com/dns-query`。
-
-2. 设置页已经暴露了 DoH 开关、endpoint 和 upstream 配置。
-   当前 [app/src/main/java/me/rerere/awara/ui/page/setting/SettingPage.kt](../app/src/main/java/me/rerere/awara/ui/page/setting/SettingPage.kt) 已经提供 UI 配置入口，所以这部分下一步重点不是“从零实现”，而是补验证、重置入口、输入校验和故障回退。
-
-3. GitHub Actions 已经改成在 CI 中动态同步最新稳定版 Gradle。
-   当前 [.github/workflows/build-apk.yml](../.github/workflows/build-apk.yml)、[.github/workflows/build-apk-docker.yml](../.github/workflows/build-apk-docker.yml) 都会执行 [scripts/sync-gradle-wrapper.sh](../scripts/sync-gradle-wrapper.sh)，因此远端构建已经不是固定死在 `9.1.0`。
-
-4. `FeedQuery` 相关领域对象已经开始存在，只是还没有完成真正的模块迁移和持久化接线。
-   当前 [app/src/main/java/me/rerere/awara/domain/feed/FeedQuery.kt](../app/src/main/java/me/rerere/awara/domain/feed/FeedQuery.kt) 已经保留 `FeedQuery`、`FeedScope`、`FeedFilter`，而 `SavedFeedView` 相关实现已移除。因此第一阶段更准确的目标不是继续补救保存视图，而是继续把统一查询模型迁到 `:core:model` / `:data`，再接上 Room 和页面状态。
-
-### 9.2 当前不建议立刻改动的点
-
-1. 本地 `gradle-wrapper.properties` 不建议直接改成每次都跟随最新版。
-   当前顶层插件仍是 AGP `9.0.1`，而 CI 之所以可以动态同步，是因为它先执行验证，再用工作流兜住兼容性风险。仓库内本地 wrapper 继续保留一个已知可启动基线，会比“每次打开工程都追最新”更稳。这个点更适合作为 `build-logic` 和 AGP 升级完成后的第二步，而不是现在先动。
-
-2. ECH 需求已经明确移除，不再保留“先挂一个设置项”的中间状态。
-   参考 UjuiUjuMandan 的 EhViewer patch，ECH 至少需要 Conscrypt、自定义 `SSLSocketFactory`、额外 DNS / HTTPS 记录解析、ECH 拒绝后的重试或缓存失效逻辑，以及额外的 ProGuard keep / dontwarn 规则；它本质上是一条独立网络栈分支，而不是普通设置页选项。
-   进一步确认后，当前公开可用的 Conscrypt 稳定版和公开源码里都没有可直接接入的 `setEchConfigList` / `getEchConfigList` / `setCheckDnsForEch` / `EchRejectedException` Java API，所以本方案后续不再把 ECH 作为近期路线的一部分。
-
-### 9.3 建议提升优先级的两件事
-
-1. 先补持久化行为日志，而不是继续投入更深的网络实验。
-   当前仓库大量使用 Android `Log`，但没有统一的本地持久化日志池。先做一个默认上限 10000 条、带敏感字段脱敏和导出能力的日志模块，能更快帮助排查下载、登录、评论、解析失败和工作流回归问题。
-
-2. 把 DoH 从“可配置”提升到“可运维”。
-   下一步更有价值的是加 4 个配套能力：
-   一是 endpoint / upstream 输入格式校验。
-   二是恢复默认值按钮。
-   三是最近一次解析失败原因展示。
-   四是按域名区分策略的扩展位，为以后是否单独给 API / 视频 / 图片分流做准备。
-
-### 9.4 从 EhViewer 和 FreshRSS 得到的更具体结论
-
-1. EhViewer 值得借鉴的不是“模块数量多”，而是它先用 `build-logic` 和 `core:*` 把约定与基础层抽离，再持续升级 AGP / Gradle / Paging / Compose。Awara 现在最值得照搬的是这个迁移顺序，而不是先把页面全部拆碎。
-
-2. FreshRSS 值得借鉴的不是单纯筛选器数量，而是“保存查询 -> 分享查询 -> 导出/导入 -> 扩展点”这一整条资产化思路。Awara 的订阅视图如果只停在本地弹窗状态，就拿不到它真正的长期价值。
-
-3. 因此 Awara 的第一阶段目标应该明确调整为：
-   先统一查询模型和保存视图。
-   再补导出导入与恢复能力。
-   然后再考虑下载策略插件化、外部播放器策略等更深的网络或扩展能力。
+1. 先完成首页抽屉路由与设置入口一致性收口。
+2. 再推进 FeedSort 类型化与 mapper 收敛。
+3. 最后启动 Iwara 接口本地扫测模板，并专项定位“视频可见但不可播”的真实链路断点。
