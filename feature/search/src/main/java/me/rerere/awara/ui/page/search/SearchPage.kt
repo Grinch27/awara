@@ -811,7 +811,6 @@ private fun TagBrowseSheet(
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 TAG_BROWSE_FILTERS.fastForEach { filter ->
                     SearchFilterChip(
@@ -830,7 +829,6 @@ private fun TagBrowseSheet(
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     selectedTags.fastForEach { selectedTag ->
                         SearchFilterChip(
