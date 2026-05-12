@@ -115,6 +115,8 @@
     <string name="setting_look_home_default_text">Choose whether Subscription, Video, Image, or Forum opens first after launch.</string>
     <string name="setting_look_media_list_mode_title">Media List Mode</string>
     <string name="setting_look_media_list_mode_text">Switch media feeds between detail and thumbnail layouts.</string>
+    <string name="setting_look_search_rating_title">Search Rating</string>
+    <string name="setting_look_search_rating_text">Default rating parameter for video and image search.</string>
     <string name="setting_player">Player Setting</string>
     <string name="setting_player_auto_play_title">Autoplay</string>
     <string name="setting_player_auto_play_text">Automatically start buffering and playing the video</string>

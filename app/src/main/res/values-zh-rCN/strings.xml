@@ -114,6 +114,8 @@
     <string name="setting_look_home_default_text">选择启动后优先进入订阅、视频、图片或论坛页面。</string>
     <string name="setting_look_media_list_mode_title">媒体列表模式</string>
     <string name="setting_look_media_list_mode_text">在媒体列表中切换详情和缩略图布局。</string>
+    <string name="setting_look_search_rating_title">搜索评级</string>
+    <string name="setting_look_search_rating_text">控制视频和图片搜索默认使用的 rating 参数。</string>
     <string name="setting_player">播放器设置</string>
     <string name="setting_player_auto_play_title">自动播放</string>
     <string name="setting_player_auto_play_text">自动开始缓冲和播放视频</string>

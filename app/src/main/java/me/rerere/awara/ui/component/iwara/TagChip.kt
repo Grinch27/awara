@@ -1,5 +1,6 @@
 package me.rerere.awara.ui.component.iwara
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -15,10 +16,18 @@ import androidx.compose.ui.unit.dp
 import me.rerere.awara.data.entity.Tag
 
 @Composable
-fun TagChip(tag: Tag) {
+fun TagChip(
+    tag: Tag,
+    onClick: ((Tag) -> Unit)? = null,
+) {
     Surface(
         tonalElevation = 2.dp,
         shape = MaterialTheme.shapes.small,
+        modifier = if (onClick == null) {
+            Modifier
+        } else {
+            Modifier.clickable { onClick(tag) }
+        },
     ) {
         ProvideTextStyle(MaterialTheme.typography.labelMedium) {
             Text(
@@ -32,14 +41,15 @@ fun TagChip(tag: Tag) {
 @Composable
 fun TagRow(
     modifier: Modifier = Modifier,
-    tags: List<Tag>
+    tags: List<Tag>,
+    onTagClick: ((Tag) -> Unit)? = null,
 ) {
     LazyRow(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         items(tags) {
-            TagChip(tag = it)
+            TagChip(tag = it, onClick = onTagClick)
         }
     }
 }

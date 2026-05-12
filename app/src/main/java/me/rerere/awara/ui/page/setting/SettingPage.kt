@@ -22,6 +22,7 @@ import androidx.compose.material.icons.outlined.Replay
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Source
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.ViewAgenda
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -59,6 +60,9 @@ import me.rerere.awara.ui.component.common.MessageHolder
 import me.rerere.awara.ui.component.iwara.MEDIA_LIST_MODE_DETAIL
 import me.rerere.awara.ui.component.iwara.MEDIA_LIST_MODE_THUMBNAIL
 import me.rerere.awara.ui.component.iwara.SETTING_MEDIA_LIST_MODE
+import me.rerere.awara.ui.component.iwara.param.rating.DEFAULT_MEDIA_RATING
+import me.rerere.awara.ui.component.iwara.param.rating.MediaRatingKeys
+import me.rerere.awara.ui.component.iwara.param.rating.SETTING_MEDIA_SEARCH_RATING
 import me.rerere.awara.ui.page.index.SETTING_HOME_DEFAULT_SECTION
 import me.rerere.awara.util.AppLogger
 import me.rerere.awara.util.DEFAULT_NETWORK_DOH_ENDPOINT
@@ -145,6 +149,8 @@ private fun appearanceSectionMatches(context: Context, query: String): Boolean =
     R.string.setting_look_work_mode_text,
     R.string.setting_look_media_list_mode_title,
     R.string.setting_look_media_list_mode_text,
+    R.string.setting_look_search_rating_title,
+    R.string.setting_look_search_rating_text,
     R.string.setting_look_home_default_title,
     R.string.setting_look_home_default_text,
     R.string.setting_player,
@@ -507,6 +513,10 @@ private fun AppearanceSettingsSection(
         key = SETTING_MEDIA_LIST_MODE,
         default = MEDIA_LIST_MODE_DETAIL,
     )
+    val mediaSearchRating = rememberStringPreference(
+        key = SETTING_MEDIA_SEARCH_RATING,
+        default = DEFAULT_MEDIA_RATING,
+    )
     val homeDefaultSection = rememberStringPreference(
         key = SETTING_HOME_DEFAULT_SECTION,
         default = "video",
@@ -538,6 +548,12 @@ private fun AppearanceSettingsSection(
         query,
         R.string.setting_look_media_list_mode_title,
         R.string.setting_look_media_list_mode_text,
+    )
+    val showSearchRating = showWholeSection || matchesSettingQuery(
+        context,
+        query,
+        R.string.setting_look_search_rating_title,
+        R.string.setting_look_search_rating_text,
     )
     val showHomeDefault = showWholeSection || matchesSettingQuery(
         context,
@@ -624,6 +640,31 @@ private fun AppearanceSettingsSection(
                 },
                 text = {
                     Text(stringResource(R.string.setting_look_media_list_mode_text))
+                },
+            )
+        }
+
+        if (showSearchRating) {
+            SettingPickerItem(
+                state = mediaSearchRating,
+                items = MediaRatingKeys,
+                itemLabel = { rating ->
+                    Text(
+                        text = when (rating) {
+                            "ecchi" -> stringResource(R.string.rating_ecchi)
+                            "general" -> stringResource(R.string.rating_general)
+                            else -> stringResource(R.string.rating_all)
+                        },
+                    )
+                },
+                title = {
+                    Text(stringResource(R.string.setting_look_search_rating_title))
+                },
+                icon = {
+                    Icon(Icons.Outlined.Star, null)
+                },
+                text = {
+                    Text(stringResource(R.string.setting_look_search_rating_text))
                 },
             )
         }

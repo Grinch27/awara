@@ -171,8 +171,22 @@ class RouterActivity : ComponentActivity() {
                     SettingPage()
                 }
 
-                composable("search") {
+                composable(
+                    route = "search?type={type}&tag={tag}",
+                    arguments = listOf(
+                        navArgument("type") {
+                            type = NavType.StringType
+                            defaultValue = "video"
+                        },
+                        navArgument("tag") {
+                            type = NavType.StringType
+                            defaultValue = ""
+                        },
+                    ),
+                ) {
                     SearchPage(
+                        initialSearchType = it.arguments?.getString("type"),
+                        initialTag = it.arguments?.getString("tag"),
                         onBack = {
                             navController.popBackStack()
                         },

@@ -91,6 +91,9 @@ import kotlinx.coroutines.launch
 import me.rerere.awara.feature.search.R
 import me.rerere.awara.ui.component.common.UiState
 import me.rerere.awara.ui.component.iwara.param.FilterValue
+import me.rerere.awara.ui.component.iwara.param.rating.DEFAULT_MEDIA_RATING
+import me.rerere.awara.ui.component.iwara.param.rating.MediaRatingKeys
+import me.rerere.awara.ui.component.iwara.param.rating.SETTING_MEDIA_SEARCH_RATING
 import me.rerere.awara.ui.component.iwara.param.sort.DEFAULT_MEDIA_SORT
 import me.rerere.awara.ui.component.iwara.param.sort.MediaSortKeys
 import me.rerere.compose_setting.preference.rememberStringPreference
@@ -106,6 +109,8 @@ private val TAG_BROWSE_FILTERS = ('A'..'Z').map(Char::toString) + ('0'..'9').map
 @Composable
 fun SearchPage(
     vm: SearchVM = koinViewModel(),
+    initialSearchType: String? = null,
+    initialTag: String? = null,
     onBack: () -> Unit = {},
     onOpenMedia: (SearchMediaItem) -> Unit = {},
     onOpenUser: (SearchUserItem) -> Unit = {},
@@ -114,10 +119,16 @@ fun SearchPage(
         key = SETTING_MEDIA_LIST_MODE,
         default = MEDIA_LIST_MODE_DETAIL,
     )
+    var globalSearchRating by rememberStringPreference(
+        key = SETTING_MEDIA_SEARCH_RATING,
+        default = DEFAULT_MEDIA_RATING,
+    )
     var recentQueriesRaw by rememberStringPreference(key = "search.recent_queries", default = "")
     var searchBarActive by rememberSaveable { mutableStateOf(false) }
+    var initialRouteApplied by remember(initialSearchType, initialTag) { mutableStateOf(false) }
     var lastLoadMoreItemCount by remember { mutableStateOf(-1) }
     val gridState = rememberLazyStaggeredGridState()
+    val defaultSearchRating = globalSearchRating.takeIf { it in MediaRatingKeys } ?: DEFAULT_MEDIA_RATING
     val recentQueries = remember(recentQueriesRaw) {
         recentQueriesRaw.lineSequence()
             .map(String::trim)
@@ -133,10 +144,28 @@ fun SearchPage(
     }
     val currentDateFilterValue = activeFilters.firstOrNull { it.key == "date" }?.value
     val currentTagFilterValues = activeFilters.filter { it.key == "tags" }
+    val currentSortValue = when (vm.state.searchType) {
+        "image" -> vm.imageSort
+        else -> vm.videoSort
+    }
+    val currentRatingValue = when (vm.state.searchType) {
+        "image" -> vm.imageRating
+        else -> vm.videoRating
+    }
     val currentItemCount = when (vm.state.searchType) {
         "image" -> vm.state.imageList.size
         "user" -> vm.state.userList.size
         else -> vm.state.videoList.size
+    }
+
+    LaunchedEffect(defaultSearchRating, initialSearchType, initialTag) {
+        vm.applyDefaultRating(defaultSearchRating)
+        if (!initialRouteApplied && !initialTag.isNullOrBlank()) {
+            lastLoadMoreItemCount = -1
+            vm.searchByTag(initialSearchType.orEmpty(), initialTag)
+            searchBarActive = false
+            initialRouteApplied = true
+        }
     }
 
     LaunchedEffect(
@@ -182,6 +211,24 @@ fun SearchPage(
     fun updateSearchType(type: String) {
         lastLoadMoreItemCount = -1
         vm.updateSearchType(type)
+    }
+
+    fun updateMediaSort(sort: String) {
+        lastLoadMoreItemCount = -1
+        if (vm.state.searchType == "image") {
+            vm.updateImageSort(sort)
+        } else {
+            vm.updateVideoSort(sort)
+        }
+    }
+
+    fun updateRating(rating: String) {
+        lastLoadMoreItemCount = -1
+        if (vm.state.searchType == "image") {
+            vm.updateImageRating(rating)
+        } else {
+            vm.updateVideoRating(rating)
+        }
     }
 
     fun updateDateFilter(selectedDate: String?) {
@@ -375,6 +422,16 @@ fun SearchPage(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
+                            SortDropdown(
+                                modifier = Modifier.weight(1f),
+                                selectedSort = currentSortValue,
+                                onValueChange = ::updateMediaSort,
+                            )
+                            RatingDropdown(
+                                modifier = Modifier.weight(1f),
+                                selectedRating = currentRatingValue,
+                                onValueChange = ::updateRating,
+                            )
                             DateDropdown(
                                 modifier = Modifier.weight(1f),
                                 selectedDateValue = currentDateFilterValue,
@@ -650,6 +707,98 @@ private fun DateDropdown(
                     onClick = {
                         expanded = false
                         onValueChange(option.ifBlank { null })
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SortDropdown(
+    modifier: Modifier = Modifier,
+    selectedSort: String,
+    onValueChange: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val currentSort = selectedSort.takeIf { it in MediaSortKeys } ?: DEFAULT_MEDIA_SORT
+
+    Box(modifier = modifier) {
+        FilledTonalButton(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = { expanded = true },
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.filledTonalButtonColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.72f),
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            ),
+        ) {
+            Icon(Icons.Outlined.FilterList, null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = mediaSortLabel(currentSort),
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            MediaSortKeys.fastForEach { sort ->
+                DropdownMenuItem(
+                    text = { Text(mediaSortLabel(sort)) },
+                    onClick = {
+                        expanded = false
+                        onValueChange(sort)
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RatingDropdown(
+    modifier: Modifier = Modifier,
+    selectedRating: String,
+    onValueChange: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val currentRating = selectedRating.takeIf { it in MediaRatingKeys } ?: DEFAULT_MEDIA_RATING
+
+    Box(modifier = modifier) {
+        FilledTonalButton(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = { expanded = true },
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.filledTonalButtonColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.72f),
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            ),
+        ) {
+            Icon(Icons.Outlined.Star, null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = mediaRatingLabel(currentRating),
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            MediaRatingKeys.fastForEach { rating ->
+                DropdownMenuItem(
+                    text = { Text(mediaRatingLabel(rating)) },
+                    onClick = {
+                        expanded = false
+                        onValueChange(rating)
                     },
                 )
             }
@@ -1024,6 +1173,15 @@ private fun mediaSortLabel(sort: String): String {
         "views" -> stringResource(R.string.sort_views)
         "likes" -> stringResource(R.string.sort_likes)
         else -> stringResource(R.string.sort_date)
+    }
+}
+
+@Composable
+private fun mediaRatingLabel(rating: String): String {
+    return when (rating) {
+        "ecchi" -> stringResource(R.string.rating_ecchi)
+        "general" -> stringResource(R.string.rating_general)
+        else -> stringResource(R.string.rating_all)
     }
 }
 

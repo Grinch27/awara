@@ -4,6 +4,7 @@ package me.rerere.awara.ui.page.video.pager
 // TODO(agent): If overview metadata later gains playlist note editing or translation, split the reusable header section into smaller cards instead of growing one long column.
 
 import android.Manifest
+import android.net.Uri
 import android.os.Build
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
@@ -67,6 +68,7 @@ import me.rerere.awara.R
 import me.rerere.awara.data.entity.Video
 import me.rerere.awara.data.entity.fixUrl
 import me.rerere.awara.data.entity.thumbnailUrl
+import me.rerere.awara.ui.LocalRouterProvider
 import me.rerere.awara.ui.LocalMessageProvider
 import me.rerere.awara.ui.component.common.Button
 import me.rerere.awara.ui.component.common.ButtonType
@@ -123,6 +125,7 @@ fun VideoOverviewHeaderSection(
     modifier: Modifier = Modifier,
 ) {
     val state = vm.state
+    val router = LocalRouterProvider.current
     if (state.private) {
         Column(
             modifier = modifier,
@@ -155,6 +158,9 @@ fun VideoOverviewHeaderSection(
             )
             TagRow(
                 tags = video.tags,
+                onTagClick = { tag ->
+                    router.navigate("search?type=video&tag=${Uri.encode(tag.id)}")
+                },
             )
         }
     }

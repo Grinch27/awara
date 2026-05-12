@@ -81,6 +81,8 @@
     <string name="setting_look_dynamic_color_text">サムネイルに合わせて色を動的に調整する</string>
     <string name="setting_look_work_mode_title">動作モード</string>
     <string name="setting_look_work_mode_text">サムネイルがぼやけます</string>
+    <string name="setting_look_search_rating_title">検索レーティング</string>
+    <string name="setting_look_search_rating_text">動画と画像検索で既定使用する rating パラメータを選択します。</string>
     <string name="setting_player">プレーヤーの設定</string>
     <string name="setting_player_auto_play_title">自動再生</string>
     <string name="setting_player_auto_play_text">動画の読み込みと自動再生を開始する</string>

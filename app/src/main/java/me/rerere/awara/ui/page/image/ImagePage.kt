@@ -1,5 +1,6 @@
 package me.rerere.awara.ui.page.image
 
+import android.net.Uri
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -49,6 +50,7 @@ import me.rerere.awara.ui.component.common.zoomable.rememberZoomState
 import me.rerere.awara.ui.component.common.zoomable.zoomable
 import me.rerere.awara.ui.component.iwara.AuthorCard
 import me.rerere.awara.ui.component.iwara.RichText
+import me.rerere.awara.ui.component.iwara.TagRow
 import me.rerere.awara.util.openUrl
 import me.rerere.awara.util.shareLink
 import me.rerere.awara.util.toLocalDateTimeString
@@ -118,6 +120,16 @@ fun ImagePage(vm: ImageVM = koinViewModel()) {
                                     modifier = Modifier
                                         .fillMaxWidth(),
                                     maxLines = if (expaned) Int.MAX_VALUE else 2,
+                                )
+                            }
+
+                            val tags = state.state?.tags.orEmpty()
+                            if (tags.isNotEmpty()) {
+                                TagRow(
+                                    tags = tags,
+                                    onTagClick = { tag ->
+                                        router.navigate("search?type=image&tag=${Uri.encode(tag.id)}")
+                                    },
                                 )
                             }
 

@@ -11,10 +11,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import me.rerere.awara.domain.feed.FeedQuery
+import me.rerere.awara.domain.feed.FeedFilter
 import me.rerere.awara.domain.feed.FeedScope
 import me.rerere.awara.domain.feed.toFeedFilters
 import me.rerere.awara.ui.component.common.UiState
 import me.rerere.awara.ui.component.iwara.param.FilterValue
+import me.rerere.awara.ui.component.iwara.param.rating.DEFAULT_MEDIA_RATING
 import me.rerere.awara.ui.component.iwara.param.sort.DEFAULT_MEDIA_SORT
 
 class SearchVM(
@@ -24,17 +26,34 @@ class SearchVM(
         private set
     var query by mutableStateOf("")
     var videoSort by mutableStateOf(DEFAULT_MEDIA_SORT)
+    var videoRating by mutableStateOf(DEFAULT_MEDIA_RATING)
     val videoFilters: MutableList<FilterValue> = mutableStateListOf()
     var imageSort by mutableStateOf(DEFAULT_MEDIA_SORT)
+    var imageRating by mutableStateOf(DEFAULT_MEDIA_RATING)
     val imageFilters: MutableList<FilterValue> = mutableStateListOf()
+    private var defaultRatingApplied = false
 
     private fun hasActiveSearchCriteria(type: String = state.searchType): Boolean {
         return when (type) {
-            "video" -> query.isNotBlank() || videoFilters.isNotEmpty()
-            "image" -> query.isNotBlank() || imageFilters.isNotEmpty()
+            "video" -> query.isNotBlank() || videoFilters.isNotEmpty() || videoRating != DEFAULT_MEDIA_RATING || videoSort != DEFAULT_MEDIA_SORT
+            "image" -> query.isNotBlank() || imageFilters.isNotEmpty() || imageRating != DEFAULT_MEDIA_RATING || imageSort != DEFAULT_MEDIA_SORT
             "user" -> query.isNotBlank()
             else -> query.isNotBlank()
         }
+    }
+
+    private fun mediaFilters(scope: FeedScope): List<FeedFilter> {
+        val baseFilters = when (scope) {
+            FeedScope.SEARCH_IMAGE -> imageFilters.toFeedFilters()
+            else -> videoFilters.toFeedFilters()
+        }.filterNot { filter ->
+            filter is FeedFilter.KeyValue && filter.key == "rating"
+        }
+        val rating = when (scope) {
+            FeedScope.SEARCH_IMAGE -> imageRating
+            else -> videoRating
+        }
+        return baseFilters + FeedFilter.KeyValue("rating", rating)
     }
 
     private fun buildMediaSearchQuery(scope: FeedScope): FeedQuery {
@@ -45,13 +64,38 @@ class SearchVM(
                 FeedScope.SEARCH_IMAGE -> imageSort
                 else -> videoSort
             },
-            filters = when (scope) {
-                FeedScope.SEARCH_IMAGE -> imageFilters.toFeedFilters()
-                else -> videoFilters.toFeedFilters()
-            },
+            filters = mediaFilters(scope),
             page = state.page - 1,
             pageSize = 24,
         )
+    }
+
+    fun applyDefaultRating(rating: String) {
+        if (defaultRatingApplied) {
+            return
+        }
+        videoRating = rating
+        imageRating = rating
+        defaultRatingApplied = true
+    }
+
+    fun searchByTag(type: String, tag: String) {
+        val targetType = if (type == "image") "image" else "video"
+        val tagFilter = FilterValue("tags", tag)
+        query = ""
+        when (targetType) {
+            "image" -> {
+                imageFilters.clear()
+                imageFilters.add(tagFilter)
+            }
+
+            else -> {
+                videoFilters.clear()
+                videoFilters.add(tagFilter)
+            }
+        }
+        state = state.copy(searchType = targetType, page = 1, hasMore = true)
+        search()
     }
 
     fun submitSearch() {
@@ -157,7 +201,15 @@ class SearchVM(
     fun updateVideoSort(sort: String) {
         videoSort = sort
         state = state.copy(page = 1, hasMore = true)
-        if (state.searchType == "video" && hasActiveSearchCriteria()) {
+        if (state.searchType == "video") {
+            search()
+        }
+    }
+
+    fun updateVideoRating(rating: String) {
+        videoRating = rating
+        state = state.copy(page = 1, hasMore = true)
+        if (state.searchType == "video") {
             search()
         }
     }
@@ -179,7 +231,15 @@ class SearchVM(
     fun updateImageSort(sort: String) {
         imageSort = sort
         state = state.copy(page = 1, hasMore = true)
-        if (state.searchType == "image" && hasActiveSearchCriteria()) {
+        if (state.searchType == "image") {
+            search()
+        }
+    }
+
+    fun updateImageRating(rating: String) {
+        imageRating = rating
+        state = state.copy(page = 1, hasMore = true)
+        if (state.searchType == "image") {
             search()
         }
     }
