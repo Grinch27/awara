@@ -7,7 +7,10 @@ import me.rerere.awara.data.repo.MediaRepo
 import me.rerere.awara.data.repo.UserRepo
 import me.rerere.awara.ui.page.search.AppSearchRepository
 import me.rerere.awara.ui.page.search.SearchRepository
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
+
+private const val IWARA_HTTP_CLIENT = "iwaraHttpClient"
 
 val repoModule = module {
     single {
@@ -15,7 +18,7 @@ val repoModule = module {
     }
 
     single {
-        MediaRepo(get(), get())
+        MediaRepo(get(named(IWARA_HTTP_CLIENT)), get())
     }
 
     single<SearchRepository> {

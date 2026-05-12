@@ -52,6 +52,7 @@ import me.rerere.awara.ui.stores.collectAsState
 import me.rerere.compose_setting.preference.rememberStringPreference
 
 private val externalRouteNavigations = setOf("history", "download", "setting")
+private val defaultEntryNavigations = setOf("video", "image", "forum")
 
 @Composable
 fun IndexPageTabletLayout(vm: IndexVM) {
@@ -67,16 +68,23 @@ fun IndexPageTabletLayout(vm: IndexVM) {
         key = SETTING_HOME_DEFAULT_SECTION,
         default = "video",
     )
+    val preferredDefaultEntry = preferredHomeSection.value.takeIf { preferredName ->
+        preferredName in defaultEntryNavigations && navigations.any { it.name == preferredName }
+    }
     val defaultNavigationName = when {
-        navigations.any { it.name == preferredHomeSection.value } -> preferredHomeSection.value
+        preferredDefaultEntry != null -> preferredDefaultEntry
         navigations.any { it.name == "video" } -> "video"
         navigations.any { it.name == "image" } -> "image"
         navigations.any { it.name == "forum" } -> "forum"
-        userState.user != null && navigations.any { it.name == "subscription" } -> "subscription"
         else -> navigations.firstOrNull()?.name ?: "video"
     }
     var selectedNavigationName by rememberSaveable(userState.user != null) {
         mutableStateOf(defaultNavigationName)
+    }
+    LaunchedEffect(preferredHomeSection.value, defaultNavigationName) {
+        if (preferredHomeSection.value !in defaultEntryNavigations) {
+            preferredHomeSection.value = defaultNavigationName
+        }
     }
     LaunchedEffect(defaultNavigationName, navigations, selectedNavigationName) {
         if (navigations.none { it.name == selectedNavigationName }) {

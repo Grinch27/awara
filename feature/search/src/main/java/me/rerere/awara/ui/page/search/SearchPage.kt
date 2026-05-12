@@ -182,6 +182,30 @@ fun SearchPage(
         searchBarActive = false
     }
 
+    fun updateDateFilter(selectedDate: String?) {
+        val activeValueList = if (vm.state.searchType == "image") {
+            vm.imageFilters.toList()
+        } else {
+            vm.videoFilters.toList()
+        }
+        activeValueList.filter { it.key == "date" }.forEach {
+            if (vm.state.searchType == "image") {
+                vm.removeImageFilter(it)
+            } else {
+                vm.removeVideoFilter(it)
+            }
+        }
+        if (!selectedDate.isNullOrBlank()) {
+            val dateFilter = FilterValue("date", selectedDate)
+            if (vm.state.searchType == "image") {
+                vm.addImageFilter(dateFilter)
+            } else {
+                vm.addVideoFilter(dateFilter)
+            }
+        }
+        vm.submitSearch()
+    }
+
     Scaffold { innerPadding ->
         Column(
             modifier = Modifier
@@ -227,149 +251,160 @@ fun SearchPage(
                                             Icon(Icons.Outlined.History, null)
                                         },
                                     )
-                                } else {
+                                ScrollableTabRow(
+                                    selectedTabIndex = if (vm.state.searchType == "image") 1 else 0,
                                     Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        Text(text = stringResource(R.string.search_recent_title))
-                                        TextButton(onClick = { recentQueriesRaw = "" }) {
-                                            Text(stringResource(R.string.search_recent_clear))
-                                        }
-                                    }
-                                    recentQueries.forEach { recentQuery ->
-                                        ListItem(
+                                    edgePadding = 0.dp,
+                                    divider = {},
+                                ) {
+                                    Tab(
+                                        selected = vm.state.searchType == "video",
+                                        onClick = { vm.updateSearchType("video") },
+                                        text = {
+                                            Text(stringResource(R.string.video))
+                                        },
+                                    )
+                                    Tab(
+                                        selected = vm.state.searchType == "image",
+                                        onClick = { vm.updateSearchType("image") },
+                                        text = {
+                                            Text(stringResource(R.string.image))
+                                        },
+                                    )
+                                }
                                             headlineContent = { Text(recentQuery) },
                                             leadingContent = { Icon(Icons.Outlined.History, null) },
                                             modifier = Modifier.fillMaxWidth(),
+                                        modifier = Modifier.fillMaxWidth(),
                                             trailingContent = {
-                                                FilledTonalButton(
-                                                    onClick = {
-                                                        vm.query = recentQuery
-                                                        submitSearch()
-                                                    },
-                                                ) {
-                                                    Text(stringResource(R.string.search_apply_recent_action))
-                                                }
+                                        onValueChange = ::updateDateFilter,
+                                        }
+                                }
+                            }
+                        }
+                                    },
+                        if (vm.state.searchType != "user") {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                FilterAndSort(
+                                    sort = if (vm.state.searchType == "image") vm.imageSort else vm.videoSort,
+                                    onSortChange = {
+                                        if (vm.state.searchType == "image") {
+                                            vm.updateImageSort(it)
+                                        } else {
+                                            vm.updateVideoSort(it)
+                                        }
+                                    },
+                                    filterValues = if (vm.state.searchType == "image") vm.imageFilters else vm.videoFilters,
+                                    onFilterAdd = {
+                                        if (vm.state.searchType == "image") {
+                                            vm.addImageFilter(it)
+                                        } else {
+                                            vm.addVideoFilter(it)
+                                        }
+                                    },
+                                    onFilterRemove = {
+                                        if (vm.state.searchType == "image") {
+                                            vm.removeImageFilter(it)
+                                        } else {
+                                            vm.removeVideoFilter(it)
+                                        }
+                                    },
+                                    onFilterChooseDone = vm::submitSearch,
+                                    onFilterClear = {
+                                        if (vm.state.searchType == "image") {
+                                            vm.clearImageFilter()
+                                        } else {
+                                            vm.clearVideoFilter()
+                                        }
+                                    },
+                                )
+
+                                MediaListModeButton(
+                                    value = listMode,
+                                    onValueChange = { listMode = it },
+                                )
+                            }
+                        }
+                                    }
+                        if (recentQueries.isNotEmpty() && !searchBarActive) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.search_recent_quick_title),
+                                    style = MaterialTheme.typography.labelMedium,
+                                )
+                                LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    items(items = recentQueries, key = { it }) { recentQuery ->
+                                        FilterChip(
+                                            selected = recentQuery == vm.query,
+                                            onClick = {
+                                                vm.query = recentQuery
+                                                submitSearch()
+                                            },
+                                            label = {
+                                                Text(
+                                                    text = recentQuery,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                )
+                                            },
+                                            leadingIcon = {
+                                                Icon(Icons.Outlined.History, null)
                                             },
                                         )
                                     }
                                 }
-                            },
-                            leadingIcon = {
-                                Icon(Icons.Outlined.Search, null)
-                            },
-                            trailingIcon = {
-                                IconButton(
-                                    onClick = {
-                                        if (searchBarActive && vm.query.isNotBlank()) {
-                                            vm.query = ""
-                                        } else {
-                                            submitSearch()
-                                        }
-                                    },
-                                ) {
-                                    Icon(
-                                        imageVector = if (searchBarActive && vm.query.isNotBlank()) {
-                                            Icons.Outlined.Close
-                                        } else {
-                                            Icons.Outlined.Search
-                                        },
-                                        contentDescription = null,
-                                    )
-                                }
-                            },
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        SearchTypeChip(
-                            selected = vm.state.searchType == "video",
-                            label = stringResource(R.string.video),
-                            onClick = { vm.updateSearchType("video") },
-                        )
-                        SearchTypeChip(
-                            selected = vm.state.searchType == "image",
-                            label = stringResource(R.string.image),
-                            onClick = { vm.updateSearchType("image") },
-                        )
-                    }
-
-                    if (vm.state.searchType != "user") {
-                        DateDropdown(
-                            selectedDateValue = currentDateFilterValue,
-                            onValueChange = { selectedDate ->
-                                val activeValueList = if (vm.state.searchType == "image") {
-                                    vm.imageFilters.toList()
-                                } else {
-                                    vm.videoFilters.toList()
-                                }
-                                activeValueList.filter { it.key == "date" }.forEach {
-                                    if (vm.state.searchType == "image") {
-                                        vm.removeImageFilter(it)
-                                    } else {
-                                        vm.removeVideoFilter(it)
-                                    }
-                                }
-                                if (!selectedDate.isNullOrBlank()) {
-                                    val dateFilter = FilterValue("date", selectedDate)
-                                    if (vm.state.searchType == "image") {
-                                        vm.addImageFilter(dateFilter)
-                                    } else {
-                                        vm.addVideoFilter(dateFilter)
-                                    }
-                                }
-                                vm.submitSearch()
-                            },
-                        )
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            FilterAndSort(
-                                sort = if (vm.state.searchType == "image") vm.imageSort else vm.videoSort,
-                                onSortChange = {
-                                    if (vm.state.searchType == "image") {
-                                        vm.updateImageSort(it)
-                                    } else {
-                                        vm.updateVideoSort(it)
-                                    }
-                                },
-                                filterValues = if (vm.state.searchType == "image") vm.imageFilters else vm.videoFilters,
-                                onFilterAdd = {
-                                    if (vm.state.searchType == "image") {
+                            }
+                        }
                                         vm.addImageFilter(it)
-                                    } else {
-                                        vm.addVideoFilter(it)
-                                    }
-                                },
-                                onFilterRemove = {
-                                    if (vm.state.searchType == "image") {
-                                        vm.removeImageFilter(it)
-                                    } else {
-                                        vm.removeVideoFilter(it)
-                                    }
-                                },
-                                onFilterChooseDone = vm::submitSearch,
-                                onFilterClear = {
-                                    if (vm.state.searchType == "image") {
-                                        vm.clearImageFilter()
-                                    } else {
-                                        vm.clearVideoFilter()
-                                    }
-                                },
-                            )
+                        if (showSearchSummary) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Divider()
+                                SearchSummarySection(
+                                    query = vm.query,
+                                    searchType = vm.state.searchType,
+                                    activeSort = activeSort,
+                                    activeFilters = activeFilters,
+                                    onEditQuery = {
+                                        searchBarActive = true
+                                    },
+                                    onRemoveFilter = { filterValue ->
+                                        if (vm.state.searchType == "image") {
+                                            vm.removeImageFilter(filterValue)
+                                        } else {
+                                            vm.removeVideoFilter(filterValue)
+                                        }
+                                        vm.submitSearch()
+                                    },
+                                )
+                            }
+                        }
 
-                            MediaListModeButton(
-                                value = listMode,
+                        Text(
+                            text = stringResource(R.string.search_results_count, vm.state.count),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp),
+                        )
+
                                 onValueChange = { listMode = it },
                             )
                         }
@@ -538,6 +573,7 @@ private fun SearchTypeChip(
 
 @Composable
 private fun DateDropdown(
+    modifier: Modifier = Modifier,
     selectedDateValue: String?,
     onValueChange: (String?) -> Unit,
 ) {
@@ -559,7 +595,7 @@ private fun DateDropdown(
     val currentLabel = selectedDateValue?.takeIf { it.isNotBlank() }
         ?: stringResource(R.string.date_any)
 
-    Box {
+    Box(modifier = modifier) {
         FilledTonalButton(onClick = { expanded = true }) {
             Icon(Icons.Outlined.CalendarMonth, null)
             Text(text = currentLabel, modifier = Modifier.padding(start = 6.dp))
