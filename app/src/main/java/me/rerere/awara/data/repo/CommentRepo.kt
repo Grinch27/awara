@@ -4,6 +4,16 @@ import me.rerere.awara.data.entity.CommentCreationDto
 import me.rerere.awara.data.source.IwaraAPI
 
 class CommentRepo(private val iwaraAPI: IwaraAPI) {
+    suspend fun getProfileComments(
+        id: String,
+        page: Int,
+    ) = iwaraAPI.getProfileComments(
+        id,
+        mapOf(
+            "page" to page.toString(),
+        ),
+    )
+
     suspend fun getVideoComments(
         id: String,
         page: Int

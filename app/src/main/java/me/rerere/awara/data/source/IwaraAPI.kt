@@ -47,6 +47,12 @@ interface IwaraAPI {
         @Path("username") username: String
     ): ProfileDto
 
+    @GET("/profile/{id}/comments")
+    suspend fun getProfileComments(
+        @Path("id") id: String,
+        @QueryMap queryMap: Map<String, String>
+    ): Pager<Comment>
+
     @GET("/videos")
     suspend fun getVideoList(
         @QueryMap queryMap: Map<String, String>

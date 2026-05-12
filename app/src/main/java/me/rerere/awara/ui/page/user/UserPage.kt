@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items as lazyItems
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.pager.HorizontalPager
@@ -53,6 +55,7 @@ import kotlinx.coroutines.launch
 import me.rerere.awara.R
 import me.rerere.awara.data.dto.FriendStatus
 import me.rerere.awara.data.dto.ProfileDto
+import me.rerere.awara.data.source.stringResource as apiErrorString
 import me.rerere.awara.data.entity.toHeaderUrl
 import me.rerere.awara.ui.component.common.BackButton
 import me.rerere.awara.ui.component.common.BetterTabBar
@@ -64,6 +67,7 @@ import me.rerere.awara.ui.component.common.pullrefresh.SwipeRefresh
 import me.rerere.awara.ui.component.common.pullrefresh.rememberSwipeRefreshState
 import me.rerere.awara.ui.component.ext.excludeBottom
 import me.rerere.awara.ui.component.iwara.Avatar
+import me.rerere.awara.ui.component.iwara.comment.CommentCard
 import me.rerere.awara.ui.component.iwara.MediaCard
 import me.rerere.awara.ui.component.iwara.MediaListModeButton
 import me.rerere.awara.ui.component.iwara.mediaListGridCells
@@ -187,7 +191,10 @@ fun UserPage(
                         }
 
                         2 -> {
-                            UserGuestbookFallbackPage(profileState = profileState)
+                            UserGuestbookPage(
+                                vm = vm,
+                                profileState = profileState,
+                            )
                         }
                     }
                 }
@@ -197,10 +204,81 @@ fun UserPage(
 }
 
 @Composable
-private fun UserGuestbookFallbackPage(profileState: ProfileDto?) {
+private fun UserGuestbookPage(
+    vm: UserVM,
+    profileState: ProfileDto?,
+) {
     val context = LocalContext.current
     val username = profileState?.user?.username?.takeIf { it.isNotBlank() }
     val browserUrl = username?.let { "https://www.iwara.tv/profile/$it" }
+    val guestbookState = vm.state.guestbookCommentState.stack.last()
+    val guestbookError = vm.state.guestbookError
+    val guestbookExceptionMessage = vm.state.guestbookExceptionMessage
+
+    Column {
+        SwipeRefresh(
+            state = rememberSwipeRefreshState(isRefreshing = vm.state.guestbookCommentState.loading),
+            onRefresh = vm::loadGuestbookComments,
+            modifier = Modifier.weight(1f),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 8.dp),
+            ) {
+                when {
+                    guestbookError != null || guestbookExceptionMessage != null -> {
+                        UserGuestbookErrorState(
+                            message = guestbookError?.let { apiErrorString(it) }
+                                ?: guestbookExceptionMessage
+                                ?: stringResource(R.string.errors_unknown, "guestbook"),
+                            browserUrl = browserUrl,
+                            onRetry = vm::loadGuestbookComments,
+                        )
+                    }
+
+                    guestbookState.comments.isEmpty() -> {
+                        EmptyStatus()
+                    }
+
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                            contentPadding = PaddingValues(vertical = 8.dp),
+                        ) {
+                            lazyItems(guestbookState.comments, key = { it.id }) { comment ->
+                                CommentCard(
+                                    comment = comment,
+                                    onLoadReplies = null,
+                                    onReply = null,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (guestbookError == null && guestbookExceptionMessage == null && guestbookState.total > 0) {
+            PaginationBar(
+                page = guestbookState.page,
+                limit = guestbookState.limit,
+                total = guestbookState.total,
+                onPageChange = vm::changeGuestbookPage,
+                contentPadding = WindowInsets.navigationBars.asPaddingValues(),
+            )
+        }
+    }
+}
+
+@Composable
+private fun UserGuestbookErrorState(
+    message: String,
+    browserUrl: String?,
+    onRetry: () -> Unit,
+) {
+    val context = LocalContext.current
 
     Box(
         modifier = Modifier
@@ -228,18 +306,34 @@ private fun UserGuestbookFallbackPage(profileState: ProfileDto?) {
                 )
 
                 Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                )
+
+                Text(
                     text = stringResource(R.string.user_guestbook_tip),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                 )
 
-                if (browserUrl != null) {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Button(
-                        onClick = { context.openUrl(browserUrl) },
+                        onClick = onRetry,
                         type = ButtonType.Default,
                     ) {
-                        Text(stringResource(R.string.user_guestbook_open_action))
+                        Text(stringResource(R.string.user_guestbook_retry_action))
+                    }
+
+                    if (browserUrl != null) {
+                        Button(
+                            onClick = { context.openUrl(browserUrl) },
+                            type = ButtonType.Outlined,
+                        ) {
+                            Text(stringResource(R.string.user_guestbook_open_action))
+                        }
                     }
                 }
             }

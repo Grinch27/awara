@@ -139,9 +139,10 @@
     <string name="forum_landing_message">原生论坛流还没有接通，你可以先从这里在浏览器中打开 Iwara 论坛。</string>
     <string name="forum_landing_open_action">打开 Iwara 论坛</string>
     <string name="forum_landing_tip">提示：如果你希望默认入口保持纯应用内浏览，建议继续选择视频或图片。</string>
-    <string name="user_guestbook_message">原生留言流还没有接通。</string>
+    <string name="user_guestbook_message">留言暂时无法加载。</string>
     <string name="user_guestbook_open_action">打开 Iwara 个人页</string>
-    <string name="user_guestbook_tip">你仍然可以在应用内浏览该创作者的视频和图片，留言墙目前先走浏览器回退。</string>
+    <string name="user_guestbook_retry_action">重试</string>
+    <string name="user_guestbook_tip">你仍然可以在应用内浏览该创作者的视频和图片；如果留言持续加载失败，可以先打开 Iwara 个人页查看完整留言墙。</string>
     <string name="setting_data_local_backup_export_title">导出本地数据备份</string>
     <string name="setting_data_local_backup_export_text">导出 %1$d 条历史、%2$d 条下载记录和不含登录态的应用设置 JSON</string>
     <string name="setting_data_local_backup_export_success">本地数据备份已导出</string>

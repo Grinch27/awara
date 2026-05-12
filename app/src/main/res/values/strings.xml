@@ -137,9 +137,10 @@
     <string name="forum_landing_message">The native forum feed is not ready yet. You can open the Iwara forum in your browser from here.</string>
     <string name="forum_landing_open_action">Open Iwara Forum</string>
     <string name="forum_landing_tip">Tip: keep Video or Image as the default entry if you want to stay fully in-app.</string>
-    <string name="user_guestbook_message">The native guestbook feed is not connected yet.</string>
+    <string name="user_guestbook_message">Couldn\'t load guestbook right now.</string>
     <string name="user_guestbook_open_action">Open Iwara Profile</string>
-    <string name="user_guestbook_tip">You can still browse this creator\'s videos and images here. Open the profile in your browser to view the message wall for now.</string>
+    <string name="user_guestbook_retry_action">Retry</string>
+    <string name="user_guestbook_tip">You can still browse this creator\'s videos and images here. If loading keeps failing, open the profile in your browser to view the full message wall.</string>
     <string name="setting_data_logs_export_title">Export App Logs</string>
     <string name="setting_data_logs_export_text">Export up to 10000 recent sanitized behavior logs as JSON</string>
     <string name="setting_data_logs_export_success">App logs exported</string>

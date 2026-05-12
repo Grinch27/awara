@@ -62,8 +62,8 @@ fun CommentCard(
     comment: Comment,
     nestingLevel: Int = 0,
     showParentContext: Boolean = false,
-    onLoadReplies: (Comment) -> Unit,
-    onReply: (Comment) -> Unit
+    onLoadReplies: ((Comment) -> Unit)? = null,
+    onReply: ((Comment) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val user = LocalUserStore.current.collectAsState()
@@ -214,27 +214,33 @@ fun CommentCard(
 
                     Spacer(modifier = Modifier.weight(1f))
 
-                    AnimatedVisibility(
-                        visible = comment.numReplies > 0
-                    ) {
-                        TextButton(
-                            onClick = {
-                                onLoadReplies(comment)
-                            },
-                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
-                            colors = ButtonDefaults.textButtonColors(
-                                contentColor = MaterialTheme.colorScheme.primary,
-                            ),
-                        ) {
+                    AnimatedVisibility(visible = comment.numReplies > 0) {
+                        if (onLoadReplies != null) {
+                            TextButton(
+                                onClick = {
+                                    onLoadReplies(comment)
+                                },
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                                colors = ButtonDefaults.textButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.primary,
+                                ),
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.comment_replies_count, comment.numReplies),
+                                    style = MaterialTheme.typography.labelMedium,
+                                )
+                                Icon(Icons.Outlined.KeyboardArrowDown, null)
+                            }
+                        } else {
                             Text(
                                 text = stringResource(R.string.comment_replies_count, comment.numReplies),
                                 style = MaterialTheme.typography.labelMedium,
+                                color = CommentMetaColor,
                             )
-                            Icon(Icons.Outlined.KeyboardArrowDown, null)
                         }
                     }
 
-                    if(comment.parent == null) {
+                    if (comment.parent == null && onReply != null) {
                         TextButton(
                             onClick = {
                                 onReply(comment)
