@@ -40,6 +40,14 @@ class AppSearchRepository(
     override suspend fun suggestTags(query: String): List<String> {
         return mediaRepo.getTagsSuggestions(query).results.map { it.id }
     }
+
+    override suspend fun browseTags(filter: String, page: Int): SearchPageResult<String> {
+        val pager = mediaRepo.getTags(filter, page)
+        return SearchPageResult(
+            count = pager.count,
+            results = pager.results.map { it.id },
+        )
+    }
 }
 
 private fun Video.toSearchMediaItem(): SearchMediaItem {

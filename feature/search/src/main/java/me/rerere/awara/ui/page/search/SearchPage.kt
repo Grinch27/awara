@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
@@ -100,6 +101,7 @@ import java.util.Calendar
 private const val SETTING_MEDIA_LIST_MODE = "setting.media_list_mode"
 private const val MEDIA_LIST_MODE_DETAIL = "detail"
 private const val MEDIA_LIST_MODE_THUMBNAIL = "thumbnail"
+private val TAG_BROWSE_FILTERS = ('A'..'Z').map(Char::toString) + ('0'..'9').map(Char::toString)
 
 @Composable
 fun SearchPage(
@@ -114,6 +116,7 @@ fun SearchPage(
     )
     var recentQueriesRaw by rememberStringPreference(key = "search.recent_queries", default = "")
     var searchBarActive by rememberSaveable { mutableStateOf(false) }
+    var lastLoadMoreItemCount by remember { mutableStateOf(-1) }
     val gridState = rememberLazyStaggeredGridState()
     val recentQueries = remember(recentQueriesRaw) {
         recentQueriesRaw.lineSequence()
@@ -129,10 +132,15 @@ fun SearchPage(
         else -> emptyList()
     }
     val currentDateFilterValue = activeFilters.firstOrNull { it.key == "date" }?.value
+    val currentTagFilterValues = activeFilters.filter { it.key == "tags" }
     val currentItemCount = when (vm.state.searchType) {
         "image" -> vm.state.imageList.size
         "user" -> vm.state.userList.size
         else -> vm.state.videoList.size
+    }
+
+    LaunchedEffect(vm.state.searchType, vm.query, activeFilters) {
+        lastLoadMoreItemCount = -1
     }
 
     LaunchedEffect(
@@ -140,12 +148,18 @@ fun SearchPage(
         vm.state.searchType,
         currentItemCount,
         vm.state.hasMore,
-        vm.state.loadingMore,
     ) {
         snapshotFlow {
-            gridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            gridState.layoutInfo.visibleItemsInfo.maxOfOrNull { it.index } ?: 0
         }.collectLatest { lastVisibleIndex ->
-            if (vm.state.hasMore && !vm.state.loadingMore && currentItemCount > 0 && lastVisibleIndex >= currentItemCount - 6) {
+            if (
+                vm.state.hasMore &&
+                !vm.state.loadingMore &&
+                currentItemCount > 0 &&
+                lastVisibleIndex >= currentItemCount - 6 &&
+                lastLoadMoreItemCount != currentItemCount
+            ) {
+                lastLoadMoreItemCount = currentItemCount
                 vm.loadNextPage()
             }
         }
@@ -188,6 +202,25 @@ fun SearchPage(
             } else {
                 vm.addVideoFilter(dateFilter)
             }
+        }
+        vm.submitSearch()
+    }
+
+    fun addTagFilter(tag: String) {
+        val tagFilter = FilterValue("tags", tag)
+        if (vm.state.searchType == "image") {
+            vm.addImageFilter(tagFilter)
+        } else {
+            vm.addVideoFilter(tagFilter)
+        }
+        vm.submitSearch()
+    }
+
+    fun removeMediaFilter(filterValue: FilterValue) {
+        if (vm.state.searchType == "image") {
+            vm.removeImageFilter(filterValue)
+        } else {
+            vm.removeVideoFilter(filterValue)
         }
         vm.submitSearch()
     }
@@ -333,11 +366,22 @@ fun SearchPage(
                     }
 
                     if (vm.state.searchType != "user") {
-                        DateDropdown(
+                        Row(
                             modifier = Modifier.fillMaxWidth(),
-                            selectedDateValue = currentDateFilterValue,
-                            onValueChange = ::updateDateFilter,
-                        )
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            DateDropdown(
+                                modifier = Modifier.weight(1f),
+                                selectedDateValue = currentDateFilterValue,
+                                onValueChange = ::updateDateFilter,
+                            )
+                            TagBrowseButton(
+                                modifier = Modifier.weight(1f),
+                                selectedTags = currentTagFilterValues,
+                                onTagSelected = ::addTagFilter,
+                                onTagRemove = ::removeMediaFilter,
+                            )
+                        }
                     } else {
                         UserSearchHintBanner(modifier = Modifier.fillMaxWidth())
                     }
@@ -603,6 +647,274 @@ private fun DateDropdown(
                         onValueChange(option.ifBlank { null })
                     },
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TagBrowseButton(
+    modifier: Modifier = Modifier,
+    selectedTags: List<FilterValue>,
+    onTagSelected: (String) -> Unit,
+    onTagRemove: (FilterValue) -> Unit,
+) {
+    var showSheet by rememberSaveable { mutableStateOf(false) }
+    val currentLabel = when {
+        selectedTags.isEmpty() -> stringResource(R.string.tag_browse)
+        selectedTags.size == 1 -> "#${selectedTags.first().value}"
+        else -> "#${selectedTags.first().value} +${selectedTags.size - 1}"
+    }
+
+    FilledTonalButton(
+        modifier = modifier.fillMaxWidth(),
+        onClick = { showSheet = true },
+        shape = RoundedCornerShape(16.dp),
+        colors = ButtonDefaults.filledTonalButtonColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.72f),
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        ),
+    ) {
+        Icon(Icons.Outlined.FilterList, null)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = currentLabel,
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+
+    if (showSheet) {
+        TagBrowseSheet(
+            selectedTags = selectedTags,
+            onTagSelected = onTagSelected,
+            onTagRemove = onTagRemove,
+            onDismiss = { showSheet = false },
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TagBrowseSheet(
+    selectedTags: List<FilterValue>,
+    onTagSelected: (String) -> Unit,
+    onTagRemove: (FilterValue) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val searchRepository = get<SearchRepository>()
+    val scope = rememberCoroutineScope()
+    val listState = rememberLazyListState()
+    val defaultError = stringResource(R.string.search_error_default)
+    var selectedFilter by rememberSaveable { mutableStateOf(TAG_BROWSE_FILTERS.first()) }
+    var page by remember { mutableStateOf(0) }
+    var count by remember { mutableStateOf(0) }
+    var loading by remember { mutableStateOf(false) }
+    var loadingMore by remember { mutableStateOf(false) }
+    var hasMore by remember { mutableStateOf(true) }
+    var errorText by remember { mutableStateOf<String?>(null) }
+    var lastLoadMoreItemCount by remember { mutableStateOf(-1) }
+    val tags = remember { mutableStateListOf<String>() }
+
+    fun loadTags(replaceResults: Boolean = true) {
+        if (!replaceResults && (loading || loadingMore || !hasMore)) {
+            return
+        }
+        val requestFilter = selectedFilter
+        val requestPage = if (replaceResults) 0 else page + 1
+        if (replaceResults) {
+            page = 0
+            count = 0
+            hasMore = true
+            loading = true
+            loadingMore = false
+            errorText = null
+            tags.clear()
+        } else {
+            loadingMore = true
+        }
+        scope.launch {
+            runCatching {
+                searchRepository.browseTags(requestFilter, requestPage)
+            }.onSuccess { result ->
+                if (selectedFilter != requestFilter) {
+                    return@onSuccess
+                }
+                val mergedTags = if (replaceResults) {
+                    result.results
+                } else {
+                    tags + result.results
+                }
+                tags.clear()
+                tags.addAll(mergedTags)
+                page = requestPage
+                count = result.count
+                hasMore = tags.size < result.count
+                errorText = null
+            }.onFailure { throwable ->
+                if (selectedFilter != requestFilter) {
+                    return@onFailure
+                }
+                if (replaceResults) {
+                    errorText = throwable.localizedMessage ?: defaultError
+                }
+            }
+            if (selectedFilter == requestFilter) {
+                loading = false
+                loadingMore = false
+            }
+        }
+    }
+
+    LaunchedEffect(selectedFilter) {
+        lastLoadMoreItemCount = -1
+        loadTags()
+    }
+
+    LaunchedEffect(
+        listState,
+        selectedFilter,
+        tags.size,
+        hasMore,
+    ) {
+        snapshotFlow {
+            listState.layoutInfo.visibleItemsInfo.maxOfOrNull { it.index } ?: 0
+        }.collectLatest { lastVisibleIndex ->
+            if (
+                hasMore &&
+                !loading &&
+                !loadingMore &&
+                tags.isNotEmpty() &&
+                lastVisibleIndex >= tags.size - 6 &&
+                lastLoadMoreItemCount != tags.size
+            ) {
+                lastLoadMoreItemCount = tags.size
+                loadTags(replaceResults = false)
+            }
+        }
+    }
+
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(560.dp)
+                .padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.tag_browse_title),
+                style = MaterialTheme.typography.titleMedium,
+            )
+
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                TAG_BROWSE_FILTERS.fastForEach { filter ->
+                    SearchFilterChip(
+                        selected = filter == selectedFilter,
+                        label = filter,
+                        onClick = {
+                            if (selectedFilter != filter) {
+                                selectedFilter = filter
+                            }
+                        },
+                    )
+                }
+            }
+
+            if (selectedTags.isNotEmpty()) {
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    selectedTags.fastForEach { selectedTag ->
+                        SearchFilterChip(
+                            selected = true,
+                            label = "#${selectedTag.value}",
+                            onClick = { onTagRemove(selectedTag) },
+                        )
+                    }
+                }
+            }
+
+            Text(
+                text = stringResource(R.string.search_results_count, count),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelMedium,
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+            ) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    items(tags) { tag ->
+                        ListItem(
+                            headlineContent = {
+                                Text(
+                                    text = tag,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            },
+                            leadingContent = {
+                                Text(
+                                    text = "#",
+                                    color = MaterialTheme.colorScheme.primary,
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { onTagSelected(tag) },
+                        )
+                    }
+                    if (loadingMore) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            }
+                        }
+                    }
+                }
+
+                if (loading) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                } else if (tags.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = errorText ?: stringResource(R.string.tag_browse_empty),
+                            color = if (errorText == null) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.error
+                            },
+                        )
+                    }
+                }
             }
         }
     }

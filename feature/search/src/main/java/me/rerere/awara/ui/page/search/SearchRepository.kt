@@ -10,6 +10,8 @@ interface SearchRepository {
     suspend fun searchUsers(query: String, page: Int): SearchPageResult<SearchUserItem>
 
     suspend fun suggestTags(query: String): List<String>
+
+    suspend fun browseTags(filter: String, page: Int): SearchPageResult<String>
 }
 
 data class SearchPageResult<T>(

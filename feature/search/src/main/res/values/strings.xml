@@ -11,6 +11,9 @@
     <string name="date">Date</string>
     <string name="date_any">Any Date</string>
     <string name="tag">Tag</string>
+    <string name="tag_browse">Browse Tags</string>
+    <string name="tag_browse_empty">No tags</string>
+    <string name="tag_browse_title">Browse Tags</string>
     <string name="search">Search</string>
     <string name="search_hint_media">Search media, tags, or users</string>
     <string name="search_recent_title">Recent Searches</string>

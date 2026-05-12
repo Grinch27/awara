@@ -65,6 +65,8 @@ class MediaRepo(
 
     suspend fun getTagsSuggestions(query: String) = iwaraAPI.autoCompleteTags(query)
 
+    suspend fun getTags(filter: String, page: Int) = iwaraAPI.getTags(filter = filter, page = page)
+
     suspend fun getPlaylists(userId: String, page: Int) = iwaraAPI.getPlaylists(
         mapOf(
             "page" to page.toString(),

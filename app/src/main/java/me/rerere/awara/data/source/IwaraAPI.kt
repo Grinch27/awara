@@ -125,6 +125,12 @@ interface IwaraAPI {
         @Query("query") query: String
     ): Pager<Tag>
 
+    @GET("/tags")
+    suspend fun getTags(
+        @Query("filter") filter: String,
+        @Query("page") page: Int,
+    ): Pager<Tag>
+
     @GET("/playlists")
     suspend fun getPlaylists(
         @QueryMap queryMap: Map<String, String>

@@ -28,6 +28,15 @@ class SearchVM(
     var imageSort by mutableStateOf(DEFAULT_MEDIA_SORT)
     val imageFilters: MutableList<FilterValue> = mutableStateListOf()
 
+    private fun hasActiveSearchCriteria(type: String = state.searchType): Boolean {
+        return when (type) {
+            "video" -> query.isNotBlank() || videoFilters.isNotEmpty()
+            "image" -> query.isNotBlank() || imageFilters.isNotEmpty()
+            "user" -> query.isNotBlank()
+            else -> query.isNotBlank()
+        }
+    }
+
     private fun buildMediaSearchQuery(scope: FeedScope): FeedQuery {
         return FeedQuery(
             scope = scope,
@@ -47,7 +56,7 @@ class SearchVM(
 
     fun submitSearch() {
         query = query.trim()
-        state = state.copy(page = 1)
+        state = state.copy(page = 1, hasMore = true)
         search()
     }
 
@@ -131,24 +140,24 @@ class SearchVM(
     }
 
     fun loadNextPage() {
-        if (state.loadingMore || !state.hasMore || query.isBlank()) {
+        if (state.loadingMore || !state.hasMore) {
             return
         }
-        state = state.copy(page = state.page + 1)
+        state = state.copy(page = state.page + 1, loadingMore = true)
         search(replaceResults = false)
     }
 
     fun updateSearchType(type: String) {
-        state = state.copy(searchType = type, page = 1)
-        if (query.isNotBlank()) {
+        state = state.copy(searchType = type, page = 1, hasMore = true)
+        if (hasActiveSearchCriteria(type)) {
             search()
         }
     }
 
     fun updateVideoSort(sort: String) {
         videoSort = sort
-        state = state.copy(page = 1)
-        if (state.searchType == "video" && query.isNotBlank()) {
+        state = state.copy(page = 1, hasMore = true)
+        if (state.searchType == "video" && hasActiveSearchCriteria()) {
             search()
         }
     }
@@ -169,8 +178,8 @@ class SearchVM(
 
     fun updateImageSort(sort: String) {
         imageSort = sort
-        state = state.copy(page = 1)
-        if (state.searchType == "image" && query.isNotBlank()) {
+        state = state.copy(page = 1, hasMore = true)
+        if (state.searchType == "image" && hasActiveSearchCriteria()) {
             search()
         }
     }
