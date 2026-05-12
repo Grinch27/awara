@@ -32,6 +32,9 @@
     <string name="playlist">プレイリスト</string>
     <string name="playlist_num_videos">合計%dビデオ</string>
     <string name="search">検索</string>
+    <string name="tag_browse">タグを閲覧</string>
+    <string name="tag_browse_empty">タグがありません</string>
+    <string name="tag_browse_title">タグを閲覧</string>
     <string name="favorites">お気に入り</string>
     <string name="follow">フォロー</string>
     <string name="unfollow">フォローを解除</string>

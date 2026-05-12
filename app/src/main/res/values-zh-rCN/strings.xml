@@ -39,6 +39,9 @@
     <string name="search_recent_clear">清空</string>
     <string name="search_apply_recent_action">搜索</string>
     <string name="search_results_count">结果：%d</string>
+    <string name="tag_browse">浏览标签</string>
+    <string name="tag_browse_empty">没有标签</string>
+    <string name="tag_browse_title">浏览标签</string>
     <string name="search_recent_quick_title">快捷搜索</string>
     <string name="search_summary_query">关键词：%s</string>
     <string name="search_summary_sort">排序：%s</string>

@@ -40,6 +40,9 @@
     <string name="search_recent_clear">Clear</string>
     <string name="search_apply_recent_action">Search</string>
     <string name="search_results_count">Results: %d</string>
+    <string name="tag_browse">Browse Tags</string>
+    <string name="tag_browse_empty">No tags</string>
+    <string name="tag_browse_title">Browse Tags</string>
     <string name="search_recent_quick_title">Quick Search</string>
     <string name="search_summary_query">Query: %s</string>
     <string name="search_summary_sort">Sort: %s</string>

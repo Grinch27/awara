@@ -32,6 +32,9 @@
     <string name="playlist">播放列表</string>
     <string name="playlist_num_videos">總共 %d 個視頻</string>
     <string name="search">搜索</string>
+    <string name="tag_browse">瀏覽標籤</string>
+    <string name="tag_browse_empty">沒有標籤</string>
+    <string name="tag_browse_title">瀏覽標籤</string>
     <string name="favorites">收藏夾</string>
     <string name="follow">跟隨</string>
     <string name="unfollow">取消關注</string>
