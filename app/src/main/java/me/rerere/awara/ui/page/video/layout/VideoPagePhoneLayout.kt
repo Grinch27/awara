@@ -22,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,10 +30,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import me.rerere.awara.R
 import me.rerere.awara.ui.component.common.Spin
@@ -44,9 +47,8 @@ import me.rerere.awara.ui.component.player.PlayerState
 import me.rerere.awara.ui.page.video.VideoVM
 import me.rerere.awara.ui.page.video.pager.VideoOverviewHeaderSection
 
-private const val DETAIL_NAV_INDEX = 1
-private const val DETAIL_COMMENTS_INDEX = 2
-private const val DETAIL_RELATED_INDEX = 3
+private const val DETAIL_COMMENTS_INDEX = 3
+private const val DETAIL_RELATED_INDEX = 4
 
 @Composable
 fun VideoPagePhoneLayout(vm: VideoVM, state: PlayerState, player: @Composable () -> Unit) {
@@ -54,6 +56,32 @@ fun VideoPagePhoneLayout(vm: VideoVM, state: PlayerState, player: @Composable ()
     val listMode by rememberMediaListModePreference()
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+    val currentCommentState = vm.state.commentState.stack.last()
+    LaunchedEffect(
+        listState,
+        currentCommentState.comments.size,
+        currentCommentState.hasMore,
+        currentCommentState.loadingMore,
+        vm.state.relatedVideos.size,
+    ) {
+        snapshotFlow {
+            listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+        }.collectLatest { lastVisibleIndex ->
+            val reachedCommentEnd = if (vm.state.relatedVideos.isEmpty()) {
+                lastVisibleIndex >= DETAIL_COMMENTS_INDEX
+            } else {
+                lastVisibleIndex >= DETAIL_RELATED_INDEX
+            }
+            if (
+                reachedCommentEnd &&
+                currentCommentState.comments.isNotEmpty() &&
+                currentCommentState.hasMore &&
+                !currentCommentState.loadingMore
+            ) {
+                vm.loadNextComments()
+            }
+        }
+    }
     Spin(
         show = vm.state.loading,
         modifier = Modifier.fillMaxSize(),
@@ -114,7 +142,7 @@ fun VideoPagePhoneLayout(vm: VideoVM, state: PlayerState, player: @Composable ()
                         EmbeddedCommentSection(
                             state = vm.state.commentState,
                             contentPadding = PaddingValues(0.dp),
-                            onPageChange = vm::jumpCommentPage,
+                            onLoadMore = vm::loadNextComments,
                             onBack = vm::popComment,
                             onPush = { vm.pushComment(it) },
                             onPostReply = { vm.postComment(it) },

@@ -1,7 +1,7 @@
 package me.rerere.awara.ui.page.index.pager
 
 // TODO(user): Decide whether home feed filters should later gain presets or remain ad hoc.
-// TODO(agent): Keep the pager footer focused on sort and list mode only.
+// TODO(agent): Keep page-local controls focused on feed filters; display mode is configured in Settings.
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,7 +18,6 @@ import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridS
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,7 +26,6 @@ import kotlinx.coroutines.flow.collectLatest
 import me.rerere.awara.ui.component.common.Spin
 import me.rerere.awara.ui.component.common.UiStateBox
 import me.rerere.awara.ui.component.iwara.MediaCard
-import me.rerere.awara.ui.component.iwara.MediaListModeButton
 import me.rerere.awara.ui.component.iwara.mediaListGridCells
 import me.rerere.awara.ui.component.iwara.rememberMediaListModePreference
 import me.rerere.awara.ui.component.iwara.param.FilterAndSort
@@ -37,7 +35,7 @@ import me.rerere.awara.ui.page.index.IndexVM
 @Composable
 fun IndexVideoPage(vm: IndexVM) {
     val state = vm.state
-    var listMode by rememberMediaListModePreference()
+    val listMode by rememberMediaListModePreference()
     val gridState = rememberLazyStaggeredGridState()
 
     LaunchedEffect(gridState, state.videoList.size, state.videoHasMore, state.videoLoadingMore) {
@@ -79,11 +77,6 @@ fun IndexVideoPage(vm: IndexVM) {
                     vm.clearVideoFilter()
                     vm.loadVideoList()
                 },
-            )
-
-            MediaListModeButton(
-                value = listMode,
-                onValueChange = { listMode = it },
             )
         }
 

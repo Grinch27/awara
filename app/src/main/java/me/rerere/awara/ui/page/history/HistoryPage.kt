@@ -17,7 +17,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
@@ -34,7 +33,6 @@ import me.rerere.awara.ui.component.common.BackButton
 import me.rerere.awara.ui.component.ext.items
 import me.rerere.awara.ui.component.ext.plus
 import me.rerere.awara.ui.component.iwara.MEDIA_LIST_MODE_THUMBNAIL
-import me.rerere.awara.ui.component.iwara.MediaListModeButton
 import me.rerere.awara.ui.component.iwara.mediaListGridCells
 import me.rerere.awara.ui.component.iwara.rememberMediaListModePreference
 import me.rerere.awara.util.toLocalDateTimeString
@@ -44,7 +42,7 @@ import org.koin.androidx.compose.koinViewModel
 fun HistoryPage(vm: HistoryVM = koinViewModel()) {
     val itemsPaged = vm.historyItems.collectAsLazyPagingItems()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    var listMode by rememberMediaListModePreference()
+    val listMode by rememberMediaListModePreference()
     Scaffold(
         topBar = {
             LargeTopAppBar(
@@ -53,12 +51,6 @@ fun HistoryPage(vm: HistoryVM = koinViewModel()) {
                 },
                 navigationIcon = {
                     BackButton()
-                },
-                actions = {
-                    MediaListModeButton(
-                        value = listMode,
-                        onValueChange = { listMode = it },
-                    )
                 },
                 scrollBehavior = scrollBehavior
             )

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Card
@@ -37,11 +38,11 @@ import me.rerere.awara.ui.component.common.Spin
 import me.rerere.awara.ui.component.common.UiStateBox
 import me.rerere.awara.ui.component.ext.DynamicStaggeredGridCells
 import me.rerere.awara.ui.component.ext.excludeBottom
-import me.rerere.awara.ui.component.ext.onlyBottom
 import me.rerere.awara.ui.component.iwara.Avatar
-import me.rerere.awara.ui.component.iwara.PaginationBar
+import me.rerere.awara.ui.component.iwara.LoadMoreEffect
 import me.rerere.awara.ui.component.iwara.UserCard
 import me.rerere.awara.ui.component.iwara.UserStatus
+import me.rerere.awara.ui.component.iwara.loadMoreFooter
 import me.rerere.awara.ui.stores.LocalUserStore
 import me.rerere.awara.ui.stores.collectAsState
 import me.rerere.awara.util.toLocalDateTimeString
@@ -102,6 +103,14 @@ fun FriendsPage(vm: FriendsVM = koinViewModel()) {
             ) { page ->
                 when (page) {
                     0 -> {
+                        val gridState = rememberLazyStaggeredGridState()
+                        LoadMoreEffect(
+                            gridState = gridState,
+                            itemCount = vm.state.friendsData.size,
+                            hasMore = vm.state.friendsHasMore,
+                            loadingMore = vm.state.friendsLoadingMore,
+                            onLoadMore = vm::loadNextFriendsPage,
+                        )
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -116,6 +125,7 @@ fun FriendsPage(vm: FriendsVM = koinViewModel()) {
                                 }
                             ) {
                                 LazyVerticalStaggeredGrid(
+                                    state = gridState,
                                     columns = DynamicStaggeredGridCells(),
                                     contentPadding = PaddingValues(8.dp),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -127,21 +137,22 @@ fun FriendsPage(vm: FriendsVM = koinViewModel()) {
                                     items(vm.state.friendsData) {
                                         UserCard(user = it)
                                     }
+
+                                    loadMoreFooter(vm.state.friendsLoadingMore)
                                 }
                             }
-                            PaginationBar(
-                                page = vm.state.friendsPage,
-                                limit = 32,
-                                total = vm.state.friendsCount,
-                                onPageChange = {
-                                    vm.jumpFriendsPage(it)
-                                },
-                                contentPadding = innerPadding.onlyBottom()
-                            )
                         }
                     }
 
                     1 -> {
+                        val gridState = rememberLazyStaggeredGridState()
+                        LoadMoreEffect(
+                            gridState = gridState,
+                            itemCount = vm.state.requestsData.size,
+                            hasMore = vm.state.requestsHasMore,
+                            loadingMore = vm.state.requestsLoadingMore,
+                            onLoadMore = vm::loadNextRequestsPage,
+                        )
                         Spin(show = vm.state.loadingFriendChange) {
                             Column(
                                 modifier = Modifier
@@ -158,6 +169,7 @@ fun FriendsPage(vm: FriendsVM = koinViewModel()) {
                                     }
                                 ) {
                                     LazyVerticalStaggeredGrid(
+                                        state = gridState,
                                         columns = DynamicStaggeredGridCells(
                                             minSize = 300.dp,
                                             min = 1
@@ -176,18 +188,10 @@ fun FriendsPage(vm: FriendsVM = koinViewModel()) {
                                                 onReject = { userId -> vm.removeFriends(userId) }
                                             )
                                         }
+
+                                        loadMoreFooter(vm.state.requestsLoadingMore)
                                     }
                                 }
-
-                                PaginationBar(
-                                    page = vm.state.requestsPage,
-                                    limit = 32,
-                                    total = vm.state.requestsCount,
-                                    onPageChange = {
-                                        vm.jumpRequestsPage(it)
-                                    },
-                                    contentPadding = innerPadding.onlyBottom()
-                                )
                             }
                         }
                     }

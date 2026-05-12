@@ -1231,27 +1231,6 @@ private fun SearchFilterChip(
     )
 }
 
-@Composable
-private fun MediaListModeButton(
-    value: String,
-    onValueChange: (String) -> Unit,
-) {
-    SelectButton(
-        value = value,
-        options = listOf(
-            SelectOption(
-                value = MEDIA_LIST_MODE_DETAIL,
-                label = { Text(stringResource(R.string.media_list_mode_detail)) },
-            ),
-            SelectOption(
-                value = MEDIA_LIST_MODE_THUMBNAIL,
-                label = { Text(stringResource(R.string.media_list_mode_thumbnail)) },
-            ),
-        ),
-        onValueChange = onValueChange,
-    )
-}
-
 private fun mediaListGridCells(listMode: String): StaggeredGridCells = when (listMode) {
     MEDIA_LIST_MODE_THUMBNAIL -> DynamicStaggeredGridCells(150.dp, 2, 4)
     else -> StaggeredGridCells.Fixed(1)

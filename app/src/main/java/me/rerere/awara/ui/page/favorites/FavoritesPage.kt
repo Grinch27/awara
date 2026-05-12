@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.LargeTopAppBar
@@ -28,12 +29,11 @@ import me.rerere.awara.ui.component.common.BackButton
 import me.rerere.awara.ui.component.common.BetterTabBar
 import me.rerere.awara.ui.component.common.Spin
 import me.rerere.awara.ui.component.ext.excludeBottom
-import me.rerere.awara.ui.component.ext.onlyBottom
+import me.rerere.awara.ui.component.iwara.LoadMoreEffect
 import me.rerere.awara.ui.component.iwara.MediaCard
-import me.rerere.awara.ui.component.iwara.MediaListModeButton
 import me.rerere.awara.ui.component.iwara.mediaListGridCells
-import me.rerere.awara.ui.component.iwara.PaginationBar
 import me.rerere.awara.ui.component.iwara.rememberMediaListModePreference
+import me.rerere.awara.ui.component.iwara.loadMoreFooter
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -41,7 +41,7 @@ fun FavoritesPage(vm: FavoritesVM = koinViewModel()) {
     val appbarBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val pagerState = rememberPagerState(pageCount = { 2 })
     val scope = rememberCoroutineScope()
-    var listMode by rememberMediaListModePreference()
+    val listMode by rememberMediaListModePreference()
     Scaffold(
         topBar = {
             LargeTopAppBar(
@@ -86,6 +86,14 @@ fun FavoritesPage(vm: FavoritesVM = koinViewModel()) {
             ) { page ->
                 when (page) {
                     0 -> {
+                        val gridState = rememberLazyStaggeredGridState()
+                        LoadMoreEffect(
+                            gridState = gridState,
+                            itemCount = vm.state.videoList.size,
+                            hasMore = vm.state.videoHasMore,
+                            loadingMore = vm.state.videoLoadingMore,
+                            onLoadMore = vm::loadNextVideoPage,
+                        )
                         Column {
                             Spin(
                                 show = vm.state.videoLoading,
@@ -94,6 +102,7 @@ fun FavoritesPage(vm: FavoritesVM = koinViewModel()) {
                                     .fillMaxWidth()
                             ) {
                                 LazyVerticalStaggeredGrid(
+                                    state = gridState,
                                     columns = mediaListGridCells(listMode),
                                     contentPadding = PaddingValues(8.dp),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -105,28 +114,22 @@ fun FavoritesPage(vm: FavoritesVM = koinViewModel()) {
                                     items(vm.state.videoList) { video ->
                                         MediaCard(media = video.video, listMode = listMode)
                                     }
+
+                                    loadMoreFooter(vm.state.videoLoadingMore)
                                 }
                             }
-
-                            PaginationBar(
-                                page = vm.state.videoPage,
-                                limit = 32,
-                                total = vm.state.videoCount,
-                                onPageChange = {
-                                    vm.jumpToVideoPage(it)
-                                },
-                                contentPadding = innerPadding.onlyBottom(),
-                                trailing = {
-                                    MediaListModeButton(
-                                        value = listMode,
-                                        onValueChange = { listMode = it },
-                                    )
-                                }
-                            )
                         }
                     }
 
                     1 -> {
+                        val gridState = rememberLazyStaggeredGridState()
+                        LoadMoreEffect(
+                            gridState = gridState,
+                            itemCount = vm.state.imageList.size,
+                            hasMore = vm.state.imageHasMore,
+                            loadingMore = vm.state.imageLoadingMore,
+                            onLoadMore = vm::loadNextImagePage,
+                        )
                         Column {
                             Spin(
                                 show = vm.state.imageLoading,
@@ -135,6 +138,7 @@ fun FavoritesPage(vm: FavoritesVM = koinViewModel()) {
                                     .fillMaxWidth()
                             ) {
                                 LazyVerticalStaggeredGrid(
+                                    state = gridState,
                                     columns = mediaListGridCells(listMode),
                                     contentPadding = PaddingValues(8.dp),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -146,24 +150,10 @@ fun FavoritesPage(vm: FavoritesVM = koinViewModel()) {
                                     items(vm.state.imageList) { image ->
                                         MediaCard(media = image.image, listMode = listMode)
                                     }
+
+                                    loadMoreFooter(vm.state.imageLoadingMore)
                                 }
                             }
-
-                            PaginationBar(
-                                page = vm.state.imagePage,
-                                limit = 32,
-                                total = vm.state.imageCount,
-                                onPageChange = {
-                                    vm.jumpToImagePage(it)
-                                },
-                                contentPadding = innerPadding.onlyBottom(),
-                                trailing = {
-                                    MediaListModeButton(
-                                        value = listMode,
-                                        onValueChange = { listMode = it },
-                                    )
-                                }
-                            )
                         }
                     }
                 }

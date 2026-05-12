@@ -23,45 +23,61 @@ class FavoritesVM(
         loadImages()
     }
 
-    fun jumpToVideoPage(page: Int) {
-        state = state.copy(videoPage = page)
-        loadVideo()
+    fun loadNextVideoPage() {
+        if (state.videoLoadingMore || !state.videoHasMore) {
+            return
+        }
+        loadVideo(replaceResults = false)
     }
 
-    fun jumpToImagePage(page: Int) {
-        state = state.copy(imagePage = page)
-        loadImages()
+    fun loadNextImagePage() {
+        if (state.imageLoadingMore || !state.imageHasMore) {
+            return
+        }
+        loadImages(replaceResults = false)
     }
 
-    private fun loadVideo() {
+    fun loadVideo(replaceResults: Boolean = true) {
+        val targetPage = if (replaceResults) 1 else state.videoPage + 1
+        state = state.copy(
+            videoLoading = replaceResults,
+            videoLoadingMore = !replaceResults,
+        )
         viewModelScope.launch {
-            state = state.copy(videoLoading = true)
             runAPICatching {
-                mediaRepo.getFavoriteVideos(state.videoPage - 1)
+                mediaRepo.getFavoriteVideos(targetPage - 1)
             }.onSuccess {
+                val mergedList = if (replaceResults) it.results else state.videoList + it.results
                 state = state.copy(
-                    videoLoading = false,
+                    videoPage = targetPage,
                     videoCount = it.count,
-                    videoList = it.results
+                    videoList = mergedList,
+                    videoHasMore = mergedList.size < it.count,
                 )
             }
-            state = state.copy(videoLoading = false)
+            state = state.copy(videoLoading = false, videoLoadingMore = false)
         }
     }
 
-    private fun loadImages() {
+    fun loadImages(replaceResults: Boolean = true) {
+        val targetPage = if (replaceResults) 1 else state.imagePage + 1
+        state = state.copy(
+            imageLoading = replaceResults,
+            imageLoadingMore = !replaceResults,
+        )
         viewModelScope.launch {
-            state = state.copy(imageLoading = true)
             runAPICatching {
-                mediaRepo.getFavoriteImages(state.imagePage - 1)
+                mediaRepo.getFavoriteImages(targetPage - 1)
             }.onSuccess {
+                val mergedList = if (replaceResults) it.results else state.imageList + it.results
                 state = state.copy(
-                    imageLoading = false,
+                    imagePage = targetPage,
                     imageCount = it.count,
-                    imageList = it.results
+                    imageList = mergedList,
+                    imageHasMore = mergedList.size < it.count,
                 )
             }
-            state = state.copy(imageLoading = false)
+            state = state.copy(imageLoading = false, imageLoadingMore = false)
         }
     }
 
@@ -69,10 +85,14 @@ class FavoritesVM(
         val videoLoading: Boolean = false,
         val videoPage: Int = 1,
         val videoCount: Int = 0,
+        val videoLoadingMore: Boolean = false,
+        val videoHasMore: Boolean = true,
         val videoList: List<FavoriteVideo> = emptyList(),
         val imageLoading: Boolean = false,
         val imagePage: Int = 1,
         val imageCount: Int = 0,
+        val imageLoadingMore: Boolean = false,
+        val imageHasMore: Boolean = true,
         val imageList: List<FavoriteImage> = emptyList(),
     )
 }

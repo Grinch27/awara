@@ -9,18 +9,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items as lazyItems
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -68,13 +67,13 @@ import me.rerere.awara.ui.component.common.pullrefresh.rememberSwipeRefreshState
 import me.rerere.awara.ui.component.ext.excludeBottom
 import me.rerere.awara.ui.component.iwara.Avatar
 import me.rerere.awara.ui.component.iwara.comment.CommentCard
+import me.rerere.awara.ui.component.iwara.LoadMoreEffect
 import me.rerere.awara.ui.component.iwara.MediaCard
-import me.rerere.awara.ui.component.iwara.MediaListModeButton
 import me.rerere.awara.ui.component.iwara.mediaListGridCells
-import me.rerere.awara.ui.component.iwara.PaginationBar
 import me.rerere.awara.ui.component.iwara.rememberMediaListModePreference
 import me.rerere.awara.ui.component.iwara.RichText
 import me.rerere.awara.ui.component.iwara.UserStatus
+import me.rerere.awara.ui.component.iwara.loadMoreFooter
 import me.rerere.awara.util.openUrl
 import org.koin.androidx.compose.koinViewModel
 
@@ -86,7 +85,7 @@ fun UserPage(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var expand by remember { mutableStateOf(false) }
-    var listMode by rememberMediaListModePreference()
+    val listMode by rememberMediaListModePreference()
     Scaffold(
         topBar = {
             if (expand) {
@@ -178,7 +177,6 @@ fun UserPage(
                             VideoPage(
                                 vm = vm,
                                 listMode = listMode,
-                                onListModeChange = { listMode = it },
                             )
                         }
 
@@ -186,7 +184,6 @@ fun UserPage(
                             ImagePage(
                                 vm = vm,
                                 listMode = listMode,
-                                onListModeChange = { listMode = it },
                             )
                         }
 
@@ -214,6 +211,15 @@ private fun UserGuestbookPage(
     val guestbookState = vm.state.guestbookCommentState.stack.last()
     val guestbookError = vm.state.guestbookError
     val guestbookExceptionMessage = vm.state.guestbookExceptionMessage
+    val listState = rememberLazyListState()
+
+    LoadMoreEffect(
+        listState = listState,
+        itemCount = guestbookState.comments.size,
+        hasMore = guestbookState.hasMore,
+        loadingMore = guestbookState.loadingMore,
+        onLoadMore = vm::loadNextGuestbookPage,
+    )
 
     Column {
         SwipeRefresh(
@@ -243,6 +249,7 @@ private fun UserGuestbookPage(
 
                     else -> {
                         LazyColumn(
+                            state = listState,
                             modifier = Modifier.fillMaxSize(),
                             verticalArrangement = Arrangement.spacedBy(6.dp),
                             contentPadding = PaddingValues(vertical = 8.dp),
@@ -254,20 +261,12 @@ private fun UserGuestbookPage(
                                     onReply = null,
                                 )
                             }
+
+                            loadMoreFooter(guestbookState.loadingMore)
                         }
                     }
                 }
             }
-        }
-
-        if (guestbookError == null && guestbookExceptionMessage == null && guestbookState.total > 0) {
-            PaginationBar(
-                page = guestbookState.page,
-                limit = guestbookState.limit,
-                total = guestbookState.total,
-                onPageChange = vm::changeGuestbookPage,
-                contentPadding = WindowInsets.navigationBars.asPaddingValues(),
-            )
         }
     }
 }
@@ -455,8 +454,15 @@ private fun UserCard(
 private fun VideoPage(
     vm: UserVM,
     listMode: String,
-    onListModeChange: (String) -> Unit,
 ) {
+    val gridState = rememberLazyStaggeredGridState()
+    LoadMoreEffect(
+        gridState = gridState,
+        itemCount = vm.state.videoList.size,
+        hasMore = vm.state.videoHasMore,
+        loadingMore = vm.state.videoLoadingMore,
+        onLoadMore = vm::loadNextVideoPage,
+    )
     Column {
         SwipeRefresh(
             state = rememberSwipeRefreshState(isRefreshing = vm.state.videoLoading),
@@ -470,6 +476,7 @@ private fun VideoPage(
                     EmptyStatus()
                 } else {
                     LazyVerticalStaggeredGrid(
+                        state = gridState,
                         columns = mediaListGridCells(listMode),
                         modifier = Modifier.fillMaxSize(),
                         verticalItemSpacing = 8.dp,
@@ -479,25 +486,12 @@ private fun VideoPage(
                         items(vm.state.videoList) {
                             MediaCard(media = it, listMode = listMode)
                         }
+
+                        loadMoreFooter(vm.state.videoLoadingMore)
                     }
                 }
             }
         }
-        PaginationBar(
-            page = vm.state.videoPage,
-            limit = 32,
-            total = vm.state.videoCount,
-            onPageChange = {
-                vm.changeVideoPage(it)
-            },
-            contentPadding = WindowInsets.navigationBars.asPaddingValues(),
-            trailing = {
-                MediaListModeButton(
-                    value = listMode,
-                    onValueChange = onListModeChange,
-                )
-            }
-        )
     }
 }
 
@@ -505,8 +499,15 @@ private fun VideoPage(
 private fun ImagePage(
     vm: UserVM,
     listMode: String,
-    onListModeChange: (String) -> Unit,
 ) {
+    val gridState = rememberLazyStaggeredGridState()
+    LoadMoreEffect(
+        gridState = gridState,
+        itemCount = vm.state.imageList.size,
+        hasMore = vm.state.imageHasMore,
+        loadingMore = vm.state.imageLoadingMore,
+        onLoadMore = vm::loadNextImagePage,
+    )
     Column {
         SwipeRefresh(
             state = rememberSwipeRefreshState(isRefreshing = vm.state.imageLoading),
@@ -520,6 +521,7 @@ private fun ImagePage(
                     EmptyStatus()
                 } else {
                     LazyVerticalStaggeredGrid(
+                        state = gridState,
                         columns = mediaListGridCells(listMode),
                         modifier = Modifier.fillMaxSize(),
                         verticalItemSpacing = 8.dp,
@@ -529,24 +531,11 @@ private fun ImagePage(
                         items(vm.state.imageList) {
                             MediaCard(media = it, listMode = listMode)
                         }
+
+                        loadMoreFooter(vm.state.imageLoadingMore)
                     }
                 }
             }
         }
-        PaginationBar(
-            page = vm.state.imagePage,
-            limit = 32,
-            total = vm.state.imageCount,
-            onPageChange = {
-                vm.changeImagePage(it)
-            },
-            contentPadding = WindowInsets.navigationBars.asPaddingValues(),
-            trailing = {
-                MediaListModeButton(
-                    value = listMode,
-                    onValueChange = onListModeChange,
-                )
-            }
-        )
     }
 }

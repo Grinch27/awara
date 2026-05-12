@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.LargeTopAppBar
@@ -27,9 +28,9 @@ import me.rerere.awara.ui.component.common.BetterTabBar
 import me.rerere.awara.ui.component.common.UiStateBox
 import me.rerere.awara.ui.component.ext.DynamicStaggeredGridCells
 import me.rerere.awara.ui.component.ext.excludeBottom
-import me.rerere.awara.ui.component.ext.onlyBottom
-import me.rerere.awara.ui.component.iwara.PaginationBar
+import me.rerere.awara.ui.component.iwara.LoadMoreEffect
 import me.rerere.awara.ui.component.iwara.UserCard
+import me.rerere.awara.ui.component.iwara.loadMoreFooter
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -81,6 +82,14 @@ fun FollowPage(vm: FollowVM = koinViewModel()) {
             ) { page ->
                 when (page) {
                     0 -> {
+                        val gridState = rememberLazyStaggeredGridState()
+                        LoadMoreEffect(
+                            gridState = gridState,
+                            itemCount = vm.state.followingList.size,
+                            hasMore = vm.state.followingHasMore,
+                            loadingMore = vm.state.followingLoadingMore,
+                            onLoadMore = vm::loadNextFollowingPage,
+                        )
                         Column {
                             UiStateBox(
                                 state = vm.state.followingState,
@@ -89,6 +98,7 @@ fun FollowPage(vm: FollowVM = koinViewModel()) {
                                     .fillMaxWidth()
                             ) {
                                 LazyVerticalStaggeredGrid(
+                                    state = gridState,
                                     columns = DynamicStaggeredGridCells(),
                                     contentPadding = PaddingValues(8.dp),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -100,22 +110,22 @@ fun FollowPage(vm: FollowVM = koinViewModel()) {
                                     items(vm.state.followingList) {user ->
                                         UserCard(user = user.user)
                                     }
+
+                                    loadMoreFooter(vm.state.followingLoadingMore)
                                 }
                             }
-
-                            PaginationBar(
-                                page = vm.state.followingPage,
-                                limit = 32,
-                                total = vm.state.followingCount,
-                                onPageChange = {
-                                    vm.jumpToFollowingPage(it)
-                                },
-                                contentPadding = innerPadding.onlyBottom()
-                            )
                         }
                     }
 
                     1 -> {
+                        val gridState = rememberLazyStaggeredGridState()
+                        LoadMoreEffect(
+                            gridState = gridState,
+                            itemCount = vm.state.followerList.size,
+                            hasMore = vm.state.followerHasMore,
+                            loadingMore = vm.state.followerLoadingMore,
+                            onLoadMore = vm::loadNextFollowerPage,
+                        )
                         Column {
                             UiStateBox(
                                 state = vm.state.followerState,
@@ -124,6 +134,7 @@ fun FollowPage(vm: FollowVM = koinViewModel()) {
                                     .fillMaxWidth()
                             ) {
                                 LazyVerticalStaggeredGrid(
+                                    state = gridState,
                                     columns = DynamicStaggeredGridCells(),
                                     contentPadding = PaddingValues(8.dp),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -135,18 +146,10 @@ fun FollowPage(vm: FollowVM = koinViewModel()) {
                                     items(vm.state.followerList) {user ->
                                         UserCard(user = user.follower)
                                     }
+
+                                    loadMoreFooter(vm.state.followerLoadingMore)
                                 }
                             }
-
-                            PaginationBar(
-                                page = vm.state.followerPage,
-                                limit = 32,
-                                total = vm.state.followerCount,
-                                onPageChange = {
-                                    vm.jumpToFollowerPage(it)
-                                },
-                                contentPadding = innerPadding.onlyBottom()
-                            )
                         }
                     }
                 }

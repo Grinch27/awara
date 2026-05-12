@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -53,21 +54,31 @@ import me.rerere.awara.R
 import me.rerere.awara.data.entity.Comment
 import me.rerere.awara.data.entity.CommentCreationDto
 import me.rerere.awara.ui.component.common.Spin
-import me.rerere.awara.ui.component.iwara.PaginationBar
+import me.rerere.awara.ui.component.iwara.LoadMoreEffect
+import me.rerere.awara.ui.component.iwara.loadMoreFooter
 
 @Composable
 fun CommentList(
     modifier: Modifier = Modifier,
     state: CommentState,
     contentPadding: PaddingValues = PaddingValues(0.dp),
-    onPageChange: (Int) -> Unit,
+    onLoadMore: () -> Unit,
     onBack: () -> Unit,
     onPush: (String) -> Unit,
     onPostReply: (CommentCreationDto) -> Unit,
 ) {
     val currentComment = state.stack.last()
+    val listState = rememberLazyListState()
     var replying by remember { mutableStateOf(false) }
     var replyTo by remember { mutableStateOf<Comment?>(null) }
+
+    LoadMoreEffect(
+        listState = listState,
+        itemCount = currentComment.comments.size,
+        hasMore = currentComment.hasMore,
+        loadingMore = currentComment.loadingMore,
+        onLoadMore = onLoadMore,
+    )
 
     BackHandler(state.stack.size > 1) {
         onBack()
@@ -92,6 +103,7 @@ fun CommentList(
                 .fillMaxWidth(),
         ) {
             LazyColumn(
+                state = listState,
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
                 contentPadding = PaddingValues(10.dp),
@@ -111,6 +123,8 @@ fun CommentList(
                         },
                     )
                 }
+
+                loadMoreFooter(currentComment.loadingMore)
             }
         }
 
@@ -120,7 +134,6 @@ fun CommentList(
             currentComment = currentComment,
             contentPadding = contentPadding,
             onReplyingChange = { replying = it },
-            onPageChange = onPageChange,
             onPostReply = onPostReply,
         )
     }
@@ -131,7 +144,7 @@ fun EmbeddedCommentSection(
     modifier: Modifier = Modifier,
     state: CommentState,
     contentPadding: PaddingValues = PaddingValues(0.dp),
-    onPageChange: (Int) -> Unit,
+    onLoadMore: () -> Unit,
     onBack: () -> Unit,
     onPush: (String) -> Unit,
     onPostReply: (CommentCreationDto) -> Unit,
@@ -196,6 +209,16 @@ fun EmbeddedCommentSection(
                             },
                         )
                     }
+
+                    if (currentComment.loadingMore) {
+                        Spin(show = true, modifier = Modifier.fillMaxWidth()) {
+                            androidx.compose.foundation.layout.Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 12.dp),
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -206,7 +229,6 @@ fun EmbeddedCommentSection(
             currentComment = currentComment,
             contentPadding = contentPadding,
             onReplyingChange = { replying = it },
-            onPageChange = onPageChange,
             onPostReply = onPostReply,
         )
     }
@@ -275,7 +297,6 @@ private fun CommentReplyFooter(
     currentComment: CommentStateItem,
     contentPadding: PaddingValues,
     onReplyingChange: (Boolean) -> Unit,
-    onPageChange: (Int) -> Unit,
     onPostReply: (CommentCreationDto) -> Unit,
 ) {
     AnimatedContent(
@@ -370,14 +391,27 @@ private fun CommentReplyFooter(
                 }
             }
         } else {
-            PaginationBar(
-                page = currentComment.page,
-                limit = currentComment.limit,
-                total = currentComment.total,
-                onPageChange = onPageChange,
+            Surface(
                 modifier = Modifier.fillMaxWidth(),
-                contentPadding = contentPadding,
-                trailing = {
+                color = CommentPanelSurface,
+                border = BorderStroke(1.dp, CommentCardBorder),
+                shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+                tonalElevation = 0.dp,
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .padding(contentPadding)
+                        .padding(horizontal = 10.dp, vertical = 8.dp)
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.comment_meta_count, currentComment.total),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = CommentMetaColor,
+                        modifier = Modifier.weight(1f),
+                    )
                     FilledTonalButton(
                         onClick = { onReplyingChange(true) },
                     ) {
@@ -386,8 +420,8 @@ private fun CommentReplyFooter(
                             contentDescription = null,
                         )
                     }
-                },
-            )
+                }
+            }
         }
     }
 }

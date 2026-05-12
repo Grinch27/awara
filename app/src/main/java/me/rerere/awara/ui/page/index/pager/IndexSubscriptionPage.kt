@@ -31,7 +31,6 @@ import kotlinx.coroutines.flow.collectLatest
 import me.rerere.awara.ui.component.common.Spin
 import me.rerere.awara.ui.component.common.UiStateBox
 import me.rerere.awara.ui.component.iwara.MediaCard
-import me.rerere.awara.ui.component.iwara.MediaListModeButton
 import me.rerere.awara.ui.component.iwara.mediaListGridCells
 import me.rerere.awara.ui.component.iwara.rememberMediaListModePreference
 import me.rerere.awara.ui.page.index.IndexVM
@@ -40,7 +39,7 @@ import me.rerere.awara.ui.page.index.IndexVM
 fun IndexSubscriptionPage(
     vm: IndexVM,
 ) {
-    var listMode by rememberMediaListModePreference()
+    val listMode by rememberMediaListModePreference()
     val gridState = rememberLazyStaggeredGridState()
 
     LaunchedEffect(gridState, vm.state.subscriptions.size, vm.state.subscriptionHasMore, vm.state.subscriptionLoadingMore) {
@@ -94,11 +93,6 @@ fun IndexSubscriptionPage(
                     )
                 }
             }
-
-            MediaListModeButton(
-                value = listMode,
-                onValueChange = { listMode = it },
-            )
         }
 
         UiStateBox(

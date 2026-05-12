@@ -25,27 +25,36 @@ class PlaylistDetailVM(
         loadPlaylistDetail()
     }
 
-    fun jumpToPage(page: Int) {
-        state = state.copy(page = page)
-        loadPlaylistDetail()
+    fun loadNextPage() {
+        if (state.loadingMore || !state.hasMore) {
+            return
+        }
+        loadPlaylistDetail(replaceResults = false)
     }
 
-    private fun loadPlaylistDetail() {
+    fun loadPlaylistDetail(replaceResults: Boolean = true) {
+        val targetPage = if (replaceResults) 1 else state.page + 1
+        state = state.copy(
+            loading = replaceResults,
+            loadingMore = !replaceResults,
+        )
         viewModelScope.launch {
-            state = state.copy(loading = true)
             runAPICatching {
                 mediaRepo.getPlaylistContent(
                     playlistId = id,
-                    page = state.page - 1
+                    page = targetPage - 1
                 )
             }.onSuccess {
+                val mergedList = if (replaceResults) it.results else state.list + it.results
                 state = state.copy(
+                    page = targetPage,
                     count = it.count,
-                    list = it.results,
-                    playlist = it.playlist
+                    list = mergedList,
+                    playlist = it.playlist,
+                    hasMore = mergedList.size < it.count,
                 )
             }
-            state = state.copy(loading = false)
+            state = state.copy(loading = false, loadingMore = false)
         }
     }
 
@@ -53,6 +62,8 @@ class PlaylistDetailVM(
         val loading: Boolean = false,
         val page: Int = 1,
         val count: Int = 0,
+        val loadingMore: Boolean = false,
+        val hasMore: Boolean = true,
         val list: List<Video> = emptyList(),
         val playlist: Playlist? = null,
     )

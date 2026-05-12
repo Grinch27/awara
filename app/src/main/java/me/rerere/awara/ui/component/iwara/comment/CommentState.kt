@@ -11,6 +11,8 @@ data class CommentStateItem(
     val page: Int = 1,
     val limit: Int = 32,
     val total: Int = 0,
+    val loadingMore: Boolean = false,
+    val hasMore: Boolean = true,
     val parent: String? = null,
     val comments: List<Comment> = emptyList(),
 )
@@ -24,12 +26,6 @@ fun CommentState.push(id: String): CommentState {
 fun CommentState.pop(): CommentState {
     return copy(
         stack = stack.dropLast(1)
-    )
-}
-
-fun CommentState.updatePage(page: Int): CommentState {
-    return copy(
-        stack = stack.dropLast(1) + stack.last().copy(page = page)
     )
 }
 

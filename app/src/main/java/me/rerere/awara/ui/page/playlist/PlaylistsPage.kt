@@ -3,14 +3,12 @@ package me.rerere.awara.ui.page.playlist
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.material3.Card
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
@@ -28,13 +26,22 @@ import me.rerere.awara.ui.LocalRouterProvider
 import me.rerere.awara.ui.component.common.BackButton
 import me.rerere.awara.ui.component.common.Spin
 import me.rerere.awara.ui.component.ext.DynamicStaggeredGridCells
-import me.rerere.awara.ui.component.iwara.PaginationBar
+import me.rerere.awara.ui.component.iwara.LoadMoreEffect
+import me.rerere.awara.ui.component.iwara.loadMoreFooter
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun PlaylistsPage(vm: PlaylistsVM = koinViewModel()) {
     val router = LocalRouterProvider.current
     val appbarBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val gridState = rememberLazyStaggeredGridState()
+    LoadMoreEffect(
+        gridState = gridState,
+        itemCount = vm.state.list.size,
+        hasMore = vm.state.hasMore,
+        loadingMore = vm.state.loadingMore,
+        onLoadMore = vm::loadNextPage,
+    )
     Scaffold(
         topBar = {
             LargeTopAppBar(
@@ -46,17 +53,6 @@ fun PlaylistsPage(vm: PlaylistsVM = koinViewModel()) {
                 },
                 scrollBehavior = appbarBehavior
             )
-        },
-        bottomBar = {
-            PaginationBar(
-                page = vm.state.page,
-                limit = 32,
-                total = vm.state.count,
-                onPageChange = {
-                    vm.jumpToPage(it)
-                },
-                contentPadding = WindowInsets.navigationBars.asPaddingValues()
-            )
         }
     ) {
         Spin(
@@ -66,6 +62,7 @@ fun PlaylistsPage(vm: PlaylistsVM = koinViewModel()) {
                 .padding(it)
         ) {
             LazyVerticalStaggeredGrid(
+                state = gridState,
                 columns = DynamicStaggeredGridCells(),
                 contentPadding = PaddingValues(8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -79,6 +76,8 @@ fun PlaylistsPage(vm: PlaylistsVM = koinViewModel()) {
                         router.navigate("playlist/${it.id}")
                     }
                 }
+
+                loadMoreFooter(vm.state.loadingMore)
             }
         }
     }

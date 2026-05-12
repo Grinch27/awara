@@ -18,7 +18,7 @@ fun VideoCommentPage(vm: VideoVM) {
         modifier = Modifier.consumeWindowInsets(WindowInsets.navigationBars),
         state = vm.state.commentState,
         contentPadding = WindowInsets.navigationBars.asPaddingValues(),
-        onPageChange = vm::jumpCommentPage,
+        onLoadMore = vm::loadNextComments,
         onPush = {
             vm.pushComment(it)
         },

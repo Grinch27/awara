@@ -33,82 +33,136 @@ class FollowVM(
         loadFollower()
     }
 
-    fun jumpToFollowingPage(page: Int) {
-        state = state.copy(followingPage = page)
-        loadFollowing()
+    fun loadNextFollowingPage() {
+        if (state.followingLoadingMore || !state.followingHasMore) {
+            return
+        }
+        loadFollowing(replaceResults = false)
     }
 
-    fun loadFollowing() {
+    fun loadFollowing(replaceResults: Boolean = true) {
+        val targetPage = if (replaceResults) 1 else state.followingPage + 1
+        state = state.copy(
+            followingState = if (replaceResults) UiState.Loading else state.followingState,
+            followingLoadingMore = !replaceResults,
+        )
         viewModelScope.launch {
-            state = state.copy(followingState = UiState.Loading)
             runAPICatching {
-                userRepo.getFollowing(userId = userId, page = state.followingPage - 1)
+                userRepo.getFollowing(userId = userId, page = targetPage - 1)
             }.onSuccess {
-                state = if(it.results.isEmpty()) {
+                val mergedList = if (replaceResults) it.results else state.followingList + it.results
+                state = if(mergedList.isEmpty()) {
                     state.copy(
                         followingState = UiState.Empty,
-                        followingList = it.results,
-                        followingCount = it.count
+                        followingPage = targetPage,
+                        followingList = mergedList,
+                        followingCount = it.count,
+                        followingLoadingMore = false,
+                        followingHasMore = false,
                     )
                 } else {
                     state.copy(
                         followingState = UiState.Success,
-                        followingList = it.results,
-                        followingCount = it.count
+                        followingPage = targetPage,
+                        followingList = mergedList,
+                        followingCount = it.count,
+                        followingLoadingMore = false,
+                        followingHasMore = mergedList.size < it.count,
                     )
                 }
             }.onError {
-                state = state.copy(followingState = UiState.Error(
-                    message = {
-                        Text(text = stringResource(error = it))
-                    }
-                ))
+                state = state.copy(
+                    followingState = if (replaceResults) {
+                        UiState.Error(
+                            message = {
+                                Text(text = stringResource(error = it))
+                            }
+                        )
+                    } else {
+                        state.followingState
+                    },
+                    followingLoadingMore = false,
+                )
             }.onException {
-                state = state.copy(followingState = UiState.Error(
-                    message = {
-                        Text(text = it.exception.localizedMessage ?: "Unknown Error")
-                    }
-                ))
+                state = state.copy(
+                    followingState = if (replaceResults) {
+                        UiState.Error(
+                            message = {
+                                Text(text = it.exception.localizedMessage ?: "Unknown Error")
+                            }
+                        )
+                    } else {
+                        state.followingState
+                    },
+                    followingLoadingMore = false,
+                )
             }
         }
     }
 
-    fun jumpToFollowerPage(page: Int) {
-        state = state.copy(followerPage = page)
-        loadFollower()
+    fun loadNextFollowerPage() {
+        if (state.followerLoadingMore || !state.followerHasMore) {
+            return
+        }
+        loadFollower(replaceResults = false)
     }
 
-    fun loadFollower() {
+    fun loadFollower(replaceResults: Boolean = true) {
+        val targetPage = if (replaceResults) 1 else state.followerPage + 1
+        state = state.copy(
+            followerState = if (replaceResults) UiState.Loading else state.followerState,
+            followerLoadingMore = !replaceResults,
+        )
         viewModelScope.launch {
-            state = state.copy(followerState = UiState.Loading)
             runAPICatching {
-                userRepo.getFollowers(userId = userId, page = state.followerPage - 1)
+                userRepo.getFollowers(userId = userId, page = targetPage - 1)
             }.onSuccess {
-                state = if(it.results.isEmpty()) {
+                val mergedList = if (replaceResults) it.results else state.followerList + it.results
+                state = if(mergedList.isEmpty()) {
                     state.copy(
                         followerState = UiState.Empty,
-                        followerList = it.results,
-                        followerCount = it.count
+                        followerPage = targetPage,
+                        followerList = mergedList,
+                        followerCount = it.count,
+                        followerLoadingMore = false,
+                        followerHasMore = false,
                     )
                 } else {
                     state.copy(
                         followerState = UiState.Success,
-                        followerList = it.results,
-                        followerCount = it.count
+                        followerPage = targetPage,
+                        followerList = mergedList,
+                        followerCount = it.count,
+                        followerLoadingMore = false,
+                        followerHasMore = mergedList.size < it.count,
                     )
                 }
             }.onError {
-                state = state.copy(followerState = UiState.Error(
-                    message = {
-                        Text(text = stringResource(error = it))
-                    }
-                ))
+                state = state.copy(
+                    followerState = if (replaceResults) {
+                        UiState.Error(
+                            message = {
+                                Text(text = stringResource(error = it))
+                            }
+                        )
+                    } else {
+                        state.followerState
+                    },
+                    followerLoadingMore = false,
+                )
             }.onException {
-                state = state.copy(followerState = UiState.Error(
-                    message = {
-                        Text(text = it.exception.localizedMessage ?: "Unknown Error")
-                    }
-                ))
+                state = state.copy(
+                    followerState = if (replaceResults) {
+                        UiState.Error(
+                            message = {
+                                Text(text = it.exception.localizedMessage ?: "Unknown Error")
+                            }
+                        )
+                    } else {
+                        state.followerState
+                    },
+                    followerLoadingMore = false,
+                )
             }
         }
     }
@@ -117,10 +171,14 @@ class FollowVM(
         val followingState: UiState = UiState.Initial,
         val followingPage: Int = 1,
         val followingCount: Int = 0,
+        val followingLoadingMore: Boolean = false,
+        val followingHasMore: Boolean = true,
         val followingList: List<Following> = emptyList(),
         val followerState: UiState = UiState.Initial,
         val followerPage: Int = 1,
         val followerCount: Int = 0,
+        val followerLoadingMore: Boolean = false,
+        val followerHasMore: Boolean = true,
         val followerList: List<Follower> = emptyList()
     )
 }

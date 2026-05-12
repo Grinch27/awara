@@ -20,7 +20,6 @@ import me.rerere.awara.data.source.onException
 import me.rerere.awara.data.source.onSuccess
 import me.rerere.awara.data.source.runAPICatching
 import me.rerere.awara.ui.component.iwara.comment.CommentState
-import me.rerere.awara.ui.component.iwara.comment.updatePage
 import me.rerere.awara.ui.component.iwara.comment.updateTopStack
 
 class UserVM(
@@ -63,12 +62,15 @@ class UserVM(
         }
     }
 
-    fun changeGuestbookPage(page: Int) {
-        state = state.copy(guestbookCommentState = state.guestbookCommentState.updatePage(page))
-        loadGuestbookComments()
+    fun loadNextGuestbookPage() {
+        val currentCommentState = state.guestbookCommentState.stack.last()
+        if (currentCommentState.loadingMore || !currentCommentState.hasMore) {
+            return
+        }
+        loadGuestbookComments(replaceResults = false)
     }
 
-    fun loadGuestbookComments() {
+    fun loadGuestbookComments(replaceResults: Boolean = true) {
         val profileId = state.profile?.user?.id?.takeIf { it.isNotBlank() } ?: run {
             state = state.copy(
                 guestbookCommentState = state.guestbookCommentState.copy(loading = false),
@@ -76,29 +78,48 @@ class UserVM(
             return
         }
         val currentCommentState = state.guestbookCommentState.stack.last()
+        val targetPage = if (replaceResults) 1 else currentCommentState.page + 1
         state = state.copy(
-            guestbookCommentState = state.guestbookCommentState.copy(loading = true),
+            guestbookCommentState = state.guestbookCommentState
+                .copy(loading = replaceResults)
+                .updateTopStack(currentCommentState.copy(loadingMore = !replaceResults)),
             guestbookError = null,
             guestbookExceptionMessage = null,
         )
         viewModelScope.launch {
             runAPICatching {
-                commentRepo.getProfileComments(profileId, currentCommentState.page - 1)
+                commentRepo.getProfileComments(profileId, targetPage - 1)
             }.onSuccess {
+                val mergedComments = if (replaceResults) {
+                    it.results
+                } else {
+                    currentCommentState.comments + it.results
+                }
                 state = state.copy(
                     guestbookCommentState = state.guestbookCommentState.updateTopStack(
                         currentCommentState.copy(
-                            comments = it.results,
+                            page = targetPage,
+                            comments = mergedComments,
                             limit = it.limit,
                             total = it.count,
+                            loadingMore = false,
+                            hasMore = mergedComments.size < it.count,
                         )
                     ),
                 )
             }.onError {
-                state = state.copy(guestbookError = it)
+                state = state.copy(
+                    guestbookError = it,
+                    guestbookCommentState = state.guestbookCommentState.updateTopStack(
+                        currentCommentState.copy(loadingMore = false)
+                    ),
+                )
             }.onException {
                 state = state.copy(
                     guestbookExceptionMessage = it.exception.localizedMessage,
+                    guestbookCommentState = state.guestbookCommentState.updateTopStack(
+                        currentCommentState.copy(loadingMore = false)
+                    ),
                 )
             }
             state = state.copy(
@@ -134,55 +155,73 @@ class UserVM(
         }
     }
 
-    fun changeVideoPage(page: Int) {
-        state = state.copy(videoPage = page)
-        loadVideoList()
+    fun loadNextVideoPage() {
+        if (state.videoLoadingMore || !state.videoHasMore) {
+            return
+        }
+        loadVideoList(replaceResults = false)
     }
 
-    fun loadVideoList() {
+    fun loadVideoList(replaceResults: Boolean = true) {
+        val targetPage = if (replaceResults) 1 else state.videoPage + 1
+        state = state.copy(
+            videoLoading = replaceResults,
+            videoLoadingMore = !replaceResults,
+        )
         viewModelScope.launch {
-            state = state.copy(videoLoading = true)
             runAPICatching {
                 val result = mediaRepo.getVideoList(
                     mapOf(
-                        "page" to (state.videoPage - 1).toString(),
+                        "page" to (targetPage - 1).toString(),
                         "sort" to "date",
                         "user" to (state.profile?.user?.id ?: ""),
                         "limit" to "32"
                     )
                 )
+                val mergedList = if (replaceResults) result.results else state.videoList + result.results
                 state = state.copy(
+                    videoPage = targetPage,
                     videoCount = result.count,
-                    videoList = result.results
+                    videoList = mergedList,
+                    videoHasMore = mergedList.size < result.count,
                 )
             }
-            state = state.copy(videoLoading = false)
+            state = state.copy(videoLoading = false, videoLoadingMore = false)
         }
     }
 
-    fun changeImagePage(page: Int) {
-        state = state.copy(imagePage = page)
-        loadImageList()
+    fun loadNextImagePage() {
+        if (state.imageLoadingMore || !state.imageHasMore) {
+            return
+        }
+        loadImageList(replaceResults = false)
     }
 
-    fun loadImageList() {
+    fun loadImageList(replaceResults: Boolean = true) {
+        val targetPage = if (replaceResults) 1 else state.imagePage + 1
+        state = state.copy(
+            imageLoading = replaceResults,
+            imageLoadingMore = !replaceResults,
+        )
         viewModelScope.launch {
-            state = state.copy(imageLoading = true)
             runAPICatching {
                 val result = mediaRepo.getImageList(
                     mapOf(
-                        "page" to (state.imagePage - 1).toString(),
+                        "page" to (targetPage - 1).toString(),
                         "sort" to "date",
                         "user" to (state.profile?.user?.id ?: ""),
                         "limit" to "32",
                     )
                 )
+                val mergedList = if (replaceResults) result.results else state.imageList + result.results
                 state = state.copy(
+                    imagePage = targetPage,
                     imageCount = result.count,
-                    imageList = result.results
+                    imageList = mergedList,
+                    imageHasMore = mergedList.size < result.count,
                 )
             }
-            state = state.copy(imageLoading = false)
+            state = state.copy(imageLoading = false, imageLoadingMore = false)
         }
     }
 
@@ -213,10 +252,14 @@ class UserVM(
         val videoPage: Int = 1,
         val videoCount: Int = 0,
         val videoLoading: Boolean = false,
+        val videoLoadingMore: Boolean = false,
+        val videoHasMore: Boolean = true,
         val videoList: List<Video> = emptyList(),
         val imagePage: Int = 1,
         val imageCount: Int = 0,
         val imageLoading: Boolean = false,
+        val imageLoadingMore: Boolean = false,
+        val imageHasMore: Boolean = true,
         val imageList: List<Image> = emptyList(),
     )
 }

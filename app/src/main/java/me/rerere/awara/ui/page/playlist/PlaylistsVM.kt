@@ -24,31 +24,37 @@ class PlaylistsVM(
         loadPlaylist()
     }
 
-    fun jumpToPage(page: Int) {
-        state = state.copy(
-            page = page
-        )
-        loadPlaylist()
+    fun loadNextPage() {
+        if (state.loadingMore || !state.hasMore) {
+            return
+        }
+        loadPlaylist(replaceResults = false)
     }
 
-    private fun loadPlaylist() {
+    fun loadPlaylist(replaceResults: Boolean = true) {
+        val targetPage = if (replaceResults) 1 else state.page + 1
+        state = state.copy(
+            loading = replaceResults,
+            loadingMore = !replaceResults,
+        )
         viewModelScope.launch {
-            state = state.copy(
-                loading = true
-            )
             runAPICatching {
                 mediaRepo.getPlaylists(
                     userId = userId,
-                    page = state.page - 1,
+                    page = targetPage - 1,
                 )
             }.onSuccess {
+                val mergedList = if (replaceResults) it.results else state.list + it.results
                 state = state.copy(
-                    list = it.results,
-                    count = it.count
+                    page = targetPage,
+                    list = mergedList,
+                    count = it.count,
+                    hasMore = mergedList.size < it.count,
                 )
             }
             state = state.copy(
-                loading = false
+                loading = false,
+                loadingMore = false,
             )
         }
     }
@@ -57,6 +63,8 @@ class PlaylistsVM(
         val loading: Boolean = false,
         val page: Int = 1,
         val count: Int = 0,
+        val loadingMore: Boolean = false,
+        val hasMore: Boolean = true,
         val list: List<Playlist> = emptyList()
     )
 }

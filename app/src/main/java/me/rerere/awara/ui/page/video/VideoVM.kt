@@ -29,7 +29,6 @@ import me.rerere.awara.di.AppDatabase
 import me.rerere.awara.ui.component.iwara.comment.CommentState
 import me.rerere.awara.ui.component.iwara.comment.pop
 import me.rerere.awara.ui.component.iwara.comment.push
-import me.rerere.awara.ui.component.iwara.comment.updatePage
 import me.rerere.awara.ui.component.iwara.comment.updateTopStack
 import me.rerere.awara.util.JsonInstance
 import java.time.Instant
@@ -178,39 +177,74 @@ class VideoVM(
         }
     }
 
-    fun jumpCommentPage(page: Int) {
-        state = state.copy(commentState = state.commentState.updatePage(page))
-        loadComments()
+    fun loadNextComments() {
+        val currentCommentState = state.commentState.stack.last()
+        if (currentCommentState.loadingMore || !currentCommentState.hasMore) {
+            return
+        }
+        loadComments(replaceResults = false)
     }
 
-    fun loadComments() {
-        state = state.copy(commentState = state.commentState.copy(loading = true))
+    fun loadComments(replaceResults: Boolean = true) {
+        val currentCommentState = state.commentState.stack.last()
+        val targetPage = if (replaceResults) 1 else currentCommentState.page + 1
+        state = state.copy(
+            commentState = state.commentState
+                .copy(loading = replaceResults)
+                .updateTopStack(currentCommentState.copy(loadingMore = !replaceResults)),
+        )
         viewModelScope.launch {
-            val currentCommentState = state.commentState.stack.last()
             runAPICatching {
                 if (currentCommentState.parent != null) {
                     commentRepo.getVideoCommentReplies(
                         id,
-                        currentCommentState.page - 1,
+                        targetPage - 1,
                         currentCommentState.parent
                     )
                 } else {
-                    commentRepo.getVideoComments(id, currentCommentState.page - 1)
+                    commentRepo.getVideoComments(id, targetPage - 1)
                 }
             }.onSuccess {
-                state = state.copy(
-                    commentState = state.commentState.updateTopStack(
-                        currentCommentState.copy(
-                            comments = it.results,
-                            limit = it.limit,
-                            total = it.count,
+                val activeCommentState = state.commentState.stack.last()
+                if (activeCommentState.parent == currentCommentState.parent) {
+                    val mergedComments = if (replaceResults) {
+                        it.results
+                    } else {
+                        activeCommentState.comments + it.results
+                    }
+                    state = state.copy(
+                        commentState = state.commentState.updateTopStack(
+                            activeCommentState.copy(
+                                page = targetPage,
+                                comments = mergedComments,
+                                limit = it.limit,
+                                total = it.count,
+                                loadingMore = false,
+                                hasMore = mergedComments.size < it.count,
+                            )
                         )
                     )
-                )
+                }
                 Log.i(TAG, "loadComments: $it")
             }.onError {
+                val activeCommentState = state.commentState.stack.last()
+                if (activeCommentState.parent == currentCommentState.parent) {
+                    state = state.copy(
+                        commentState = state.commentState.updateTopStack(
+                            activeCommentState.copy(loadingMore = false)
+                        ),
+                    )
+                }
                 Log.w(TAG, "loadComments(error): $it")
             }.onException {
+                val activeCommentState = state.commentState.stack.last()
+                if (activeCommentState.parent == currentCommentState.parent) {
+                    state = state.copy(
+                        commentState = state.commentState.updateTopStack(
+                            activeCommentState.copy(loadingMore = false)
+                        ),
+                    )
+                }
                 Log.w(TAG, "loadComments(exception)", it.exception)
             }
             state = state.copy(commentState = state.commentState.copy(loading = false))
