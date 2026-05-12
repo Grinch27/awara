@@ -139,10 +139,6 @@ fun SearchPage(
         else -> vm.state.videoList.size
     }
 
-    LaunchedEffect(vm.state.searchType, vm.query, activeFilters) {
-        lastLoadMoreItemCount = -1
-    }
-
     LaunchedEffect(
         gridState,
         vm.state.searchType,
@@ -178,8 +174,14 @@ fun SearchPage(
 
     fun submitSearch() {
         persistRecentQuery()
+        lastLoadMoreItemCount = -1
         vm.submitSearch()
         searchBarActive = false
+    }
+
+    fun updateSearchType(type: String) {
+        lastLoadMoreItemCount = -1
+        vm.updateSearchType(type)
     }
 
     fun updateDateFilter(selectedDate: String?) {
@@ -203,6 +205,7 @@ fun SearchPage(
                 vm.addVideoFilter(dateFilter)
             }
         }
+        lastLoadMoreItemCount = -1
         vm.submitSearch()
     }
 
@@ -213,6 +216,7 @@ fun SearchPage(
         } else {
             vm.addVideoFilter(tagFilter)
         }
+        lastLoadMoreItemCount = -1
         vm.submitSearch()
     }
 
@@ -222,6 +226,7 @@ fun SearchPage(
         } else {
             vm.removeVideoFilter(filterValue)
         }
+        lastLoadMoreItemCount = -1
         vm.submitSearch()
     }
 
@@ -349,19 +354,19 @@ fun SearchPage(
                             modifier = Modifier.weight(1f),
                             selected = vm.state.searchType == "video",
                             label = stringResource(R.string.video),
-                            onClick = { vm.updateSearchType("video") },
+                            onClick = { updateSearchType("video") },
                         )
                         SearchTypeChip(
                             modifier = Modifier.weight(1f),
                             selected = vm.state.searchType == "image",
                             label = stringResource(R.string.image),
-                            onClick = { vm.updateSearchType("image") },
+                            onClick = { updateSearchType("image") },
                         )
                         SearchTypeChip(
                             modifier = Modifier.weight(1f),
                             selected = vm.state.searchType == "user",
                             label = stringResource(R.string.user),
-                            onClick = { vm.updateSearchType("user") },
+                            onClick = { updateSearchType("user") },
                         )
                     }
 
