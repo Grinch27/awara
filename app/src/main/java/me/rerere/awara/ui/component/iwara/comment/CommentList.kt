@@ -316,18 +316,18 @@ private fun CommentReplyFooter(
                         value = body,
                         onValueChange = { body = it },
                         modifier = Modifier.weight(1f),
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = CommentBodyColor),
                         placeholder = {
                             Text(
                                 text = if (replyTo == null) {
                                     stringResource(R.string.comment_reply_action)
                                 } else {
                                     stringResource(R.string.comment_reply_placeholder, replyTo.user?.name ?: "")
-                                }
+                                },
+                                color = CommentMetaColor,
                             )
                         },
                         colors = TextFieldDefaults.textFieldColors(
-                            textColor = CommentBodyColor,
-                            placeholderColor = CommentMetaColor,
                             containerColor = Color.Transparent,
                             cursorColor = MaterialTheme.colorScheme.primary,
                             focusedIndicatorColor = Color.Transparent,
