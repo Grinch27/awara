@@ -1,7 +1,7 @@
 package me.rerere.awara.ui.page.index.layout
 
-// TODO(user): Decide whether the phone home page should default to subscription, video, image, or forum.
-// TODO(agent): Keep the phone shell drawer-first and avoid restoring the old swipe-based section switcher.
+// TODO(user): Decide whether subscription should rejoin the default entry choices after video/image/forum stabilizes.
+// TODO(agent): Keep the phone shell drawer-first and route utility entries directly, never through placeholder sections.
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,7 +41,6 @@ import me.rerere.awara.R
 import me.rerere.awara.ui.LocalRouterProvider
 import me.rerere.awara.ui.component.common.TodoStatus
 import me.rerere.awara.ui.page.index.IndexDrawer
-import me.rerere.awara.ui.page.index.IndexHomeLandingPage
 import me.rerere.awara.ui.page.index.SETTING_HOME_DEFAULT_SECTION
 import me.rerere.awara.ui.page.index.IndexVM
 import me.rerere.awara.ui.page.index.indexNavigations
@@ -66,13 +65,15 @@ fun IndexPagePhoneLayout(vm: IndexVM) {
     }
     val preferredHomeSection = rememberStringPreference(
         key = SETTING_HOME_DEFAULT_SECTION,
-        default = "subscription",
+        default = "video",
     )
     val defaultNavigationName = when {
         navigations.any { it.name == preferredHomeSection.value } -> preferredHomeSection.value
-        userState.user != null && navigations.any { it.name == "subscription" } -> "subscription"
         navigations.any { it.name == "video" } -> "video"
-        else -> navigations.firstOrNull()?.name ?: "home"
+        navigations.any { it.name == "image" } -> "image"
+        navigations.any { it.name == "forum" } -> "forum"
+        userState.user != null && navigations.any { it.name == "subscription" } -> "subscription"
+        else -> navigations.firstOrNull()?.name ?: "video"
     }
     var selectedNavigationName by rememberSaveable(userState.user != null) {
         mutableStateOf(defaultNavigationName)
@@ -191,18 +192,6 @@ fun IndexPagePhoneLayout(vm: IndexVM) {
                     .fillMaxSize(),
             ) {
                 when (currentNavigation?.name) {
-                    "home" -> {
-                        IndexHomeLandingPage(
-                            navigations = navigations,
-                            onNavigationSelected = { navigationName ->
-                                if (navigations.any { it.name == navigationName }) {
-                                    selectedNavigationName = navigationName
-                                }
-                            },
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    }
-
                     "subscription" -> {
                         IndexSubscriptionPage(vm)
                     }

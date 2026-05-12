@@ -9,6 +9,7 @@
     <string name="rating_ecchi">Ecchi</string>
     <string name="rating">Rating</string>
     <string name="date">Date</string>
+    <string name="date_any">Any Date</string>
     <string name="tag">Tag</string>
     <string name="search">Search</string>
     <string name="search_hint_media">Search media, tags, or users</string>

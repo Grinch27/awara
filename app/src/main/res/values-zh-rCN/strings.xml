@@ -107,8 +107,8 @@
     <string name="setting_look_dynamic_color_text">是否根据视频封面动态调整颜色</string>
     <string name="setting_look_work_mode_title">工作模式</string>
     <string name="setting_look_work_mode_text">视频封面会模糊</string>
-    <string name="setting_look_home_default_title">首页默认分区</string>
-    <string name="setting_look_home_default_text">选择进入首页时默认展示的主分区。</string>
+    <string name="setting_look_home_default_title">默认入口页面</string>
+    <string name="setting_look_home_default_text">选择启动后优先进入视频、图片或论坛页面。</string>
     <string name="setting_look_media_list_mode_title">媒体列表模式</string>
     <string name="setting_look_media_list_mode_text">在媒体列表中切换详情和缩略图布局。</string>
     <string name="setting_player">播放器设置</string>

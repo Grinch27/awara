@@ -1,7 +1,7 @@
 package me.rerere.awara.ui.page.setting
 
-// TODO(user): Decide whether settings search should also cover future debug-only actions or stay limited to user-facing preferences.
-// TODO(agent): Keep this page flat and searchable; do not bring back section drill-down or saved-view-specific settings.
+// TODO(user): Decide whether subscription should return as an optional default entry after video/image/forum behavior is fully validated.
+// TODO(agent): Keep this page flat and searchable; avoid hidden nested routes for core navigation preferences.
 
 import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -509,7 +509,7 @@ private fun AppearanceSettingsSection(
     )
     val homeDefaultSection = rememberStringPreference(
         key = SETTING_HOME_DEFAULT_SECTION,
-        default = "subscription",
+        default = "video",
     )
     val dynamicColor = rememberBooleanPreference(
         key = "setting.dynamic_color",
@@ -631,11 +631,10 @@ private fun AppearanceSettingsSection(
         if (showHomeDefault) {
             SettingPickerItem(
                 state = homeDefaultSection,
-                items = listOf("subscription", "video", "image", "forum"),
+                items = listOf("video", "image", "forum"),
                 itemLabel = { section ->
                     Text(
                         text = when (section) {
-                            "subscription" -> stringResource(R.string.index_nav_subscription)
                             "video" -> stringResource(R.string.index_nav_video)
                             "image" -> stringResource(R.string.index_nav_image)
                             "forum" -> stringResource(R.string.index_nav_forum)

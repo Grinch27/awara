@@ -1,7 +1,7 @@
 package me.rerere.awara.ui.page.index.layout
 
-// TODO(user): Decide whether the tablet home page should keep the left rail fixed or allow a denser two-pane detail mode later.
-// TODO(agent): Keep the tablet shell visually closer to EhViewer and avoid reintroducing saved-view controls.
+// TODO(user): Decide whether subscription should rejoin the tablet default entry choices after video/image/forum stabilizes.
+// TODO(agent): Keep the tablet shell EhViewer-like and route utility entries directly instead of page-level placeholders.
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -41,7 +41,6 @@ import me.rerere.awara.R
 import me.rerere.awara.ui.LocalRouterProvider
 import me.rerere.awara.ui.component.common.TodoStatus
 import me.rerere.awara.ui.page.index.IndexDrawer
-import me.rerere.awara.ui.page.index.IndexHomeLandingPage
 import me.rerere.awara.ui.page.index.SETTING_HOME_DEFAULT_SECTION
 import me.rerere.awara.ui.page.index.IndexVM
 import me.rerere.awara.ui.page.index.indexNavigations
@@ -66,13 +65,15 @@ fun IndexPageTabletLayout(vm: IndexVM) {
     }
     val preferredHomeSection = rememberStringPreference(
         key = SETTING_HOME_DEFAULT_SECTION,
-        default = "subscription",
+        default = "video",
     )
     val defaultNavigationName = when {
         navigations.any { it.name == preferredHomeSection.value } -> preferredHomeSection.value
-        userState.user != null && navigations.any { it.name == "subscription" } -> "subscription"
         navigations.any { it.name == "video" } -> "video"
-        else -> navigations.firstOrNull()?.name ?: "home"
+        navigations.any { it.name == "image" } -> "image"
+        navigations.any { it.name == "forum" } -> "forum"
+        userState.user != null && navigations.any { it.name == "subscription" } -> "subscription"
+        else -> navigations.firstOrNull()?.name ?: "video"
     }
     var selectedNavigationName by rememberSaveable(userState.user != null) {
         mutableStateOf(defaultNavigationName)
@@ -190,18 +191,6 @@ fun IndexPageTabletLayout(vm: IndexVM) {
                     .fillMaxHeight(),
             ) {
                 when (currentNavigation?.name) {
-                    "home" -> {
-                        IndexHomeLandingPage(
-                            navigations = navigations,
-                            onNavigationSelected = { navigationName ->
-                                if (navigations.any { it.name == navigationName }) {
-                                    selectedNavigationName = navigationName
-                                }
-                            },
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    }
-
                     "subscription" -> {
                         IndexSubscriptionPage(vm)
                     }

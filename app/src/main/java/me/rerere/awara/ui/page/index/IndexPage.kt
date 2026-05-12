@@ -3,7 +3,6 @@ package me.rerere.awara.ui.page.index
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Forum
-import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Subscriptions
@@ -90,16 +89,6 @@ data class IndexNavigation(
 )
 
 val indexNavigations = listOf(
-    IndexNavigation(
-        name = "home",
-        titleRes = R.string.index_nav_home,
-        title = {
-            Text(stringResource(R.string.index_nav_home), maxLines = 1)
-        },
-        icon = {
-            Icon(Icons.Outlined.Home, "Home")
-        },
-    ),
     IndexNavigation(
         name = "subscription",
         titleRes = R.string.index_nav_subscription,

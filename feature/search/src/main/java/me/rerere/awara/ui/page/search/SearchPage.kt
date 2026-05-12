@@ -1,7 +1,7 @@
 package me.rerere.awara.ui.page.search
 
-// TODO(user): Decide whether saved views should surface here as first-class search presets once the search summary row settles.
-// TODO(agent): If search gains server-side suggestion APIs later, replace the local-only quick history chips with ranked mixed suggestions instead of stacking another row.
+// TODO(user): Decide whether user search should return as a separate route or remain hidden behind a dedicated switch in this page.
+// TODO(agent): Keep the header layout aligned with the three-row EhViewer-style structure before adding extra controls.
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -133,6 +133,7 @@ fun SearchPage(
         "video" -> vm.videoSort
         else -> DEFAULT_MEDIA_SORT
     }
+    val currentDateFilterValue = activeFilters.firstOrNull { it.key == "date" }?.value
     val showSearchSummary = vm.query.isNotBlank() || activeFilters.isNotEmpty() || (
         vm.state.searchType != "user" && vm.state.uiState != UiState.Initial
     )
@@ -155,6 +156,12 @@ fun SearchPage(
             if (vm.state.hasMore && !vm.state.loadingMore && currentItemCount > 0 && lastVisibleIndex >= currentItemCount - 6) {
                 vm.loadNextPage()
             }
+        }
+    }
+
+    LaunchedEffect(vm.state.searchType) {
+        if (vm.state.searchType == "user") {
+            vm.updateSearchType("video")
         }
     }
 
@@ -200,92 +207,83 @@ fun SearchPage(
                         IconButton(onClick = onBack) {
                             Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
                         }
-                        Text(
-                            text = stringResource(R.string.search),
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                    }
-
-                    DockedSearchBar(
-                        modifier = Modifier.fillMaxWidth(),
-                        query = vm.query,
-                        onQueryChange = { vm.query = it },
-                        onSearch = { submitSearch() },
-                        active = searchBarActive,
-                        onActiveChange = { searchBarActive = it },
-                        placeholder = {
-                            Text(stringResource(R.string.search_hint_media))
-                        },
-                        content = {
-                            if (recentQueries.isEmpty()) {
-                                ListItem(
-                                    headlineContent = {
-                                        Text(stringResource(R.string.search_recent_empty))
-                                    },
-                                    leadingContent = {
-                                        Icon(Icons.Outlined.History, null)
-                                    },
-                                )
-                            } else {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Text(text = stringResource(R.string.search_recent_title))
-                                    TextButton(onClick = { recentQueriesRaw = "" }) {
-                                        Text(stringResource(R.string.search_recent_clear))
-                                    }
-                                }
-                                recentQueries.forEach { recentQuery ->
+                        DockedSearchBar(
+                            modifier = Modifier.weight(1f),
+                            query = vm.query,
+                            onQueryChange = { vm.query = it },
+                            onSearch = { submitSearch() },
+                            active = searchBarActive,
+                            onActiveChange = { searchBarActive = it },
+                            placeholder = {
+                                Text(stringResource(R.string.search_hint_media))
+                            },
+                            content = {
+                                if (recentQueries.isEmpty()) {
                                     ListItem(
-                                        headlineContent = { Text(recentQuery) },
-                                        leadingContent = { Icon(Icons.Outlined.History, null) },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        trailingContent = {
-                                            FilledTonalButton(
-                                                onClick = {
-                                                    vm.query = recentQuery
-                                                    submitSearch()
-                                                },
-                                            ) {
-                                                Text(stringResource(R.string.search_apply_recent_action))
-                                            }
+                                        headlineContent = {
+                                            Text(stringResource(R.string.search_recent_empty))
+                                        },
+                                        leadingContent = {
+                                            Icon(Icons.Outlined.History, null)
                                         },
                                     )
-                                }
-                            }
-                        },
-                        leadingIcon = {
-                            SelectButton(
-                                value = vm.state.searchType,
-                                options = searchOptions(),
-                                onValueChange = vm::updateSearchType,
-                            )
-                        },
-                        trailingIcon = {
-                            IconButton(
-                                onClick = {
-                                    if (searchBarActive && vm.query.isNotBlank()) {
-                                        vm.query = ""
-                                    } else {
-                                        submitSearch()
+                                } else {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Text(text = stringResource(R.string.search_recent_title))
+                                        TextButton(onClick = { recentQueriesRaw = "" }) {
+                                            Text(stringResource(R.string.search_recent_clear))
+                                        }
                                     }
-                                },
-                            ) {
-                                Icon(
-                                    imageVector = if (searchBarActive && vm.query.isNotBlank()) {
-                                        Icons.Outlined.Close
-                                    } else {
-                                        Icons.Outlined.Search
+                                    recentQueries.forEach { recentQuery ->
+                                        ListItem(
+                                            headlineContent = { Text(recentQuery) },
+                                            leadingContent = { Icon(Icons.Outlined.History, null) },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            trailingContent = {
+                                                FilledTonalButton(
+                                                    onClick = {
+                                                        vm.query = recentQuery
+                                                        submitSearch()
+                                                    },
+                                                ) {
+                                                    Text(stringResource(R.string.search_apply_recent_action))
+                                                }
+                                            },
+                                        )
+                                    }
+                                }
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Outlined.Search, null)
+                            },
+                            trailingIcon = {
+                                IconButton(
+                                    onClick = {
+                                        if (searchBarActive && vm.query.isNotBlank()) {
+                                            vm.query = ""
+                                        } else {
+                                            submitSearch()
+                                        }
                                     },
-                                    contentDescription = null,
-                                )
-                            }
-                        },
-                    )
+                                ) {
+                                    Icon(
+                                        imageVector = if (searchBarActive && vm.query.isNotBlank()) {
+                                            Icons.Outlined.Close
+                                        } else {
+                                            Icons.Outlined.Search
+                                        },
+                                        contentDescription = null,
+                                    )
+                                }
+                            },
+                        )
+                    }
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -301,14 +299,36 @@ fun SearchPage(
                             label = stringResource(R.string.image),
                             onClick = { vm.updateSearchType("image") },
                         )
-                        SearchTypeChip(
-                            selected = vm.state.searchType == "user",
-                            label = stringResource(R.string.user),
-                            onClick = { vm.updateSearchType("user") },
-                        )
                     }
 
                     if (vm.state.searchType != "user") {
+                        DateDropdown(
+                            selectedDateValue = currentDateFilterValue,
+                            onValueChange = { selectedDate ->
+                                val activeValueList = if (vm.state.searchType == "image") {
+                                    vm.imageFilters.toList()
+                                } else {
+                                    vm.videoFilters.toList()
+                                }
+                                activeValueList.filter { it.key == "date" }.forEach {
+                                    if (vm.state.searchType == "image") {
+                                        vm.removeImageFilter(it)
+                                    } else {
+                                        vm.removeVideoFilter(it)
+                                    }
+                                }
+                                if (!selectedDate.isNullOrBlank()) {
+                                    val dateFilter = FilterValue("date", selectedDate)
+                                    if (vm.state.searchType == "image") {
+                                        vm.addImageFilter(dateFilter)
+                                    } else {
+                                        vm.addVideoFilter(dateFilter)
+                                    }
+                                }
+                                vm.submitSearch()
+                            },
+                        )
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -514,6 +534,60 @@ private fun SearchTypeChip(
         onClick = onClick,
         label = { Text(label) },
     )
+}
+
+@Composable
+private fun DateDropdown(
+    selectedDateValue: String?,
+    onValueChange: (String?) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val options = remember {
+        val calendar = Calendar.getInstance()
+        val year = calendar.get(Calendar.YEAR)
+        val month = calendar.get(Calendar.MONTH) + 1
+        buildList {
+            add("")
+            for (offset in 0..23) {
+                val totalMonth = year * 12 + (month - 1) - offset
+                val optionYear = totalMonth / 12
+                val optionMonth = (totalMonth % 12) + 1
+                add("$optionYear-$optionMonth")
+            }
+        }
+    }
+    val currentLabel = selectedDateValue?.takeIf { it.isNotBlank() }
+        ?: stringResource(R.string.date_any)
+
+    Box {
+        FilledTonalButton(onClick = { expanded = true }) {
+            Icon(Icons.Outlined.CalendarMonth, null)
+            Text(text = currentLabel, modifier = Modifier.padding(start = 6.dp))
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            options.fastForEach { option ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            if (option.isBlank()) {
+                                stringResource(R.string.date_any)
+                            } else {
+                                option
+                            },
+                        )
+                    },
+                    onClick = {
+                        expanded = false
+                        onValueChange(option.ifBlank { null })
+                    },
+                )
+            }
+        }
+    }
 }
 
 @Composable

@@ -108,8 +108,8 @@
     <string name="setting_look_dynamic_color_text">Whether to dynamically adjust the color according to the video cover</string>
     <string name="setting_look_work_mode_title">Work Mode</string>
     <string name="setting_look_work_mode_text">The video cover will be blurred</string>
-    <string name="setting_look_home_default_title">Default Home Section</string>
-    <string name="setting_look_home_default_text">Choose which primary section opens by default on the home screen.</string>
+    <string name="setting_look_home_default_title">Default Entry Page</string>
+    <string name="setting_look_home_default_text">Choose whether Video, Image, or Forum opens first after launch.</string>
     <string name="setting_look_media_list_mode_title">Media List Mode</string>
     <string name="setting_look_media_list_mode_text">Switch media feeds between detail and thumbnail layouts.</string>
     <string name="setting_player">Player Setting</string>
