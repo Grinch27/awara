@@ -1,5 +1,7 @@
 package me.rerere.awara.ui.page.user
 
+import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.BorderStroke
@@ -27,6 +29,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -207,11 +210,16 @@ private fun UserGuestbookPage(
 ) {
     val context = LocalContext.current
     val username = profileState?.user?.username?.takeIf { it.isNotBlank() }
-    val browserUrl = username?.let { "https://www.iwara.tv/profile/$it" }
+    val browserUrl = username?.let { "https://www.iwara.tv/profile/${Uri.encode(it)}" }
     val guestbookState = vm.state.guestbookCommentState.stack.last()
+    val inReplyThread = vm.state.guestbookCommentState.stack.size > 1
     val guestbookError = vm.state.guestbookError
     val guestbookExceptionMessage = vm.state.guestbookExceptionMessage
     val listState = rememberLazyListState()
+
+    BackHandler(inReplyThread) {
+        vm.popGuestbookComment()
+    }
 
     LoadMoreEffect(
         listState = listState,
@@ -234,16 +242,26 @@ private fun UserGuestbookPage(
             ) {
                 when {
                     guestbookError != null || guestbookExceptionMessage != null -> {
-                        UserGuestbookErrorState(
-                            message = guestbookError?.let { apiErrorString(it) }
-                                ?: guestbookExceptionMessage
-                                ?: stringResource(R.string.errors_unknown, "guestbook"),
-                            browserUrl = browserUrl,
-                            onRetry = vm::loadGuestbookComments,
-                        )
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            if (inReplyThread) {
+                                GuestbookReplyHeader(
+                                    count = guestbookState.total,
+                                    onBack = vm::popGuestbookComment,
+                                )
+                            }
+                            Box(modifier = Modifier.weight(1f)) {
+                                UserGuestbookErrorState(
+                                    message = guestbookError?.let { apiErrorString(it) }
+                                        ?: guestbookExceptionMessage
+                                        ?: stringResource(R.string.errors_unknown, "guestbook"),
+                                    browserUrl = browserUrl,
+                                    onRetry = vm::loadGuestbookComments,
+                                )
+                            }
+                        }
                     }
 
-                    guestbookState.comments.isEmpty() -> {
+                    guestbookState.comments.isEmpty() && !inReplyThread -> {
                         EmptyStatus()
                     }
 
@@ -254,10 +272,33 @@ private fun UserGuestbookPage(
                             verticalArrangement = Arrangement.spacedBy(6.dp),
                             contentPadding = PaddingValues(vertical = 8.dp),
                         ) {
+                            if (inReplyThread) {
+                                item(key = "guestbook-reply-header") {
+                                    GuestbookReplyHeader(
+                                        count = guestbookState.total,
+                                        onBack = vm::popGuestbookComment,
+                                    )
+                                }
+                            }
+
+                            if (guestbookState.comments.isEmpty()) {
+                                item(key = "guestbook-empty-replies") {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(220.dp),
+                                    ) {
+                                        EmptyStatus()
+                                    }
+                                }
+                            }
+
                             lazyItems(guestbookState.comments, key = { it.id }) { comment ->
                                 CommentCard(
                                     comment = comment,
-                                    onLoadReplies = null,
+                                    nestingLevel = if (inReplyThread) 1 else 0,
+                                    showParentContext = inReplyThread,
+                                    onLoadReplies = { vm.pushGuestbookComment(it.id) },
                                     onReply = null,
                                 )
                             }
@@ -266,6 +307,44 @@ private fun UserGuestbookPage(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GuestbookReplyHeader(
+    count: Int,
+    onBack: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .clickable(onClick = onBack),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f),
+        ),
+        shape = RoundedCornerShape(18.dp),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Icon(Icons.Outlined.ArrowBack, null)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.comment_reply_thread_title),
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                Text(
+                    text = stringResource(R.string.comment_replies_count, count),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }

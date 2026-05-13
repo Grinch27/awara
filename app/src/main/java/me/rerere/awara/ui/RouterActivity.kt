@@ -1,5 +1,6 @@
 package me.rerere.awara.ui
 
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -198,7 +199,7 @@ class RouterActivity : ComponentActivity() {
                         },
                         onOpenUser = { user ->
                             if (user.hasNavigableProfile) {
-                                navController.navigate("user/${user.username}")
+                                navController.navigate("user/${Uri.encode(user.username)}")
                             }
                         },
                     )

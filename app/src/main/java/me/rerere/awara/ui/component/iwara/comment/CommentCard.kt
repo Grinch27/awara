@@ -3,6 +3,7 @@ package me.rerere.awara.ui.component.iwara.comment
 // TODO(user): Decide whether nested reply cards should eventually collapse long branches or keep always-expanded excerpts.
 // TODO(agent): Keep reply depth visible with the left connector and parent excerpt, but avoid overcomplicating the card chrome.
 
+import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
@@ -149,7 +150,7 @@ fun CommentCard(
                         onClick = {
                             comment.user
                                 ?.takeIf { it.hasNavigableProfile }
-                                ?.let { router.navigate("user/${it.username}") }
+                                ?.let { router.navigate("user/${Uri.encode(it.username)}") }
                         }
                     )
                     Column {
@@ -161,7 +162,7 @@ fun CommentCard(
                             modifier = Modifier.clickable {
                                 comment.user
                                     ?.takeIf { it.hasNavigableProfile }
-                                    ?.let { router.navigate("user/${it.username}") }
+                                    ?.let { router.navigate("user/${Uri.encode(it.username)}") }
                             }
                         )
                         if (!comment.user?.displayHandle.isNullOrBlank()) {

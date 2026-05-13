@@ -14,6 +14,18 @@ class CommentRepo(private val iwaraAPI: IwaraAPI) {
         ),
     )
 
+    suspend fun getProfileCommentReplies(
+        id: String,
+        page: Int,
+        parent: String,
+    ) = iwaraAPI.getProfileComments(
+        id,
+        mapOf(
+            "page" to page.toString(),
+            "parent" to parent,
+        ),
+    )
+
     suspend fun getVideoComments(
         id: String,
         page: Int

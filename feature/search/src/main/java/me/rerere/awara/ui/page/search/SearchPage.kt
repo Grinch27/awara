@@ -1,15 +1,11 @@
 package me.rerere.awara.ui.page.search
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
@@ -20,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -34,12 +31,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.CalendarMonth
-import androidx.compose.material.icons.outlined.ClearAll
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.LocalFireDepartment
 import androidx.compose.material.icons.outlined.RemoveRedEye
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Star
@@ -57,16 +52,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -325,23 +316,31 @@ fun SearchPage(
                                 Icon(Icons.Outlined.Search, null)
                             },
                             trailingIcon = {
-                                IconButton(
-                                    onClick = {
-                                        if (searchBarActive && vm.query.isNotBlank()) {
-                                            vm.query = ""
-                                        } else {
-                                            submitSearch()
-                                        }
-                                    },
-                                ) {
-                                    Icon(
-                                        imageVector = if (searchBarActive && vm.query.isNotBlank()) {
-                                            Icons.Outlined.Close
-                                        } else {
-                                            Icons.Outlined.Search
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    if (vm.state.searchType != "user") {
+                                        SearchBarSortDropdown(
+                                            selectedSort = currentSortValue,
+                                            onValueChange = ::updateMediaSort,
+                                        )
+                                    }
+                                    IconButton(
+                                        onClick = {
+                                            if (searchBarActive && vm.query.isNotBlank()) {
+                                                vm.query = ""
+                                            } else {
+                                                submitSearch()
+                                            }
                                         },
-                                        contentDescription = null,
-                                    )
+                                    ) {
+                                        Icon(
+                                            imageVector = if (searchBarActive && vm.query.isNotBlank()) {
+                                                Icons.Outlined.Close
+                                            } else {
+                                                Icons.Outlined.Search
+                                            },
+                                            contentDescription = null,
+                                        )
+                                    }
                                 }
                             },
                             content = {
@@ -422,11 +421,6 @@ fun SearchPage(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            SortDropdown(
-                                modifier = Modifier.weight(1f),
-                                selectedSort = currentSortValue,
-                                onValueChange = ::updateMediaSort,
-                            )
                             RatingDropdown(
                                 modifier = Modifier.weight(1f),
                                 selectedRating = currentRatingValue,
@@ -534,24 +528,6 @@ fun SearchPage(
 }
 
 @Composable
-private fun searchOptions(): List<SelectOption<String>> {
-    return listOf(
-        SelectOption(
-            value = "video",
-            label = { Text(stringResource(R.string.video)) },
-        ),
-        SelectOption(
-            value = "image",
-            label = { Text(stringResource(R.string.image)) },
-        ),
-        SelectOption(
-            value = "user",
-            label = { Text(stringResource(R.string.user)) },
-        ),
-    )
-}
-
-@Composable
 private fun SearchTypeChip(
     modifier: Modifier = Modifier,
     selected: Boolean,
@@ -617,6 +593,57 @@ private fun SearchHeaderIconButton(
             Box(contentAlignment = Alignment.Center, content = content)
         }
     }
+}
+
+@Composable
+private fun SearchBarSortDropdown(
+    selectedSort: String,
+    onValueChange: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val currentSort = selectedSort.takeIf { it in MediaSortKeys } ?: DEFAULT_MEDIA_SORT
+
+    Box {
+        TextButton(
+            onClick = { expanded = true },
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+        ) {
+            Icon(Icons.Outlined.FilterList, null, modifier = Modifier.size(18.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = mediaSortLabel(currentSort),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            MediaSortKeys.fastForEach { sort ->
+                DropdownMenuItem(
+                    text = { Text(mediaSortLabel(sort)) },
+                    leadingIcon = { MediaSortIcon(sort) },
+                    onClick = {
+                        expanded = false
+                        onValueChange(sort)
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MediaSortIcon(sort: String) {
+    val icon = when (sort) {
+        "views" -> Icons.Outlined.RemoveRedEye
+        "likes" -> Icons.Outlined.Favorite
+        "popularity" -> Icons.Outlined.Star
+        else -> Icons.Outlined.CalendarMonth
+    }
+    Icon(icon, null)
 }
 
 @Composable
@@ -715,52 +742,6 @@ private fun DateDropdown(
 }
 
 @Composable
-private fun SortDropdown(
-    modifier: Modifier = Modifier,
-    selectedSort: String,
-    onValueChange: (String) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val currentSort = selectedSort.takeIf { it in MediaSortKeys } ?: DEFAULT_MEDIA_SORT
-
-    Box(modifier = modifier) {
-        FilledTonalButton(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = { expanded = true },
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.filledTonalButtonColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.72f),
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            ),
-        ) {
-            Icon(Icons.Outlined.FilterList, null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = mediaSortLabel(currentSort),
-                modifier = Modifier.weight(1f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
-            MediaSortKeys.fastForEach { sort ->
-                DropdownMenuItem(
-                    text = { Text(mediaSortLabel(sort)) },
-                    onClick = {
-                        expanded = false
-                        onValueChange(sort)
-                    },
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun RatingDropdown(
     modifier: Modifier = Modifier,
     selectedRating: String,
@@ -813,54 +794,11 @@ private fun TagBrowseButton(
     onTagSelected: (String) -> Unit,
     onTagRemove: (FilterValue) -> Unit,
 ) {
-    var showSheet by rememberSaveable { mutableStateOf(false) }
-    val currentLabel = when {
-        selectedTags.isEmpty() -> stringResource(R.string.tag_browse)
-        selectedTags.size == 1 -> "#${selectedTags.first().value}"
-        else -> "#${selectedTags.first().value} +${selectedTags.size - 1}"
-    }
-
-    FilledTonalButton(
-        modifier = modifier.fillMaxWidth(),
-        onClick = { showSheet = true },
-        shape = RoundedCornerShape(16.dp),
-        colors = ButtonDefaults.filledTonalButtonColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.72f),
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-        ),
-    ) {
-        Icon(Icons.Outlined.FilterList, null)
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = currentLabel,
-            modifier = Modifier.weight(1f),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-
-    if (showSheet) {
-        TagBrowseSheet(
-            selectedTags = selectedTags,
-            onTagSelected = onTagSelected,
-            onTagRemove = onTagRemove,
-            onDismiss = { showSheet = false },
-        )
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun TagBrowseSheet(
-    selectedTags: List<FilterValue>,
-    onTagSelected: (String) -> Unit,
-    onTagRemove: (FilterValue) -> Unit,
-    onDismiss: () -> Unit,
-) {
     val searchRepository = get<SearchRepository>()
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val defaultError = stringResource(R.string.search_error_default)
+    var expanded by rememberSaveable { mutableStateOf(false) }
     var selectedFilter by rememberSaveable { mutableStateOf(TAG_BROWSE_FILTERS.first()) }
     var page by remember { mutableStateOf(0) }
     var count by remember { mutableStateOf(0) }
@@ -870,9 +808,14 @@ private fun TagBrowseSheet(
     var errorText by remember { mutableStateOf<String?>(null) }
     var lastLoadMoreItemCount by remember { mutableStateOf(-1) }
     val tags = remember { mutableStateListOf<String>() }
+    val currentLabel = when {
+        selectedTags.isEmpty() -> stringResource(R.string.tag_browse)
+        selectedTags.size == 1 -> "#${selectedTags.first().value}"
+        else -> "#${selectedTags.first().value} +${selectedTags.size - 1}"
+    }
 
     fun loadTags(replaceResults: Boolean = true) {
-        if (!replaceResults && (loading || loadingMore || !hasMore)) {
+        if (!expanded || (!replaceResults && (loading || loadingMore || !hasMore))) {
             return
         }
         val requestFilter = selectedFilter
@@ -884,6 +827,7 @@ private fun TagBrowseSheet(
             loading = true
             loadingMore = false
             errorText = null
+            lastLoadMoreItemCount = -1
             tags.clear()
         } else {
             loadingMore = true
@@ -921,17 +865,22 @@ private fun TagBrowseSheet(
         }
     }
 
-    LaunchedEffect(selectedFilter) {
-        lastLoadMoreItemCount = -1
-        loadTags()
+    LaunchedEffect(expanded, selectedFilter) {
+        if (expanded) {
+            loadTags()
+        }
     }
 
     LaunchedEffect(
+        expanded,
         listState,
         selectedFilter,
         tags.size,
         hasMore,
     ) {
+        if (!expanded) {
+            return@LaunchedEffect
+        }
         snapshotFlow {
             listState.layoutInfo.visibleItemsInfo.maxOfOrNull { it.index } ?: 0
         }.collectLatest { lastVisibleIndex ->
@@ -949,217 +898,151 @@ private fun TagBrowseSheet(
         }
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(560.dp)
-                .padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Text(
-                text = stringResource(R.string.tag_browse_title),
-                style = MaterialTheme.typography.titleMedium,
-            )
-
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                TAG_BROWSE_FILTERS.fastForEach { filter ->
-                    SearchFilterChip(
-                        selected = filter == selectedFilter,
-                        label = filter,
-                        onClick = {
-                            if (selectedFilter != filter) {
-                                selectedFilter = filter
-                            }
-                        },
-                    )
-                }
-            }
-
-            if (selectedTags.isNotEmpty()) {
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    selectedTags.fastForEach { selectedTag ->
-                        SearchFilterChip(
-                            selected = true,
-                            label = "#${selectedTag.value}",
-                            onClick = { onTagRemove(selectedTag) },
-                        )
-                    }
-                }
-            }
-
-            Text(
-                text = stringResource(R.string.search_results_count, count),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.labelMedium,
-            )
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-            ) {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    items(tags) { tag ->
-                        ListItem(
-                            headlineContent = {
-                                Text(
-                                    text = tag,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            },
-                            leadingContent = {
-                                Text(
-                                    text = "#",
-                                    color = MaterialTheme.colorScheme.primary,
-                                    style = MaterialTheme.typography.titleMedium,
-                                )
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { onTagSelected(tag) },
-                        )
-                    }
-                    if (loadingMore) {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 12.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                            }
-                        }
-                    }
-                }
-
-                if (loading) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                } else if (tags.isEmpty()) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = errorText ?: stringResource(R.string.tag_browse_empty),
-                            color = if (errorText == null) {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            } else {
-                                MaterialTheme.colorScheme.error
-                            },
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SearchSummarySection(
-    query: String,
-    searchType: String,
-    activeSort: String,
-    activeFilters: List<FilterValue>,
-    onEditQuery: () -> Unit,
-    onRemoveFilter: (FilterValue) -> Unit,
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Surface(
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-            shape = MaterialTheme.shapes.large,
+    Box(modifier = modifier) {
+        FilledTonalButton(
             modifier = Modifier.fillMaxWidth(),
+            onClick = { expanded = true },
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.filledTonalButtonColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.72f),
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            ),
+        ) {
+            Icon(Icons.Outlined.FilterList, null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = currentLabel,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
         ) {
             Column(
-                modifier = Modifier.padding(10.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .widthIn(min = 280.dp, max = 340.dp)
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Text(
-                    text = stringResource(R.string.search_summary_filters_title),
-                    style = MaterialTheme.typography.labelMedium,
+                    text = stringResource(R.string.tag_browse_title),
+                    style = MaterialTheme.typography.titleMedium,
                 )
 
                 LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    items(TAG_BROWSE_FILTERS, key = { it }) { filter ->
+                        SearchFilterChip(
+                            selected = filter == selectedFilter,
+                            label = filter,
+                            onClick = {
+                                if (selectedFilter != filter) {
+                                    selectedFilter = filter
+                                }
+                            },
+                        )
+                    }
+                }
+
+                if (selectedTags.isNotEmpty()) {
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        items(selectedTags, key = { "${it.key}:${it.value}" }) { selectedTag ->
+                            SearchFilterChip(
+                                selected = true,
+                                label = "#${selectedTag.value}",
+                                onClick = { onTagRemove(selectedTag) },
+                            )
+                        }
+                    }
+                }
+
+                Text(
+                    text = stringResource(R.string.search_results_count, count),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.labelMedium,
+                )
+
+                Box(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    if (query.isNotBlank()) {
-                        item {
-                            FilterChip(
-                                selected = true,
-                                onClick = onEditQuery,
-                                label = {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(320.dp),
+                    ) {
+                        items(tags, key = { it }) { tag ->
+                            ListItem(
+                                headlineContent = {
                                     Text(
-                                        text = stringResource(R.string.search_summary_query, query),
+                                        text = tag,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                     )
                                 },
+                                leadingContent = {
+                                    Text(
+                                        text = "#",
+                                        color = MaterialTheme.colorScheme.primary,
+                                        style = MaterialTheme.typography.titleMedium,
+                                    )
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { onTagSelected(tag) },
                             )
+                        }
+                        if (loadingMore) {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 12.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                                }
+                            }
                         }
                     }
 
-                    if (searchType != "user") {
-                        item {
-                            FilterChip(
-                                selected = true,
-                                onClick = {},
-                                label = {
-                                    Text(
-                                        text = stringResource(
-                                            R.string.search_summary_sort,
-                                            mediaSortLabel(activeSort),
-                                        ),
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
+                    if (loading) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(320.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    } else if (tags.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(320.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = errorText ?: stringResource(R.string.tag_browse_empty),
+                                color = if (errorText == null) {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                } else {
+                                    MaterialTheme.colorScheme.error
                                 },
                             )
                         }
                     }
                 }
-            }
-        }
-
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            items(items = activeFilters, key = { "${it.key}:${it.value}" }) { filterValue ->
-                FilterChip(
-                    selected = true,
-                    onClick = { onRemoveFilter(filterValue) },
-                    label = {
-                        Text(
-                            text = formatSearchFilterValue(filterValue),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(Icons.Outlined.Close, contentDescription = null)
-                    },
-                )
             }
         }
     }
@@ -1182,14 +1065,6 @@ private fun mediaRatingLabel(rating: String): String {
         "ecchi" -> stringResource(R.string.rating_ecchi)
         "general" -> stringResource(R.string.rating_general)
         else -> stringResource(R.string.rating_all)
-    }
-}
-
-private fun formatSearchFilterValue(filterValue: FilterValue): String {
-    return if (filterValue.key.contains("tag", ignoreCase = true)) {
-        "#${filterValue.value}"
-    } else {
-        "${filterValue.key}:${filterValue.value}"
     }
 }
 
@@ -1241,446 +1116,6 @@ private fun UiStateBox(
                     TextButton(onClick = onErrorRetry) {
                         Text(stringResource(R.string.confirm))
                     }
-                }
-            }
-        }
-    }
-}
-
-@Stable
-private class SelectOption<T>(
-    val value: T,
-    val label: @Composable () -> Unit,
-)
-
-@Composable
-private fun <T> SelectButton(
-    value: T,
-    options: List<SelectOption<T>>,
-    onValueChange: (T) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    var showDropdown by remember { mutableStateOf(false) }
-    Box(modifier = modifier) {
-        TextButton(onClick = { showDropdown = !showDropdown }) {
-            options.firstOrNull { it.value == value }?.label?.invoke() ?: Text("-")
-        }
-
-        DropdownMenu(
-            expanded = showDropdown,
-            onDismissRequest = { showDropdown = false },
-        ) {
-            options.fastForEach { option ->
-                DropdownMenuItem(
-                    text = { option.label() },
-                    onClick = {
-                        onValueChange(option.value)
-                        showDropdown = false
-                    },
-                )
-            }
-        }
-    }
-}
-
-private data class SortOption(
-    val name: String,
-    val label: @Composable () -> Unit,
-    val icon: @Composable () -> Unit,
-)
-
-@Composable
-private fun mediaSortOptions(): List<SortOption> {
-    return MediaSortKeys.map { key ->
-        when (key) {
-            "trending" -> SortOption(
-                name = key,
-                label = { Text(stringResource(R.string.sort_trending)) },
-                icon = { Icon(Icons.Outlined.LocalFireDepartment, null) },
-            )
-
-            "popularity" -> SortOption(
-                name = key,
-                label = { Text(stringResource(R.string.sort_popularity)) },
-                icon = { Icon(Icons.Outlined.Star, null) },
-            )
-
-            "views" -> SortOption(
-                name = key,
-                label = { Text(stringResource(R.string.sort_views)) },
-                icon = { Icon(Icons.Outlined.RemoveRedEye, null) },
-            )
-
-            "likes" -> SortOption(
-                name = key,
-                label = { Text(stringResource(R.string.sort_likes)) },
-                icon = { Icon(Icons.Outlined.Favorite, null) },
-            )
-
-            else -> SortOption(
-                name = key,
-                label = { Text(stringResource(R.string.sort_date)) },
-                icon = { Icon(Icons.Outlined.CalendarMonth, null) },
-            )
-        }
-    }
-}
-
-@Composable
-private fun FilterAndSort(
-    sort: String,
-    onSortChange: (String) -> Unit,
-    filterValues: List<FilterValue>,
-    onFilterAdd: (FilterValue) -> Unit,
-    onFilterRemove: (FilterValue) -> Unit,
-    onFilterChooseDone: () -> Unit,
-    onFilterClear: () -> Unit,
-) {
-    val sortOptions = mediaSortOptions()
-    var showSortMenu by remember { mutableStateOf(false) }
-    var showFilterSheet by remember { mutableStateOf(false) }
-    val currentSort = sortOptions.firstOrNull { it.name == sort } ?: sortOptions.first()
-
-    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        Box {
-            FilledTonalButton(onClick = { showSortMenu = !showSortMenu }) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    currentSort.icon()
-                    currentSort.label()
-                }
-            }
-
-            DropdownMenu(
-                expanded = showSortMenu,
-                onDismissRequest = { showSortMenu = false },
-            ) {
-                sortOptions.fastForEach { option ->
-                    DropdownMenuItem(
-                        text = { option.label() },
-                        leadingIcon = { option.icon() },
-                        onClick = {
-                            onSortChange(option.name)
-                            showSortMenu = false
-                        },
-                    )
-                }
-            }
-        }
-
-        Box {
-            FilledTonalButton(onClick = { showFilterSheet = true }) {
-                Icon(Icons.Outlined.FilterList, null)
-            }
-            if (filterValues.isNotEmpty()) {
-                Badge(modifier = Modifier.align(Alignment.TopEnd)) {
-                    Text(filterValues.size.toString())
-                }
-            }
-        }
-    }
-
-    if (showFilterSheet) {
-        FilterBottomSheet(
-            filterValues = filterValues,
-            onFilterAdd = onFilterAdd,
-            onFilterRemove = onFilterRemove,
-            onFilterChooseDone = {
-                showFilterSheet = false
-                onFilterChooseDone()
-            },
-            onFilterClear = onFilterClear,
-            onDismiss = { showFilterSheet = false },
-        )
-    }
-}
-
-@Composable
-private fun FilterBottomSheet(
-    filterValues: List<FilterValue>,
-    onFilterAdd: (FilterValue) -> Unit,
-    onFilterRemove: (FilterValue) -> Unit,
-    onFilterChooseDone: () -> Unit,
-    onFilterClear: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    var selectedTab by remember { mutableStateOf(0) }
-
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            ScrollableTabRow(
-                selectedTabIndex = selectedTab,
-                edgePadding = 0.dp,
-                divider = {},
-            ) {
-                Tab(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    text = { Text(stringResource(R.string.tag)) },
-                )
-                Tab(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    text = { Text(stringResource(R.string.date)) },
-                )
-                Tab(
-                    selected = selectedTab == 2,
-                    onClick = { selectedTab = 2 },
-                    text = { Text(stringResource(R.string.rating)) },
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(420.dp),
-            ) {
-                when (selectedTab) {
-                    0 -> SearchTagFilter(
-                        values = filterValues,
-                        onValueAdd = onFilterAdd,
-                        onValueRemove = onFilterRemove,
-                    )
-
-                    1 -> SearchDateFilter(
-                        values = filterValues,
-                        onValueAdd = onFilterAdd,
-                        onValueRemove = onFilterRemove,
-                    )
-
-                    else -> SearchRatingFilter(
-                        values = filterValues,
-                        onValueAdd = onFilterAdd,
-                        onValueRemove = onFilterRemove,
-                    )
-                }
-            }
-
-            Row(
-                modifier = Modifier.align(Alignment.End),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                FilledTonalButton(onClick = onFilterClear) {
-                    Icon(Icons.Outlined.ClearAll, null)
-                }
-                FilledTonalButton(onClick = onFilterChooseDone) {
-                    Text(stringResource(R.string.confirm))
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun SearchDateFilter(
-    values: List<FilterValue>,
-    onValueAdd: (FilterValue) -> Unit,
-    onValueRemove: (FilterValue) -> Unit,
-) {
-    val currentValue = values.firstOrNull { it.key == "date" }
-    val pickedYear = currentValue?.value?.split("-")?.getOrNull(0)?.toIntOrNull()
-    val pickedMonth = currentValue?.value?.split("-")?.getOrNull(1)?.toIntOrNull()
-    val currentYear = remember { Calendar.getInstance().get(Calendar.YEAR) }
-    val monthOfPickedYear = if (pickedYear != null) {
-        if (pickedYear == currentYear) Calendar.getInstance().get(Calendar.MONTH) + 1 else 12
-    } else {
-        0
-    }
-
-    FlowRow(
-        modifier = Modifier.fillMaxSize(),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        for (year in 2014..currentYear) {
-            if (year == pickedYear) {
-                SearchFilterChip(
-                    selected = true,
-                    label = year.toString(),
-                    onClick = { currentValue?.let(onValueRemove) },
-                )
-                for (month in 1..monthOfPickedYear) {
-                    SearchFilterChip(
-                        selected = month == pickedMonth,
-                        label = "$year-$month",
-                        onClick = {
-                            if (month != pickedMonth) {
-                                currentValue?.let(onValueRemove)
-                                onValueAdd(FilterValue("date", "$year-$month"))
-                            } else {
-                                currentValue?.let(onValueRemove)
-                            }
-                        },
-                    )
-                }
-            } else {
-                SearchFilterChip(
-                    selected = false,
-                    label = year.toString(),
-                    onClick = {
-                        currentValue?.let(onValueRemove)
-                        onValueAdd(FilterValue("date", "$year"))
-                    },
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun SearchRatingFilter(
-    values: List<FilterValue>,
-    onValueAdd: (FilterValue) -> Unit,
-    onValueRemove: (FilterValue) -> Unit,
-) {
-    val currentValue = values.firstOrNull { it.key == "rating" }
-
-    FlowRow(
-        modifier = Modifier.fillMaxSize(),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        SearchFilterChip(
-            selected = currentValue?.value == "all",
-            label = stringResource(R.string.rating_all),
-            onClick = {
-                if (currentValue?.value == "all") {
-                    currentValue?.let(onValueRemove)
-                } else {
-                    currentValue?.let(onValueRemove)
-                    onValueAdd(FilterValue("rating", "all"))
-                }
-            },
-        )
-        SearchFilterChip(
-            selected = currentValue?.value == "general",
-            label = stringResource(R.string.rating_general),
-            onClick = {
-                if (currentValue?.value == "general") {
-                    currentValue?.let(onValueRemove)
-                } else {
-                    currentValue?.let(onValueRemove)
-                    onValueAdd(FilterValue("rating", "general"))
-                }
-            },
-        )
-        SearchFilterChip(
-            selected = currentValue?.value == "ecchi",
-            label = stringResource(R.string.rating_ecchi),
-            onClick = {
-                if (currentValue?.value == "ecchi") {
-                    currentValue?.let(onValueRemove)
-                } else {
-                    currentValue?.let(onValueRemove)
-                    onValueAdd(FilterValue("rating", "ecchi"))
-                }
-            },
-        )
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun SearchTagFilter(
-    values: List<FilterValue>,
-    onValueAdd: (FilterValue) -> Unit,
-    onValueRemove: (FilterValue) -> Unit,
-) {
-    val searchRepository = get<SearchRepository>()
-    val scope = rememberCoroutineScope()
-    val defaultError = stringResource(R.string.search_error_default)
-    val currentTags = values.filter { it.key == "tags" }
-    var query by remember { mutableStateOf("") }
-    var queryLoading by remember { mutableStateOf(false) }
-    var queryActive by remember { mutableStateOf(false) }
-    var errorText by remember { mutableStateOf<String?>(null) }
-    val queryResult = remember { mutableStateListOf<String>() }
-
-    fun search() {
-        if (query.isBlank()) {
-            queryResult.clear()
-            return
-        }
-        scope.launch {
-            queryLoading = true
-            errorText = null
-            runCatching {
-                searchRepository.suggestTags(query)
-            }.onSuccess { result ->
-                queryResult.clear()
-                queryResult.addAll(result)
-            }.onFailure { throwable ->
-                errorText = throwable.localizedMessage ?: defaultError
-            }
-            queryLoading = false
-        }
-    }
-
-    Column(modifier = Modifier.fillMaxSize()) {
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            currentTags.fastForEach { currentTag ->
-                SearchFilterChip(
-                    selected = true,
-                    label = currentTag.value,
-                    onClick = { onValueRemove(currentTag) },
-                )
-            }
-        }
-
-        DockedSearchBar(
-            query = query,
-            onQueryChange = { query = it },
-            onSearch = { search() },
-            active = queryActive,
-            onActiveChange = { queryActive = it },
-            modifier = Modifier.fillMaxWidth(),
-            trailingIcon = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (queryActive) {
-                        IconButton(onClick = { queryActive = false }) {
-                            Icon(Icons.Outlined.Close, null)
-                        }
-                    }
-                    if (!queryLoading) {
-                        IconButton(onClick = { search() }) {
-                            Icon(Icons.Outlined.Search, null)
-                        }
-                    } else {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                    }
-                }
-            },
-        ) {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                if (!errorText.isNullOrBlank()) {
-                    item {
-                        Text(
-                            text = errorText.orEmpty(),
-                            modifier = Modifier.padding(12.dp),
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                    }
-                }
-                items(queryResult, key = { it }) { tag ->
-                    Text(
-                        text = tag,
-                        modifier = Modifier
-                            .clickable {
-                                onValueAdd(FilterValue("tags", tag))
-                                queryActive = false
-                                query = ""
-                            }
-                            .padding(8.dp)
-                            .fillMaxWidth(),
-                    )
                 }
             }
         }

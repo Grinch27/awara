@@ -1,5 +1,6 @@
 package me.rerere.awara.ui.component.iwara
 
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -23,7 +24,7 @@ fun UserCard(
         modifier = modifier,
         onClick = {
             if (user.hasNavigableProfile) {
-                router.navigate("user/${user.username}")
+                router.navigate("user/${Uri.encode(user.username)}")
             }
         }
     ) {

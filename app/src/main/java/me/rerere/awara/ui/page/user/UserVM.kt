@@ -20,6 +20,8 @@ import me.rerere.awara.data.source.onException
 import me.rerere.awara.data.source.onSuccess
 import me.rerere.awara.data.source.runAPICatching
 import me.rerere.awara.ui.component.iwara.comment.CommentState
+import me.rerere.awara.ui.component.iwara.comment.pop
+import me.rerere.awara.ui.component.iwara.comment.push
 import me.rerere.awara.ui.component.iwara.comment.updateTopStack
 
 class UserVM(
@@ -70,6 +72,24 @@ class UserVM(
         loadGuestbookComments(replaceResults = false)
     }
 
+    fun pushGuestbookComment(id: String) {
+        state = state.copy(
+            guestbookCommentState = state.guestbookCommentState.push(id)
+        )
+        loadGuestbookComments()
+    }
+
+    fun popGuestbookComment() {
+        if (state.guestbookCommentState.stack.size <= 1) {
+            return
+        }
+        state = state.copy(
+            guestbookCommentState = state.guestbookCommentState.pop().copy(loading = false),
+            guestbookError = null,
+            guestbookExceptionMessage = null,
+        )
+    }
+
     fun loadGuestbookComments(replaceResults: Boolean = true) {
         val profileId = state.profile?.user?.id?.takeIf { it.isNotBlank() } ?: run {
             state = state.copy(
@@ -88,43 +108,62 @@ class UserVM(
         )
         viewModelScope.launch {
             runAPICatching {
-                commentRepo.getProfileComments(profileId, targetPage - 1)
-            }.onSuccess {
-                val mergedComments = if (replaceResults) {
-                    it.results
+                if (currentCommentState.parent != null) {
+                    commentRepo.getProfileCommentReplies(
+                        profileId,
+                        targetPage - 1,
+                        currentCommentState.parent,
+                    )
                 } else {
-                    currentCommentState.comments + it.results
+                    commentRepo.getProfileComments(profileId, targetPage - 1)
                 }
-                state = state.copy(
-                    guestbookCommentState = state.guestbookCommentState.updateTopStack(
-                        currentCommentState.copy(
-                            page = targetPage,
-                            comments = mergedComments,
-                            limit = it.limit,
-                            total = it.count,
-                            loadingMore = false,
-                            hasMore = mergedComments.size < it.count,
-                        )
-                    ),
-                )
+            }.onSuccess {
+                val activeCommentState = state.guestbookCommentState.stack.last()
+                if (activeCommentState.parent == currentCommentState.parent) {
+                    val mergedComments = if (replaceResults) {
+                        it.results
+                    } else {
+                        activeCommentState.comments + it.results
+                    }
+                    state = state.copy(
+                        guestbookCommentState = state.guestbookCommentState.updateTopStack(
+                            activeCommentState.copy(
+                                page = targetPage,
+                                comments = mergedComments,
+                                limit = it.limit,
+                                total = it.count,
+                                loadingMore = false,
+                                hasMore = mergedComments.size < it.count,
+                            )
+                        ),
+                    )
+                }
             }.onError {
-                state = state.copy(
-                    guestbookError = it,
-                    guestbookCommentState = state.guestbookCommentState.updateTopStack(
-                        currentCommentState.copy(loadingMore = false)
-                    ),
-                )
+                val activeCommentState = state.guestbookCommentState.stack.last()
+                if (activeCommentState.parent == currentCommentState.parent) {
+                    state = state.copy(
+                        guestbookError = it,
+                        guestbookCommentState = state.guestbookCommentState.updateTopStack(
+                            activeCommentState.copy(loadingMore = false)
+                        ),
+                    )
+                }
             }.onException {
+                val activeCommentState = state.guestbookCommentState.stack.last()
+                if (activeCommentState.parent == currentCommentState.parent) {
+                    state = state.copy(
+                        guestbookExceptionMessage = it.exception.localizedMessage,
+                        guestbookCommentState = state.guestbookCommentState.updateTopStack(
+                            activeCommentState.copy(loadingMore = false)
+                        ),
+                    )
+                }
+            }
+            if (state.guestbookCommentState.stack.last().parent == currentCommentState.parent) {
                 state = state.copy(
-                    guestbookExceptionMessage = it.exception.localizedMessage,
-                    guestbookCommentState = state.guestbookCommentState.updateTopStack(
-                        currentCommentState.copy(loadingMore = false)
-                    ),
+                    guestbookCommentState = state.guestbookCommentState.copy(loading = false),
                 )
             }
-            state = state.copy(
-                guestbookCommentState = state.guestbookCommentState.copy(loading = false),
-            )
         }
     }
 
