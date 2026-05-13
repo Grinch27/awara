@@ -16,6 +16,8 @@ import me.rerere.awara.data.entity.Follower
 import me.rerere.awara.data.entity.Following
 import me.rerere.awara.data.entity.ForumSection
 import me.rerere.awara.data.entity.ForumSectionPage
+import me.rerere.awara.data.entity.ForumPost
+import me.rerere.awara.data.entity.ForumThread
 import me.rerere.awara.data.entity.ForumThreadPage
 import me.rerere.awara.data.entity.Image
 import me.rerere.awara.data.entity.Playlist
