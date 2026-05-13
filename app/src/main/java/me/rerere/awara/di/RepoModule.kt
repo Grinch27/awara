@@ -2,6 +2,7 @@ package me.rerere.awara.di
 
 import me.rerere.awara.data.repo.AppLogRepo
 import me.rerere.awara.data.repo.CommentRepo
+import me.rerere.awara.data.repo.ForumRepo
 import me.rerere.awara.data.repo.LocalDataRepo
 import me.rerere.awara.data.repo.MediaRepo
 import me.rerere.awara.data.repo.UserRepo
@@ -27,6 +28,10 @@ val repoModule = module {
 
     single {
         CommentRepo(get())
+    }
+
+    single {
+        ForumRepo(get())
     }
 
     single {

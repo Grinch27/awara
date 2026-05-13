@@ -14,6 +14,9 @@ import me.rerere.awara.data.entity.FavoriteImage
 import me.rerere.awara.data.entity.FavoriteVideo
 import me.rerere.awara.data.entity.Follower
 import me.rerere.awara.data.entity.Following
+import me.rerere.awara.data.entity.ForumSection
+import me.rerere.awara.data.entity.ForumSectionPage
+import me.rerere.awara.data.entity.ForumThreadPage
 import me.rerere.awara.data.entity.Image
 import me.rerere.awara.data.entity.Playlist
 import me.rerere.awara.data.entity.PlaylistCreationDto
@@ -130,6 +133,21 @@ interface IwaraAPI {
         @Query("filter") filter: String,
         @Query("page") page: Int,
     ): Pager<Tag>
+
+    @GET("/forum")
+    suspend fun getForumSections(): List<ForumSection>
+
+    @GET("/forum/{sectionId}")
+    suspend fun getForumSection(
+        @Path("sectionId") sectionId: String,
+        @Query("page") page: Int,
+    ): ForumSectionPage
+
+    @GET("/forum/threads/{threadId}")
+    suspend fun getForumThread(
+        @Path("threadId") threadId: String,
+        @Query("page") page: Int,
+    ): ForumThreadPage
 
     @GET("/playlists")
     suspend fun getPlaylists(

@@ -4,6 +4,7 @@ package me.rerere.awara.ui.page.setting
 // TODO(agent): Keep this page flat and searchable; avoid hidden nested routes for core navigation preferences.
 
 import android.content.Context
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
@@ -935,7 +936,7 @@ private fun AboutSettingsSection(
                     )
                 },
                 onClick = {
-                    router.navigate("user/user294150")
+                    router.navigate("user/${Uri.encode("user294150")}")
                 },
             )
         }

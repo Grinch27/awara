@@ -26,6 +26,8 @@ import me.rerere.awara.ui.component.common.MessageProvider
 import me.rerere.awara.ui.page.download.DownloadPage
 import me.rerere.awara.ui.page.favorites.FavoritesPage
 import me.rerere.awara.ui.page.follow.FollowPage
+import me.rerere.awara.ui.page.forum.ForumSectionPage
+import me.rerere.awara.ui.page.forum.ForumThreadPage
 import me.rerere.awara.ui.page.friends.FriendsPage
 import me.rerere.awara.ui.page.history.HistoryPage
 import me.rerere.awara.ui.page.image.ImagePage
@@ -166,6 +168,28 @@ class RouterActivity : ComponentActivity() {
 
                 composable("favorites") {
                     FavoritesPage()
+                }
+
+                composable(
+                    route = "forum/section/{sectionId}",
+                    arguments = listOf(
+                        navArgument("sectionId") {
+                            type = NavType.StringType
+                        }
+                    ),
+                ) {
+                    ForumSectionPage()
+                }
+
+                composable(
+                    route = "forum/thread/{threadId}",
+                    arguments = listOf(
+                        navArgument("threadId") {
+                            type = NavType.StringType
+                        }
+                    ),
+                ) {
+                    ForumThreadPage()
                 }
 
                 composable("setting") {

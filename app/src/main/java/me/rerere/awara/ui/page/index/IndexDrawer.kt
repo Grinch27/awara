@@ -3,6 +3,7 @@ package me.rerere.awara.ui.page.index
 // TODO(user): Decide whether the drawer should keep only primary navigation and utility actions, or also host a future home preset rail.
 // TODO(agent): Keep this drawer aligned with the EhViewer-style primary nav; avoid reintroducing saved-view management here.
 
+import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -97,7 +98,7 @@ fun IndexDrawer(
                     user = userState.user,
                     onClick = {
                         userState.user?.id?.let { userId ->
-                            router.navigate("user/$userId")
+                            router.navigate("user/${Uri.encode(userId)}")
                         } ?: router.navigate("login")
                     },
                     showOnlineStatus = false,
@@ -168,7 +169,9 @@ fun IndexDrawer(
                     value = vm.state.followingCount.toString(),
                     label = stringResource(R.string.following),
                     onClick = {
-                        router.navigate("user/${userState.user?.id}/follow")
+                        userState.user?.id?.let { userId ->
+                            router.navigate("user/${Uri.encode(userId)}/follow")
+                        }
                     },
                     modifier = Modifier.weight(1f),
                 )
@@ -176,7 +179,9 @@ fun IndexDrawer(
                     value = vm.state.followerCount.toString(),
                     label = stringResource(R.string.follower),
                     onClick = {
-                        router.navigate("user/${userState.user?.id}/follow")
+                        userState.user?.id?.let { userId ->
+                            router.navigate("user/${Uri.encode(userId)}/follow")
+                        }
                     },
                     modifier = Modifier.weight(1f),
                 )

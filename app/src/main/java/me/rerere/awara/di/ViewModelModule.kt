@@ -3,6 +3,9 @@ package me.rerere.awara.di
 import me.rerere.awara.ui.page.download.DownloadVM
 import me.rerere.awara.ui.page.favorites.FavoritesVM
 import me.rerere.awara.ui.page.follow.FollowVM
+import me.rerere.awara.ui.page.forum.ForumIndexVM
+import me.rerere.awara.ui.page.forum.ForumSectionVM
+import me.rerere.awara.ui.page.forum.ForumThreadVM
 import me.rerere.awara.ui.page.friends.FriendsVM
 import me.rerere.awara.ui.page.history.HistoryVM
 import me.rerere.awara.ui.page.image.ImageVM
@@ -30,6 +33,9 @@ val viewModelModule = module {
     viewModelOf(::PlaylistsVM)
     viewModelOf(::FavoritesVM)
     viewModelOf(::FollowVM)
+    viewModelOf(::ForumIndexVM)
+    viewModelOf(::ForumSectionVM)
+    viewModelOf(::ForumThreadVM)
     viewModelOf(::SearchVM)
     viewModelOf(::DownloadVM)
     viewModelOf(::FriendsVM)

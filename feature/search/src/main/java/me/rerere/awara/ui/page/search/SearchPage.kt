@@ -2,6 +2,7 @@ package me.rerere.awara.ui.page.search
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
@@ -28,6 +30,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.CalendarMonth
@@ -316,31 +319,23 @@ fun SearchPage(
                                 Icon(Icons.Outlined.Search, null)
                             },
                             trailingIcon = {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    if (vm.state.searchType != "user") {
-                                        SearchBarSortDropdown(
-                                            selectedSort = currentSortValue,
-                                            onValueChange = ::updateMediaSort,
-                                        )
-                                    }
-                                    IconButton(
-                                        onClick = {
-                                            if (searchBarActive && vm.query.isNotBlank()) {
-                                                vm.query = ""
-                                            } else {
-                                                submitSearch()
-                                            }
+                                IconButton(
+                                    onClick = {
+                                        if (searchBarActive && vm.query.isNotBlank()) {
+                                            vm.query = ""
+                                        } else {
+                                            submitSearch()
+                                        }
+                                    },
+                                ) {
+                                    Icon(
+                                        imageVector = if (searchBarActive && vm.query.isNotBlank()) {
+                                            Icons.Outlined.Close
+                                        } else {
+                                            Icons.Outlined.Search
                                         },
-                                    ) {
-                                        Icon(
-                                            imageVector = if (searchBarActive && vm.query.isNotBlank()) {
-                                                Icons.Outlined.Close
-                                            } else {
-                                                Icons.Outlined.Search
-                                            },
-                                            contentDescription = null,
-                                        )
-                                    }
+                                        contentDescription = null,
+                                    )
                                 }
                             },
                             content = {
@@ -418,21 +413,28 @@ fun SearchPage(
 
                     if (vm.state.searchType != "user") {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
+                            SortDropdown(
+                                modifier = Modifier.widthIn(min = 118.dp, max = 168.dp),
+                                selectedSort = currentSortValue,
+                                onValueChange = ::updateMediaSort,
+                            )
                             RatingDropdown(
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.widthIn(min = 118.dp, max = 168.dp),
                                 selectedRating = currentRatingValue,
                                 onValueChange = ::updateRating,
                             )
                             DateDropdown(
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.widthIn(min = 132.dp, max = 180.dp),
                                 selectedDateValue = currentDateFilterValue,
                                 onValueChange = ::updateDateFilter,
                             )
                             TagBrowseButton(
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.widthIn(min = 148.dp, max = 220.dp),
                                 selectedTags = currentTagFilterValues,
                                 onTagSelected = ::addTagFilter,
                                 onTagRemove = ::removeMediaFilter,
@@ -596,22 +598,29 @@ private fun SearchHeaderIconButton(
 }
 
 @Composable
-private fun SearchBarSortDropdown(
+private fun SortDropdown(
+    modifier: Modifier = Modifier,
     selectedSort: String,
     onValueChange: (String) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
     val currentSort = selectedSort.takeIf { it in MediaSortKeys } ?: DEFAULT_MEDIA_SORT
 
-    Box {
-        TextButton(
+    Box(modifier = modifier) {
+        FilledTonalButton(
+            modifier = Modifier.fillMaxWidth(),
             onClick = { expanded = true },
-            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.filledTonalButtonColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.72f),
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            ),
         ) {
             Icon(Icons.Outlined.FilterList, null, modifier = Modifier.size(18.dp))
-            Spacer(modifier = Modifier.width(4.dp))
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = mediaSortLabel(currentSort),
+                modifier = Modifier.weight(1f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -924,7 +933,7 @@ private fun TagBrowseButton(
         ) {
             Column(
                 modifier = Modifier
-                    .widthIn(min = 280.dp, max = 340.dp)
+                    .widthIn(min = 240.dp, max = 320.dp)
                     .padding(horizontal = 12.dp, vertical = 10.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
@@ -980,7 +989,7 @@ private fun TagBrowseButton(
                             .fillMaxWidth()
                             .height(320.dp),
                     ) {
-                        items(tags, key = { it }) { tag ->
+                        itemsIndexed(tags, key = { index, tag -> "$selectedFilter:$index:$tag" }) { _, tag ->
                             ListItem(
                                 headlineContent = {
                                     Text(
