@@ -32,9 +32,14 @@
     <string name="playlist">播放列表</string>
     <string name="playlist_num_videos">總共 %d 個視頻</string>
     <string name="search">搜索</string>
+    <string name="search_type_forum_posts">論壇帖子</string>
+    <string name="search_type_forum_threads">論壇主題</string>
     <string name="tag_browse">瀏覽標籤</string>
     <string name="tag_browse_empty">沒有標籤</string>
     <string name="tag_browse_title">瀏覽標籤</string>
+    <string name="tag_quick_filter">篩選標籤</string>
+    <string name="search_load_more">載入更多</string>
+    <string name="search_forum_reply">回覆 #%d</string>
     <string name="favorites">收藏夾</string>
     <string name="follow">跟隨</string>
     <string name="unfollow">取消關注</string>
@@ -53,7 +58,7 @@
     <string name="user">用戶</string>
     <string name="num_likes">喜歡：%d</string>
     <string name="num_views">觀看次數：%d</string>
-    <string name="sort_date">日期</string>
+    <string name="sort_date">最新</string>
     <string name="sort_trending">熱門</string>
     <string name="sort_popularity">人氣</string>
     <string name="sort_views">觀點</string>

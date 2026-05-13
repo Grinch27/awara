@@ -32,9 +32,14 @@
     <string name="playlist">プレイリスト</string>
     <string name="playlist_num_videos">合計%dビデオ</string>
     <string name="search">検索</string>
+    <string name="search_type_forum_posts">フォーラム投稿</string>
+    <string name="search_type_forum_threads">フォーラムスレッド</string>
     <string name="tag_browse">タグを閲覧</string>
     <string name="tag_browse_empty">タグがありません</string>
     <string name="tag_browse_title">タグを閲覧</string>
+    <string name="tag_quick_filter">タグを絞り込む</string>
+    <string name="search_load_more">さらに読み込む</string>
+    <string name="search_forum_reply">返信 #%d</string>
     <string name="favorites">お気に入り</string>
     <string name="follow">フォロー</string>
     <string name="unfollow">フォローを解除</string>
@@ -53,7 +58,7 @@
     <string name="user">ユーザー</string>
     <string name="num_likes">好き：%d</string>
     <string name="num_views">ビュー：%s</string>
-    <string name="sort_date">日にち</string>
+    <string name="sort_date">最新</string>
     <string name="sort_trending">トレンド</string>
     <string name="sort_popularity">人気</string>
     <string name="sort_views">ビュー</string>

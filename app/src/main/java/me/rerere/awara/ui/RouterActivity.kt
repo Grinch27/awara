@@ -226,6 +226,14 @@ class RouterActivity : ComponentActivity() {
                                 navController.navigate("user/${Uri.encode(user.username)}")
                             }
                         },
+                        onOpenPlaylist = { playlist ->
+                            navController.navigate("playlist/${Uri.encode(playlist.id)}")
+                        },
+                        onOpenForumThread = { threadId ->
+                            if (threadId.isNotBlank()) {
+                                navController.navigate("forum/thread/${Uri.encode(threadId)}")
+                            }
+                        },
                     )
                 }
 

@@ -1,6 +1,10 @@
 package me.rerere.awara.ui.page.search
 
+import me.rerere.awara.data.entity.ForumPost
+import me.rerere.awara.data.entity.ForumThread
 import me.rerere.awara.data.entity.Image
+import me.rerere.awara.data.entity.Playlist
+import me.rerere.awara.data.entity.Post
 import me.rerere.awara.data.entity.User
 import me.rerere.awara.data.entity.Video
 import me.rerere.awara.data.entity.thumbnailUrl
@@ -34,6 +38,38 @@ class AppSearchRepository(
         return SearchPageResult(
             count = pager.count,
             results = pager.results.map(User::toSearchUserItem),
+        )
+    }
+
+    override suspend fun searchPosts(query: String, page: Int): SearchPageResult<SearchPostItem> {
+        val pager = mediaRepo.searchPosts(query, page)
+        return SearchPageResult(
+            count = pager.count,
+            results = pager.results.map(Post::toSearchPostItem),
+        )
+    }
+
+    override suspend fun searchPlaylists(query: String, page: Int): SearchPageResult<SearchPlaylistItem> {
+        val pager = mediaRepo.searchPlaylists(query, page)
+        return SearchPageResult(
+            count = pager.count,
+            results = pager.results.map(Playlist::toSearchPlaylistItem),
+        )
+    }
+
+    override suspend fun searchForumPosts(query: String, page: Int): SearchPageResult<SearchForumPostItem> {
+        val pager = mediaRepo.searchForumPosts(query, page)
+        return SearchPageResult(
+            count = pager.count,
+            results = pager.results.map(ForumPost::toSearchForumPostItem),
+        )
+    }
+
+    override suspend fun searchForumThreads(query: String, page: Int): SearchPageResult<SearchForumThreadItem> {
+        val pager = mediaRepo.searchForumThreads(query, page)
+        return SearchPageResult(
+            count = pager.count,
+            results = pager.results.map(ForumThread::toSearchForumThreadItem),
         )
     }
 
@@ -91,4 +127,62 @@ private fun User.toSearchUserItem(): SearchUserItem {
         avatarUrl = avatar.toAvatarUrl(),
         hasNavigableProfile = hasNavigableProfile,
     )
+}
+
+private fun Post.toSearchPostItem(): SearchPostItem {
+    return SearchPostItem(
+        id = id,
+        title = title.ifBlank { id },
+        authorName = user?.displayName.orEmpty(),
+        createdAtLabel = createdAt.toSearchDateLabel(),
+        body = body.trim(),
+        numViews = numViews,
+    )
+}
+
+private fun Playlist.toSearchPlaylistItem(): SearchPlaylistItem {
+    return SearchPlaylistItem(
+        id = id,
+        title = title.ifBlank { id },
+        authorName = user?.displayName.orEmpty(),
+        numVideos = numVideos,
+        thumbnailUrl = thumbnail?.toThumbnailUrl(),
+    )
+}
+
+private fun ForumPost.toSearchForumPostItem(): SearchForumPostItem {
+    val targetThreadId = threadId.ifBlank { thread?.id.orEmpty() }
+    return SearchForumPostItem(
+        id = id,
+        threadId = targetThreadId,
+        threadTitle = thread?.title?.ifBlank { targetThreadId }.orEmpty(),
+        authorName = user?.displayName.orEmpty(),
+        createdAtLabel = createdAt.toSearchDateLabel(),
+        body = body.trim(),
+        replyNum = replyNum,
+    )
+}
+
+private fun ForumThread.toSearchForumThreadItem(): SearchForumThreadItem {
+    return SearchForumThreadItem(
+        id = id,
+        title = title.ifBlank { id },
+        section = section,
+        authorName = user?.displayName.orEmpty(),
+        updatedAtLabel = (updatedAt ?: createdAt).toSearchDateLabel(),
+        numPosts = numPosts,
+        numViews = numViews,
+        locked = locked,
+        sticky = sticky,
+    )
+}
+
+private fun me.rerere.awara.data.entity.PlaylistThumbnail.toThumbnailUrl(): String? {
+    val fileId = file?.id ?: return null
+    val thumbnailIndex = thumbnail.toString().padStart(2, '0')
+    return "https://i.iwara.tv/image/thumbnail/$fileId/thumbnail-$thumbnailIndex.jpg"
+}
+
+private fun java.time.Instant?.toSearchDateLabel(): String {
+    return this?.toLocalDateTimeString().orEmpty()
 }

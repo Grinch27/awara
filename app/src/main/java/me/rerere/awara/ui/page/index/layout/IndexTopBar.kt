@@ -29,7 +29,6 @@ import androidx.compose.ui.unit.dp
 import me.rerere.awara.R
 import me.rerere.awara.ui.component.iwara.MEDIA_LIST_MODE_DETAIL
 import me.rerere.awara.ui.component.iwara.MEDIA_LIST_MODE_THUMBNAIL
-import me.rerere.awara.ui.component.iwara.rememberBlockMediaThumbnailsPreference
 import me.rerere.awara.ui.component.iwara.rememberMediaListModePreference
 import me.rerere.awara.ui.page.index.IndexNavigation
 
@@ -111,7 +110,6 @@ internal fun IndexTopBarActions(
 private fun IndexViewMenu() {
     var expanded by remember { mutableStateOf(false) }
     var listMode by rememberMediaListModePreference()
-    var blockMediaThumbnails by rememberBlockMediaThumbnailsPreference()
 
     Box {
         IconButton(onClick = { expanded = true }) {
@@ -146,34 +144,6 @@ private fun IndexViewMenu() {
                 },
                 onClick = {
                     listMode = MEDIA_LIST_MODE_THUMBNAIL
-                    expanded = false
-                },
-            )
-
-            IndexViewMenuHeader(text = stringResource(R.string.index_view_menu_block_images))
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.index_view_menu_block_images_off)) },
-                leadingIcon = { Icon(Icons.Outlined.Image, null) },
-                trailingIcon = {
-                    if (!blockMediaThumbnails) {
-                        Icon(Icons.Outlined.Check, null)
-                    }
-                },
-                onClick = {
-                    blockMediaThumbnails = false
-                    expanded = false
-                },
-            )
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.index_view_menu_block_images_on)) },
-                leadingIcon = { Icon(Icons.Outlined.Image, null) },
-                trailingIcon = {
-                    if (blockMediaThumbnails) {
-                        Icon(Icons.Outlined.Check, null)
-                    }
-                },
-                onClick = {
-                    blockMediaThumbnails = true
                     expanded = false
                 },
             )

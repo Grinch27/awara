@@ -5,9 +5,13 @@ import me.rerere.awara.data.entity.FavoriteImage
 import me.rerere.awara.data.entity.FavoriteVideo
 import me.rerere.awara.data.entity.Image
 import me.rerere.awara.data.entity.PlaylistCreationDto
+import me.rerere.awara.data.entity.Playlist
+import me.rerere.awara.data.entity.Post
 import me.rerere.awara.data.entity.User
 import me.rerere.awara.data.entity.Video
 import me.rerere.awara.data.entity.VideoFile
+import me.rerere.awara.data.entity.ForumPost
+import me.rerere.awara.data.entity.ForumThread
 import me.rerere.awara.data.entity.signature
 import me.rerere.awara.data.source.IwaraAPI
 import me.rerere.awara.data.source.Pager
@@ -94,4 +98,12 @@ class MediaRepo(
     suspend fun searchImage(query: String, page: Int): Pager<Image> = iwaraAPI.searchImage(query = query, page = page)
 
     suspend fun searchUser(query: String, page: Int): Pager<User> = iwaraAPI.searchUser(query = query, page = page)
+
+    suspend fun searchPosts(query: String, page: Int): Pager<Post> = iwaraAPI.searchPosts(query = query, page = page)
+
+    suspend fun searchPlaylists(query: String, page: Int): Pager<Playlist> = iwaraAPI.searchPlaylists(query = query, page = page)
+
+    suspend fun searchForumPosts(query: String, page: Int): Pager<ForumPost> = iwaraAPI.searchForumPosts(query = query, page = page)
+
+    suspend fun searchForumThreads(query: String, page: Int): Pager<ForumThread> = iwaraAPI.searchForumThreads(query = query, page = page)
 }

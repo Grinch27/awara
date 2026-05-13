@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="post">帖子</string>
+    <string name="playlist">播放列表</string>
+    <string name="search_type_forum_posts">論壇帖子</string>
+    <string name="search_type_forum_threads">論壇主題</string>
+    <string name="tag_quick_filter">篩選標籤</string>
+    <string name="search_hint_media">搜尋 Iwara</string>
+    <string name="search_load_more">載入更多</string>
+    <string name="playlist_num_videos">共 %1$d 個視頻</string>
+    <string name="forum_posts_count">%1$d 條帖子</string>
+    <string name="forum_views_count">%1$d 次瀏覽</string>
+    <string name="forum_locked">鎖定</string>
+    <string name="forum_sticky">置頂</string>
+    <string name="search_forum_reply">回覆 #%1$d</string>
+    <string name="sort_date">最新</string>
+</resources>

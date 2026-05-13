@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="post">投稿</string>
+    <string name="playlist">プレイリスト</string>
+    <string name="search_type_forum_posts">フォーラム投稿</string>
+    <string name="search_type_forum_threads">フォーラムスレッド</string>
+    <string name="tag_quick_filter">タグを絞り込む</string>
+    <string name="search_hint_media">Iwara を検索</string>
+    <string name="search_load_more">さらに読み込む</string>
+    <string name="playlist_num_videos">合計 %1$d 本の動画</string>
+    <string name="forum_posts_count">%1$d 件の投稿</string>
+    <string name="forum_views_count">%1$d 回表示</string>
+    <string name="forum_locked">ロック</string>
+    <string name="forum_sticky">固定</string>
+    <string name="search_forum_reply">返信 #%1$d</string>
+    <string name="sort_date">最新</string>
+</resources>

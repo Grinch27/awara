@@ -55,6 +55,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -108,6 +109,8 @@ fun SearchPage(
     onBack: () -> Unit = {},
     onOpenMedia: (SearchMediaItem) -> Unit = {},
     onOpenUser: (SearchUserItem) -> Unit = {},
+    onOpenPlaylist: (SearchPlaylistItem) -> Unit = {},
+    onOpenForumThread: (String) -> Unit = {},
 ) {
     var listMode by rememberStringPreference(
         key = SETTING_MEDIA_LIST_MODE,
@@ -131,24 +134,29 @@ fun SearchPage(
             .take(8)
             .toList()
     }
+    val isMediaSearch = vm.state.searchType in SearchTypes.media
     val activeFilters = when (vm.state.searchType) {
-        "image" -> vm.imageFilters.toList()
-        "video" -> vm.videoFilters.toList()
+        SearchTypes.IMAGE -> vm.imageFilters.toList()
+        SearchTypes.VIDEO -> vm.videoFilters.toList()
         else -> emptyList()
     }
     val currentDateFilterValue = activeFilters.firstOrNull { it.key == "date" }?.value
     val currentTagFilterValues = activeFilters.filter { it.key == "tags" }
     val currentSortValue = when (vm.state.searchType) {
-        "image" -> vm.imageSort
+        SearchTypes.IMAGE -> vm.imageSort
         else -> vm.videoSort
     }
     val currentRatingValue = when (vm.state.searchType) {
-        "image" -> vm.imageRating
+        SearchTypes.IMAGE -> vm.imageRating
         else -> vm.videoRating
     }
     val currentItemCount = when (vm.state.searchType) {
-        "image" -> vm.state.imageList.size
-        "user" -> vm.state.userList.size
+        SearchTypes.IMAGE -> vm.state.imageList.size
+        SearchTypes.USER -> vm.state.userList.size
+        SearchTypes.POST -> vm.state.postList.size
+        SearchTypes.PLAYLIST -> vm.state.playlistList.size
+        SearchTypes.FORUM_POST -> vm.state.forumPostList.size
+        SearchTypes.FORUM_THREAD -> vm.state.forumThreadList.size
         else -> vm.state.videoList.size
     }
 
@@ -209,7 +217,7 @@ fun SearchPage(
 
     fun updateMediaSort(sort: String) {
         lastLoadMoreItemCount = -1
-        if (vm.state.searchType == "image") {
+        if (vm.state.searchType == SearchTypes.IMAGE) {
             vm.updateImageSort(sort)
         } else {
             vm.updateVideoSort(sort)
@@ -218,7 +226,7 @@ fun SearchPage(
 
     fun updateRating(rating: String) {
         lastLoadMoreItemCount = -1
-        if (vm.state.searchType == "image") {
+        if (vm.state.searchType == SearchTypes.IMAGE) {
             vm.updateImageRating(rating)
         } else {
             vm.updateVideoRating(rating)
@@ -226,13 +234,13 @@ fun SearchPage(
     }
 
     fun updateDateFilter(selectedDate: String?) {
-        val activeValueList = if (vm.state.searchType == "image") {
+        val activeValueList = if (vm.state.searchType == SearchTypes.IMAGE) {
             vm.imageFilters.toList()
         } else {
             vm.videoFilters.toList()
         }
         activeValueList.filter { it.key == "date" }.forEach {
-            if (vm.state.searchType == "image") {
+            if (vm.state.searchType == SearchTypes.IMAGE) {
                 vm.removeImageFilter(it)
             } else {
                 vm.removeVideoFilter(it)
@@ -240,7 +248,7 @@ fun SearchPage(
         }
         if (!selectedDate.isNullOrBlank()) {
             val dateFilter = FilterValue("date", selectedDate)
-            if (vm.state.searchType == "image") {
+            if (vm.state.searchType == SearchTypes.IMAGE) {
                 vm.addImageFilter(dateFilter)
             } else {
                 vm.addVideoFilter(dateFilter)
@@ -252,7 +260,7 @@ fun SearchPage(
 
     fun addTagFilter(tag: String) {
         val tagFilter = FilterValue("tags", tag)
-        if (vm.state.searchType == "image") {
+        if (vm.state.searchType == SearchTypes.IMAGE) {
             vm.addImageFilter(tagFilter)
         } else {
             vm.addVideoFilter(tagFilter)
@@ -262,7 +270,7 @@ fun SearchPage(
     }
 
     fun removeMediaFilter(filterValue: FilterValue) {
-        if (vm.state.searchType == "image") {
+        if (vm.state.searchType == SearchTypes.IMAGE) {
             vm.removeImageFilter(filterValue)
         } else {
             vm.removeVideoFilter(filterValue)
@@ -388,30 +396,22 @@ fun SearchPage(
                     }
 
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        SearchTypeChip(
-                            modifier = Modifier.weight(1f),
-                            selected = vm.state.searchType == "video",
-                            label = stringResource(R.string.video),
-                            onClick = { updateSearchType("video") },
-                        )
-                        SearchTypeChip(
-                            modifier = Modifier.weight(1f),
-                            selected = vm.state.searchType == "image",
-                            label = stringResource(R.string.image),
-                            onClick = { updateSearchType("image") },
-                        )
-                        SearchTypeChip(
-                            modifier = Modifier.weight(1f),
-                            selected = vm.state.searchType == "user",
-                            label = stringResource(R.string.user),
-                            onClick = { updateSearchType("user") },
-                        )
+                        SearchTypes.all.fastForEach { type ->
+                            SearchTypeChip(
+                                modifier = Modifier.widthIn(min = 78.dp),
+                                selected = vm.state.searchType == type,
+                                label = searchTypeLabel(type),
+                                onClick = { updateSearchType(type) },
+                            )
+                        }
                     }
 
-                    if (vm.state.searchType != "user") {
+                    if (isMediaSearch) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -440,7 +440,7 @@ fun SearchPage(
                                 onTagRemove = ::removeMediaFilter,
                             )
                         }
-                    } else {
+                    } else if (vm.state.searchType == SearchTypes.USER) {
                         UserSearchHintBanner(modifier = Modifier.fillMaxWidth())
                     }
                 }
@@ -469,10 +469,10 @@ fun SearchPage(
                 ) {
                     LazyVerticalStaggeredGrid(
                         state = gridState,
-                        columns = if (vm.state.searchType == "user") {
-                            DynamicStaggeredGridCells(180.dp, 1, 2)
-                        } else {
-                            mediaListGridCells(listMode)
+                        columns = when {
+                            vm.state.searchType == SearchTypes.USER -> DynamicStaggeredGridCells(180.dp, 1, 2)
+                            isMediaSearch -> mediaListGridCells(listMode)
+                            else -> StaggeredGridCells.Fixed(1)
                         },
                         contentPadding = PaddingValues(8.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -480,7 +480,7 @@ fun SearchPage(
                         modifier = Modifier.fillMaxSize(),
                     ) {
                         when (vm.state.searchType) {
-                            "video" -> {
+                            SearchTypes.VIDEO -> {
                                 items(vm.state.videoList, key = { it.id }) { media ->
                                     SearchMediaCard(
                                         media = media,
@@ -490,7 +490,7 @@ fun SearchPage(
                                 }
                             }
 
-                            "image" -> {
+                            SearchTypes.IMAGE -> {
                                 items(vm.state.imageList, key = { it.id }) { media ->
                                     SearchMediaCard(
                                         media = media,
@@ -500,11 +500,44 @@ fun SearchPage(
                                 }
                             }
 
-                            "user" -> {
+                            SearchTypes.USER -> {
                                 items(vm.state.userList, key = { it.id }) { user ->
                                     SearchUserCard(
                                         user = user,
                                         onClick = { onOpenUser(user) },
+                                    )
+                                }
+                            }
+
+                            SearchTypes.POST -> {
+                                items(vm.state.postList, key = { it.id }) { post ->
+                                    SearchPostCard(post = post)
+                                }
+                            }
+
+                            SearchTypes.PLAYLIST -> {
+                                items(vm.state.playlistList, key = { it.id }) { playlist ->
+                                    SearchPlaylistCard(
+                                        playlist = playlist,
+                                        onClick = { onOpenPlaylist(playlist) },
+                                    )
+                                }
+                            }
+
+                            SearchTypes.FORUM_POST -> {
+                                items(vm.state.forumPostList, key = { it.id }) { post ->
+                                    SearchForumPostCard(
+                                        post = post,
+                                        onOpenForumThread = onOpenForumThread,
+                                    )
+                                }
+                            }
+
+                            SearchTypes.FORUM_THREAD -> {
+                                items(vm.state.forumThreadList, key = { it.id }) { thread ->
+                                    SearchForumThreadCard(
+                                        thread = thread,
+                                        onClick = { onOpenForumThread(thread.id) },
                                     )
                                 }
                             }
@@ -573,6 +606,7 @@ private fun SearchTypeChip(
                 text = label,
                 style = MaterialTheme.typography.labelLarge,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -694,13 +728,16 @@ private fun DateDropdown(
         val month = calendar.get(Calendar.MONTH) + 1
         buildList {
             add("")
+            for (yearOffset in 0..5) {
+                add((year - yearOffset).toString())
+            }
             for (offset in 0..23) {
                 val totalMonth = year * 12 + (month - 1) - offset
                 val optionYear = totalMonth / 12
                 val optionMonth = (totalMonth % 12) + 1
                 add("$optionYear-$optionMonth")
             }
-        }
+        }.distinct()
     }
     val currentLabel = selectedDateValue?.takeIf { it.isNotBlank() }
         ?: stringResource(R.string.date_any)
@@ -816,7 +853,14 @@ private fun TagBrowseButton(
     var hasMore by remember { mutableStateOf(true) }
     var errorText by remember { mutableStateOf<String?>(null) }
     var lastLoadMoreItemCount by remember { mutableStateOf(-1) }
+    var tagSearchQuery by rememberSaveable { mutableStateOf("") }
     val tags = remember { mutableStateListOf<String>() }
+    val normalizedTagSearchQuery = tagSearchQuery.trim()
+    val displayedTags = if (normalizedTagSearchQuery.isBlank()) {
+        tags.toList()
+    } else {
+        tags.filter { tag -> tag.contains(normalizedTagSearchQuery, ignoreCase = true) }
+    }
     val currentLabel = when {
         selectedTags.isEmpty() -> stringResource(R.string.tag_browse)
         selectedTags.size == 1 -> "#${selectedTags.first().value}"
@@ -877,6 +921,16 @@ private fun TagBrowseButton(
     LaunchedEffect(expanded, selectedFilter) {
         if (expanded) {
             loadTags()
+        }
+    }
+
+    LaunchedEffect(expanded, tagSearchQuery) {
+        if (expanded) {
+            tagBrowseFilterFor(tagSearchQuery)?.let { queryFilter ->
+                if (queryFilter != selectedFilter) {
+                    selectedFilter = queryFilter
+                }
+            }
         }
     }
 
@@ -942,6 +996,22 @@ private fun TagBrowseButton(
                     style = MaterialTheme.typography.titleMedium,
                 )
 
+                OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = tagSearchQuery,
+                    onValueChange = { tagSearchQuery = it },
+                    singleLine = true,
+                    label = { Text(stringResource(R.string.tag_quick_filter)) },
+                    leadingIcon = { Icon(Icons.Outlined.Search, null) },
+                    trailingIcon = {
+                        if (tagSearchQuery.isNotEmpty()) {
+                            IconButton(onClick = { tagSearchQuery = "" }) {
+                                Icon(Icons.Outlined.Close, null)
+                            }
+                        }
+                    },
+                )
+
                 LazyRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -952,6 +1022,7 @@ private fun TagBrowseButton(
                             label = filter,
                             onClick = {
                                 if (selectedFilter != filter) {
+                                    tagSearchQuery = ""
                                     selectedFilter = filter
                                 }
                             },
@@ -975,7 +1046,10 @@ private fun TagBrowseButton(
                 }
 
                 Text(
-                    text = stringResource(R.string.search_results_count, count),
+                    text = stringResource(
+                        R.string.search_results_count,
+                        if (normalizedTagSearchQuery.isBlank()) count else displayedTags.size,
+                    ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.labelMedium,
                 )
@@ -989,7 +1063,7 @@ private fun TagBrowseButton(
                             .fillMaxWidth()
                             .height(320.dp),
                     ) {
-                        itemsIndexed(tags, key = { index, tag -> "$selectedFilter:$index:$tag" }) { _, tag ->
+                        itemsIndexed(displayedTags, key = { index, tag -> "$selectedFilter:$index:$tag" }) { _, tag ->
                             ListItem(
                                 headlineContent = {
                                     Text(
@@ -1022,6 +1096,15 @@ private fun TagBrowseButton(
                                     CircularProgressIndicator(modifier = Modifier.size(24.dp))
                                 }
                             }
+                        } else if (hasMore) {
+                            item {
+                                TextButton(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    onClick = { loadTags(replaceResults = false) },
+                                ) {
+                                    Text(stringResource(R.string.search_load_more))
+                                }
+                            }
                         }
                     }
 
@@ -1034,7 +1117,7 @@ private fun TagBrowseButton(
                         ) {
                             CircularProgressIndicator()
                         }
-                    } else if (tags.isEmpty()) {
+                    } else if (displayedTags.isEmpty()) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -1054,6 +1137,29 @@ private fun TagBrowseButton(
                 }
             }
         }
+    }
+}
+
+private fun tagBrowseFilterFor(query: String): String? {
+    val firstSearchChar = query.firstOrNull { it.isLetterOrDigit() } ?: return null
+    val upperChar = firstSearchChar.uppercaseChar()
+    return when {
+        upperChar in 'A'..'Z' -> upperChar.toString()
+        firstSearchChar in '0'..'9' -> firstSearchChar.toString()
+        else -> null
+    }
+}
+
+@Composable
+private fun searchTypeLabel(type: String): String {
+    return when (type) {
+        SearchTypes.IMAGE -> stringResource(R.string.image)
+        SearchTypes.POST -> stringResource(R.string.post)
+        SearchTypes.USER -> stringResource(R.string.user)
+        SearchTypes.PLAYLIST -> stringResource(R.string.playlist)
+        SearchTypes.FORUM_POST -> stringResource(R.string.search_type_forum_posts)
+        SearchTypes.FORUM_THREAD -> stringResource(R.string.search_type_forum_threads)
+        else -> stringResource(R.string.video)
     }
 }
 
@@ -1175,6 +1281,192 @@ private fun calculateCellsCrossAxisSizeImpl(
     val remainingPixels = gridSizeWithoutSpacing % slotCount
     return List(slotCount) { index ->
         slotSize + if (index < remainingPixels) 1 else 0
+    }
+}
+
+@Composable
+private fun SearchResultCard(
+    onClick: (() -> Unit)? = null,
+    content: @Composable () -> Unit,
+) {
+    if (onClick == null) {
+        Card { content() }
+    } else {
+        Card(onClick = onClick) { content() }
+    }
+}
+
+@Composable
+private fun SearchPostCard(post: SearchPostItem) {
+    SearchResultCard {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = post.title,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            SearchMetaText(authorName = post.authorName, dateLabel = post.createdAtLabel)
+            post.body.takeIf { it.isNotBlank() }?.let { body ->
+                Text(
+                    text = body,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 4,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Text(
+                text = stringResource(R.string.num_views, post.numViews),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SearchPlaylistCard(
+    playlist: SearchPlaylistItem,
+    onClick: () -> Unit,
+) {
+    SearchResultCard(onClick = onClick) {
+        Row(modifier = Modifier.fillMaxWidth()) {
+            playlist.thumbnailUrl?.let { thumbnailUrl ->
+                AsyncImage(
+                    model = thumbnailUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .width(132.dp)
+                        .aspectRatio(16f / 9f),
+                )
+            }
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = playlist.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                SearchMetaText(authorName = playlist.authorName, dateLabel = "")
+                Text(
+                    text = stringResource(R.string.playlist_num_videos, playlist.numVideos),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SearchForumPostCard(
+    post: SearchForumPostItem,
+    onOpenForumThread: (String) -> Unit,
+) {
+    SearchResultCard(
+        onClick = post.threadId.takeIf(String::isNotBlank)?.let { threadId ->
+            { onOpenForumThread(threadId) }
+        },
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = post.threadTitle.ifBlank { post.threadId.ifBlank { post.id } },
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            SearchMetaText(authorName = post.authorName, dateLabel = post.createdAtLabel)
+            post.body.takeIf { it.isNotBlank() }?.let { body ->
+                Text(
+                    text = body,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 4,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Text(
+                text = stringResource(R.string.search_forum_reply, post.replyNum),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SearchForumThreadCard(
+    thread: SearchForumThreadItem,
+    onClick: () -> Unit,
+) {
+    SearchResultCard(onClick = onClick) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (thread.sticky) {
+                    RoleBadge(text = stringResource(R.string.forum_sticky))
+                }
+                if (thread.locked) {
+                    RoleBadge(text = stringResource(R.string.forum_locked))
+                }
+                if (thread.section.isNotBlank()) {
+                    RoleBadge(text = thread.section)
+                }
+            }
+            Text(
+                text = thread.title,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            SearchMetaText(authorName = thread.authorName, dateLabel = thread.updatedAtLabel)
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = stringResource(R.string.forum_posts_count, thread.numPosts),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = stringResource(R.string.forum_views_count, thread.numViews),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SearchMetaText(
+    authorName: String,
+    dateLabel: String,
+) {
+    val text = listOf(authorName, dateLabel)
+        .filter(String::isNotBlank)
+        .joinToString(separator = " / ")
+    if (text.isNotBlank()) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 

@@ -21,6 +21,7 @@ import me.rerere.awara.data.entity.Image
 import me.rerere.awara.data.entity.Playlist
 import me.rerere.awara.data.entity.PlaylistCreationDto
 import me.rerere.awara.data.entity.PlaylistPager
+import me.rerere.awara.data.entity.Post
 import me.rerere.awara.data.entity.Tag
 import me.rerere.awara.data.entity.User
 import me.rerere.awara.data.entity.Video
@@ -253,4 +254,36 @@ interface IwaraAPI {
         @Query("page") page: Int,
         @Query("sort") sort: String = "relevance",
     ): Pager<User>
+
+    @GET("/search")
+    suspend fun searchPosts(
+        @Query("type") type: String = "posts",
+        @Query("query") query: String,
+        @Query("page") page: Int,
+        @Query("sort") sort: String = "relevance",
+    ): Pager<Post>
+
+    @GET("/search")
+    suspend fun searchPlaylists(
+        @Query("type") type: String = "playlists",
+        @Query("query") query: String,
+        @Query("page") page: Int,
+        @Query("sort") sort: String = "relevance",
+    ): Pager<Playlist>
+
+    @GET("/search")
+    suspend fun searchForumPosts(
+        @Query("type") type: String = "forum_posts",
+        @Query("query") query: String,
+        @Query("page") page: Int,
+        @Query("sort") sort: String = "relevance",
+    ): Pager<ForumPost>
+
+    @GET("/search")
+    suspend fun searchForumThreads(
+        @Query("type") type: String = "forum_threads",
+        @Query("query") query: String,
+        @Query("page") page: Int,
+        @Query("sort") sort: String = "relevance",
+    ): Pager<ForumThread>
 }

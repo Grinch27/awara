@@ -35,9 +35,8 @@ class SearchVM(
 
     private fun hasActiveSearchCriteria(type: String = state.searchType): Boolean {
         return when (type) {
-            "video" -> query.isNotBlank() || videoFilters.isNotEmpty() || videoRating != DEFAULT_MEDIA_RATING || videoSort != DEFAULT_MEDIA_SORT
-            "image" -> query.isNotBlank() || imageFilters.isNotEmpty() || imageRating != DEFAULT_MEDIA_RATING || imageSort != DEFAULT_MEDIA_SORT
-            "user" -> query.isNotBlank()
+            SearchTypes.VIDEO -> query.isNotBlank() || videoFilters.isNotEmpty() || videoRating != DEFAULT_MEDIA_RATING || videoSort != DEFAULT_MEDIA_SORT
+            SearchTypes.IMAGE -> query.isNotBlank() || imageFilters.isNotEmpty() || imageRating != DEFAULT_MEDIA_RATING || imageSort != DEFAULT_MEDIA_SORT
             else -> query.isNotBlank()
         }
     }
@@ -80,11 +79,11 @@ class SearchVM(
     }
 
     fun searchByTag(type: String, tag: String) {
-        val targetType = if (type == "image") "image" else "video"
+        val targetType = if (SearchTypes.normalize(type) == SearchTypes.IMAGE) SearchTypes.IMAGE else SearchTypes.VIDEO
         val tagFilter = FilterValue("tags", tag)
         query = ""
         when (targetType) {
-            "image" -> {
+            SearchTypes.IMAGE -> {
                 imageFilters.clear()
                 imageFilters.add(tagFilter)
             }
@@ -114,7 +113,7 @@ class SearchVM(
             )
             runCatching {
                 when (state.searchType) {
-                    "video" -> {
+                    SearchTypes.VIDEO -> {
                         val pager = searchRepository.searchVideos(
                             buildMediaSearchQuery(FeedScope.SEARCH_VIDEO),
                         )
@@ -132,7 +131,7 @@ class SearchVM(
                         )
                     }
 
-                    "image" -> {
+                    SearchTypes.IMAGE -> {
                         val pager = searchRepository.searchImages(
                             buildMediaSearchQuery(FeedScope.SEARCH_IMAGE),
                         )
@@ -150,7 +149,7 @@ class SearchVM(
                         )
                     }
 
-                    "user" -> {
+                    SearchTypes.USER -> {
                         val pager = searchRepository.searchUsers(query, state.page - 1)
                         val mergedList = if (replaceResults) {
                             pager.results
@@ -161,6 +160,70 @@ class SearchVM(
                             uiState = if (mergedList.isNotEmpty()) UiState.Success else UiState.Empty,
                             count = pager.count,
                             userList = mergedList,
+                            loadingMore = false,
+                            hasMore = mergedList.size < pager.count,
+                        )
+                    }
+
+                    SearchTypes.POST -> {
+                        val pager = searchRepository.searchPosts(query, state.page - 1)
+                        val mergedList = if (replaceResults) {
+                            pager.results
+                        } else {
+                            state.postList + pager.results
+                        }
+                        state = state.copy(
+                            uiState = if (mergedList.isNotEmpty()) UiState.Success else UiState.Empty,
+                            count = pager.count,
+                            postList = mergedList,
+                            loadingMore = false,
+                            hasMore = mergedList.size < pager.count,
+                        )
+                    }
+
+                    SearchTypes.PLAYLIST -> {
+                        val pager = searchRepository.searchPlaylists(query, state.page - 1)
+                        val mergedList = if (replaceResults) {
+                            pager.results
+                        } else {
+                            state.playlistList + pager.results
+                        }
+                        state = state.copy(
+                            uiState = if (mergedList.isNotEmpty()) UiState.Success else UiState.Empty,
+                            count = pager.count,
+                            playlistList = mergedList,
+                            loadingMore = false,
+                            hasMore = mergedList.size < pager.count,
+                        )
+                    }
+
+                    SearchTypes.FORUM_POST -> {
+                        val pager = searchRepository.searchForumPosts(query, state.page - 1)
+                        val mergedList = if (replaceResults) {
+                            pager.results
+                        } else {
+                            state.forumPostList + pager.results
+                        }
+                        state = state.copy(
+                            uiState = if (mergedList.isNotEmpty()) UiState.Success else UiState.Empty,
+                            count = pager.count,
+                            forumPostList = mergedList,
+                            loadingMore = false,
+                            hasMore = mergedList.size < pager.count,
+                        )
+                    }
+
+                    SearchTypes.FORUM_THREAD -> {
+                        val pager = searchRepository.searchForumThreads(query, state.page - 1)
+                        val mergedList = if (replaceResults) {
+                            pager.results
+                        } else {
+                            state.forumThreadList + pager.results
+                        }
+                        state = state.copy(
+                            uiState = if (mergedList.isNotEmpty()) UiState.Success else UiState.Empty,
+                            count = pager.count,
+                            forumThreadList = mergedList,
                             loadingMore = false,
                             hasMore = mergedList.size < pager.count,
                         )
@@ -192,8 +255,16 @@ class SearchVM(
     }
 
     fun updateSearchType(type: String) {
-        state = state.copy(searchType = type, page = 1, hasMore = true)
-        if (hasActiveSearchCriteria(type)) {
+        val normalizedType = SearchTypes.normalize(type)
+        state = state.copy(
+            searchType = normalizedType,
+            page = 1,
+            count = 0,
+            loadingMore = false,
+            hasMore = true,
+            uiState = UiState.Initial,
+        )
+        if (hasActiveSearchCriteria(normalizedType)) {
             search()
         }
     }
@@ -201,7 +272,7 @@ class SearchVM(
     fun updateVideoSort(sort: String) {
         videoSort = sort
         state = state.copy(page = 1, hasMore = true)
-        if (state.searchType == "video") {
+        if (state.searchType == SearchTypes.VIDEO) {
             search()
         }
     }
@@ -209,7 +280,7 @@ class SearchVM(
     fun updateVideoRating(rating: String) {
         videoRating = rating
         state = state.copy(page = 1, hasMore = true)
-        if (state.searchType == "video") {
+        if (state.searchType == SearchTypes.VIDEO) {
             search()
         }
     }
@@ -231,7 +302,7 @@ class SearchVM(
     fun updateImageSort(sort: String) {
         imageSort = sort
         state = state.copy(page = 1, hasMore = true)
-        if (state.searchType == "image") {
+        if (state.searchType == SearchTypes.IMAGE) {
             search()
         }
     }
@@ -239,7 +310,7 @@ class SearchVM(
     fun updateImageRating(rating: String) {
         imageRating = rating
         state = state.copy(page = 1, hasMore = true)
-        if (state.searchType == "image") {
+        if (state.searchType == SearchTypes.IMAGE) {
             search()
         }
     }
@@ -268,5 +339,9 @@ class SearchVM(
         val videoList: List<SearchMediaItem> = emptyList(),
         val imageList: List<SearchMediaItem> = emptyList(),
         val userList: List<SearchUserItem> = emptyList(),
+        val postList: List<SearchPostItem> = emptyList(),
+        val playlistList: List<SearchPlaylistItem> = emptyList(),
+        val forumPostList: List<SearchForumPostItem> = emptyList(),
+        val forumThreadList: List<SearchForumThreadItem> = emptyList(),
     )
 }

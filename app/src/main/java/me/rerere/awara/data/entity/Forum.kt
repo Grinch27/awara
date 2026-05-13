@@ -73,6 +73,7 @@ data class ForumPost(
     @Serializable(with = InstantSerializer::class)
     val updatedAt: Instant? = null,
     val user: ForumUser? = null,
+    val thread: ForumThread? = null,
 )
 
 @Serializable
