@@ -58,6 +58,13 @@
     <string name="sort_popularity">人氣</string>
     <string name="sort_views">觀點</string>
     <string name="sort_likes">喜歡</string>
+    <string name="media_list_mode_detail">詳情</string>
+    <string name="media_list_mode_thumbnail">縮圖</string>
+    <string name="index_view_menu">視圖</string>
+    <string name="index_view_menu_view">查看</string>
+    <string name="index_view_menu_block_images">攔截圖片</string>
+    <string name="index_view_menu_block_images_off">顯示圖片</string>
+    <string name="index_view_menu_block_images_on">攔截圖片</string>
     <string name="drawer_favorite">收藏夾</string>
     <string name="drawer_playlists">播放列表</string>
     <string name="drawer_downloads">下載</string>
@@ -83,6 +90,8 @@
     <string name="setting_look_work_mode_text">視頻封面會模糊</string>
     <string name="setting_look_search_rating_title">搜尋評級</string>
     <string name="setting_look_search_rating_text">控制視頻和圖像搜尋預設使用的 rating 參數。</string>
+    <string name="setting_look_block_media_thumbnails_title">攔截圖片</string>
+    <string name="setting_look_block_media_thumbnails_text">列表卡片不載入媒體縮圖。</string>
     <string name="setting_player">播放器設置</string>
     <string name="setting_player_auto_play_title">自動播放</string>
     <string name="setting_player_auto_play_text">自動開始緩沖和播放視頻</string>

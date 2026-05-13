@@ -5,9 +5,7 @@ package me.rerere.awara.ui.page.index.pager
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -19,7 +17,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.collectLatest
@@ -28,8 +25,6 @@ import me.rerere.awara.ui.component.common.UiStateBox
 import me.rerere.awara.ui.component.iwara.MediaCard
 import me.rerere.awara.ui.component.iwara.mediaListGridCells
 import me.rerere.awara.ui.component.iwara.rememberMediaListModePreference
-import me.rerere.awara.ui.component.iwara.param.FilterAndSort
-import me.rerere.awara.ui.component.iwara.param.sort.MediaSortOptions
 import me.rerere.awara.ui.page.index.IndexVM
 
 @Composable
@@ -53,66 +48,36 @@ fun IndexImagePage(vm: IndexVM) {
         }
     }
 
-    Column {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            FilterAndSort(
-                sort = vm.imageSort,
-                onSortChange = {
-                    vm.updateImageSort(it)
-                },
-                sortOptions = MediaSortOptions,
-                filterValues = vm.imageFilters,
-                onFilterAdd = vm::addImageFilter,
-                onFilterRemove = vm::removeImageFilter,
-                onFilterChooseDone = {
-                    vm.loadImageList()
-                },
-                onFilterClear = {
-                    vm.clearImageFilter()
-                    vm.loadImageList()
-                },
-            )
+    UiStateBox(
+        state = state.imageState,
+        modifier = Modifier.fillMaxSize(),
+        onErrorRetry = {
+            vm.loadImageList()
         }
-
-        UiStateBox(
-            state = state.imageState,
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-            onErrorRetry = {
-                vm.loadImageList()
-            }
+    ) {
+        LazyVerticalStaggeredGrid(
+            state = gridState,
+            columns = mediaListGridCells(listMode),
+            contentPadding = PaddingValues(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalItemSpacing = 8.dp,
+            modifier = Modifier.fillMaxSize()
         ) {
-            LazyVerticalStaggeredGrid(
-                state = gridState,
-                columns = mediaListGridCells(listMode),
-                contentPadding = PaddingValues(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalItemSpacing = 8.dp,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(state.imageList) {
-                    MediaCard(media = it, listMode = listMode)
-                }
+            items(state.imageList) {
+                MediaCard(media = it, listMode = listMode)
+            }
 
-                if (state.imageLoadingMore) {
-                    item(span = StaggeredGridItemSpan.FullLine) {
-                        Spin(
-                            show = true,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 12.dp),
-                            )
-                        }
+            if (state.imageLoadingMore) {
+                item(span = StaggeredGridItemSpan.FullLine) {
+                    Spin(
+                        show = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 12.dp),
+                        )
                     }
                 }
             }

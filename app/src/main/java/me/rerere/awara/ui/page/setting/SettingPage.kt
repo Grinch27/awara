@@ -17,6 +17,7 @@ import androidx.compose.material.icons.outlined.AutoMode
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.ColorLens
 import androidx.compose.material.icons.outlined.HomeWork
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.Replay
@@ -61,6 +62,7 @@ import me.rerere.awara.ui.component.common.MessageHolder
 import me.rerere.awara.ui.component.iwara.MEDIA_LIST_MODE_DETAIL
 import me.rerere.awara.ui.component.iwara.MEDIA_LIST_MODE_THUMBNAIL
 import me.rerere.awara.ui.component.iwara.SETTING_MEDIA_LIST_MODE
+import me.rerere.awara.ui.component.iwara.rememberBlockMediaThumbnailsPreference
 import me.rerere.awara.ui.component.iwara.param.rating.DEFAULT_MEDIA_RATING
 import me.rerere.awara.ui.component.iwara.param.rating.MediaRatingKeys
 import me.rerere.awara.ui.component.iwara.param.rating.SETTING_MEDIA_SEARCH_RATING
@@ -514,6 +516,7 @@ private fun AppearanceSettingsSection(
         key = SETTING_MEDIA_LIST_MODE,
         default = MEDIA_LIST_MODE_DETAIL,
     )
+    val blockMediaThumbnails = rememberBlockMediaThumbnailsPreference()
     val mediaSearchRating = rememberStringPreference(
         key = SETTING_MEDIA_SEARCH_RATING,
         default = DEFAULT_MEDIA_RATING,
@@ -549,6 +552,12 @@ private fun AppearanceSettingsSection(
         query,
         R.string.setting_look_media_list_mode_title,
         R.string.setting_look_media_list_mode_text,
+    )
+    val showBlockMediaThumbnails = showWholeSection || matchesSettingQuery(
+        context,
+        query,
+        R.string.setting_look_block_media_thumbnails_title,
+        R.string.setting_look_block_media_thumbnails_text,
     )
     val showSearchRating = showWholeSection || matchesSettingQuery(
         context,
@@ -641,6 +650,21 @@ private fun AppearanceSettingsSection(
                 },
                 text = {
                     Text(stringResource(R.string.setting_look_media_list_mode_text))
+                },
+            )
+        }
+
+        if (showBlockMediaThumbnails) {
+            SettingBooleanItem(
+                state = blockMediaThumbnails,
+                title = {
+                    Text(stringResource(R.string.setting_look_block_media_thumbnails_title))
+                },
+                icon = {
+                    Icon(Icons.Outlined.Image, null)
+                },
+                text = {
+                    Text(stringResource(R.string.setting_look_block_media_thumbnails_text))
                 },
             )
         }

@@ -58,6 +58,13 @@
     <string name="sort_popularity">人気</string>
     <string name="sort_views">ビュー</string>
     <string name="sort_likes">好き</string>
+    <string name="media_list_mode_detail">詳細</string>
+    <string name="media_list_mode_thumbnail">サムネイル</string>
+    <string name="index_view_menu">表示</string>
+    <string name="index_view_menu_view">表示</string>
+    <string name="index_view_menu_block_images">画像をブロック</string>
+    <string name="index_view_menu_block_images_off">画像を表示</string>
+    <string name="index_view_menu_block_images_on">画像をブロック</string>
     <string name="drawer_favorite">お気に入り</string>
     <string name="drawer_playlists">プレイリスト</string>
     <string name="drawer_downloads">ダウンロード</string>
@@ -83,6 +90,8 @@
     <string name="setting_look_work_mode_text">サムネイルがぼやけます</string>
     <string name="setting_look_search_rating_title">検索レーティング</string>
     <string name="setting_look_search_rating_text">動画と画像検索で既定使用する rating パラメータを選択します。</string>
+    <string name="setting_look_block_media_thumbnails_title">画像をブロック</string>
+    <string name="setting_look_block_media_thumbnails_text">リストカードでメディアのサムネイルを読み込みません。</string>
     <string name="setting_player">プレーヤーの設定</string>
     <string name="setting_player_auto_play_title">自動再生</string>
     <string name="setting_player_auto_play_text">動画の読み込みと自動再生を開始する</string>

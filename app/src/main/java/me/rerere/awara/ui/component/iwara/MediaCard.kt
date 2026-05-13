@@ -1,6 +1,7 @@
 package me.rerere.awara.ui.component.iwara
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,7 +52,10 @@ fun MediaCard(
         key = "setting.work_mode",
         default = false,
     )
-    val painter = rememberAsyncImagePainter(model = media.thumbnailUrl())
+    val blockMediaThumbnails by rememberBlockMediaThumbnailsPreference()
+    val painter = rememberAsyncImagePainter(
+        model = if (blockMediaThumbnails) null else media.thumbnailUrl(),
+    )
 
     Card(
         modifier = modifier,
@@ -67,12 +71,14 @@ fun MediaCard(
                 media = media,
                 painter = painter,
                 workMode = workMode,
+                blockMediaThumbnails = blockMediaThumbnails,
             )
 
             else -> DetailMediaCardBody(
                 media = media,
                 painter = painter,
                 workMode = workMode,
+                blockMediaThumbnails = blockMediaThumbnails,
             )
         }
     }
@@ -83,12 +89,14 @@ private fun ThumbnailMediaCardBody(
     media: Media,
     painter: AsyncImagePainter,
     workMode: Boolean,
+    blockMediaThumbnails: Boolean,
 ) {
     Column {
         MediaCover(
             media = media,
             painter = painter,
             workMode = workMode,
+            blockMediaThumbnails = blockMediaThumbnails,
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(220f / 160f),
@@ -133,6 +141,7 @@ private fun DetailMediaCardBody(
     media: Media,
     painter: AsyncImagePainter,
     workMode: Boolean,
+    blockMediaThumbnails: Boolean,
 ) {
     val description = media.body?.trim().orEmpty()
 
@@ -141,6 +150,7 @@ private fun DetailMediaCardBody(
             media = media,
             painter = painter,
             workMode = workMode,
+            blockMediaThumbnails = blockMediaThumbnails,
             modifier = Modifier
                 .width(164.dp)
                 .aspectRatio(220f / 160f),
@@ -198,21 +208,30 @@ private fun MediaCover(
     media: Media,
     painter: AsyncImagePainter,
     workMode: Boolean,
+    blockMediaThumbnails: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
-        SkeletonBox(
-            show = painter.state is AsyncImagePainter.State.Loading,
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            Image(
-                painter = painter,
-                contentDescription = "Media Cover",
-                contentScale = ContentScale.Crop,
+        if (blockMediaThumbnails) {
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .then(if (workMode) Modifier.blur(8.dp) else Modifier),
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
             )
+        } else {
+            SkeletonBox(
+                show = painter.state is AsyncImagePainter.State.Loading,
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                Image(
+                    painter = painter,
+                    contentDescription = "Media Cover",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(if (workMode) Modifier.blur(8.dp) else Modifier),
+                )
+            }
         }
 
         if (media is Video && media.private) {

@@ -5,21 +5,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Lens
-import androidx.compose.material.icons.outlined.Message
-import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.Badge
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -28,13 +18,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
-import me.rerere.awara.BuildConfig
-import me.rerere.awara.R
 import me.rerere.awara.ui.LocalRouterProvider
 import me.rerere.awara.ui.page.index.IndexDrawer
 import me.rerere.awara.ui.page.index.SETTING_HOME_DEFAULT_SECTION
@@ -99,62 +84,20 @@ fun IndexPageTabletLayout(vm: IndexVM) {
         topBar = {
             TopAppBar(
                 title = {
-                    Text(text = stringResource(currentNavigation?.titleRes ?: R.string.app_name))
+                    IndexTopBarTitle(
+                        currentNavigation = currentNavigation,
+                        contentNavigations = contentNavigations,
+                        onNavigationSelected = { navigationName ->
+                            if (contentNavigations.any { it.name == navigationName }) {
+                                selectedNavigationName = navigationName
+                            }
+                        },
+                    )
                 },
                 actions = {
-                    if (BuildConfig.DEBUG) {
-                        IconButton(
-                            onClick = {
-                                navController.navigate("lab")
-                            }
-                        ) {
-                            Icon(Icons.Outlined.Lens, "App Lab")
-                        }
-                    }
-
-                    Box {
-                        IconButton(
-                            onClick = {
-                                navController.navigate("conversations")
-                            }
-                        ) {
-                            Icon(Icons.Outlined.Message, null)
-                        }
-
-                        if (vm.state.notificationCounts.messages > 0) {
-                            Badge(
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(4.dp),
-                            ) {
-                                Text(vm.state.notificationCounts.messages.toString())
-                            }
-                        }
-                    }
-
-                    Box {
-                        IconButton(onClick = { /*TODO*/ }) {
-                            Icon(Icons.Outlined.Notifications, null)
-                        }
-
-                        if (vm.state.notificationCounts.notifications > 0) {
-                            Badge(
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(4.dp),
-                            ) {
-                                Text(vm.state.notificationCounts.notifications.toString())
-                            }
-                        }
-                    }
-
-                    IconButton(
-                        onClick = {
-                            navController.navigate("search")
-                        }
-                    ) {
-                        Icon(Icons.Outlined.Search, "Search")
-                    }
+                    IndexTopBarActions(
+                        onSearch = { navController.navigate("search") },
+                    )
                 },
             )
         },

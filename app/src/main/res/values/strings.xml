@@ -88,6 +88,11 @@
     <string name="sort_likes">Likes</string>
     <string name="media_list_mode_detail">Detail</string>
     <string name="media_list_mode_thumbnail">Thumbnail</string>
+    <string name="index_view_menu">View</string>
+    <string name="index_view_menu_view">View</string>
+    <string name="index_view_menu_block_images">Block Images</string>
+    <string name="index_view_menu_block_images_off">Show images</string>
+    <string name="index_view_menu_block_images_on">Block images</string>
     <string name="drawer_favorite">Favorites</string>
     <string name="drawer_playlists">Playlists</string>
     <string name="drawer_downloads">Downloads</string>
@@ -115,6 +120,8 @@
     <string name="setting_look_home_default_text">Choose whether Subscription, Video, Image, or Forum opens first after launch.</string>
     <string name="setting_look_media_list_mode_title">Media List Mode</string>
     <string name="setting_look_media_list_mode_text">Switch media feeds between detail and thumbnail layouts.</string>
+    <string name="setting_look_block_media_thumbnails_title">Block Images</string>
+    <string name="setting_look_block_media_thumbnails_text">Do not load media thumbnails in list cards.</string>
     <string name="setting_look_search_rating_title">Search Rating</string>
     <string name="setting_look_search_rating_text">Default rating parameter for video and image search.</string>
     <string name="setting_player">Player Setting</string>

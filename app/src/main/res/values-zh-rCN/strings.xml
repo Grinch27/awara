@@ -87,6 +87,11 @@
     <string name="sort_likes">喜欢</string>
     <string name="media_list_mode_detail">详情</string>
     <string name="media_list_mode_thumbnail">缩略图</string>
+    <string name="index_view_menu">视图</string>
+    <string name="index_view_menu_view">查看</string>
+    <string name="index_view_menu_block_images">拦截图片</string>
+    <string name="index_view_menu_block_images_off">显示图片</string>
+    <string name="index_view_menu_block_images_on">拦截图片</string>
     <string name="drawer_favorite">最爱</string>
     <string name="drawer_playlists">播单</string>
     <string name="drawer_downloads">下载</string>
@@ -114,6 +119,8 @@
     <string name="setting_look_home_default_text">选择启动后优先进入订阅、视频、图片或论坛页面。</string>
     <string name="setting_look_media_list_mode_title">媒体列表模式</string>
     <string name="setting_look_media_list_mode_text">在媒体列表中切换详情和缩略图布局。</string>
+    <string name="setting_look_block_media_thumbnails_title">拦截图片</string>
+    <string name="setting_look_block_media_thumbnails_text">列表卡片不加载媒体缩略图。</string>
     <string name="setting_look_search_rating_title">搜索评级</string>
     <string name="setting_look_search_rating_text">控制视频和图片搜索默认使用的 rating 参数。</string>
     <string name="setting_player">播放器设置</string>
