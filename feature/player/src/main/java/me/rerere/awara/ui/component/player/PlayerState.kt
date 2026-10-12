@@ -18,13 +18,15 @@ import com.google.android.exoplayer2.source.DefaultMediaSourceFactory
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout
 import com.google.android.exoplayer2.video.VideoSize
 import me.rerere.compose_setting.preference.mmkvPreference
+import okhttp3.OkHttpClient
 
 private const val TAG = "PlayerState"
 
 @Composable
 fun rememberPlayerState(
-    builder: (Context) -> ExoPlayer = {
-        ExoPlayer.Builder(it, DefaultMediaSourceFactory(PlayerCache.get(it)))
+    publicHttpClient: OkHttpClient,
+    builder: (Context, OkHttpClient) -> ExoPlayer = { context, httpClient ->
+        ExoPlayer.Builder(context, DefaultMediaSourceFactory(PlayerCache.get(context, httpClient)))
             .setHandleAudioBecomingNoisy(true)
             .build()
             .apply {
@@ -34,10 +36,10 @@ fun rememberPlayerState(
     }
 ): PlayerState {
     val context = LocalContext.current
-    val state by remember {
-        mutableStateOf(PlayerState(builder(context)))
+    val state by remember(context, publicHttpClient) {
+        mutableStateOf(PlayerState(builder(context, publicHttpClient)))
     }
-    DisposableEffect(context) {
+    DisposableEffect(context, state) {
         val playbackListener = object : Player.Listener {
             override fun onPlaybackStateChanged(playbackState: Int) {
                 super.onPlaybackStateChanged(playbackState)

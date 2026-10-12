@@ -51,15 +51,20 @@ import me.rerere.awara.ui.page.video.layout.VideoPageTabletLayout
 import me.rerere.awara.ui.theme.DynamicColorTheme
 import me.rerere.awara.ui.theme.rememberDynamicColorSchemeState
 import me.rerere.compose_setting.preference.mmkvPreference
+import okhttp3.OkHttpClient
+import org.koin.androidx.compose.get
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
-fun  VideoPage(vm: VideoVM = koinViewModel()) {
+fun VideoPage(
+    vm: VideoVM = koinViewModel(),
+    publicHttpClient: OkHttpClient = get(),
+) {
     ForceSystemBarColor(appearanceLight = false)
 
     var requestOrientation by rememberRequestedScreenOrientation()
     val windowSize = rememberWindowSizeClass()
-    val state = rememberPlayerState()
+    val state = rememberPlayerState(publicHttpClient)
     val message = LocalMessageProvider.current
     val scope = rememberCoroutineScope()
 

@@ -18,6 +18,8 @@ dependencies {
     implementation("androidx.compose.material3:material3:1.1.0-rc01")
     implementation("androidx.compose.material:material-icons-extended:1.4.2")
     implementation("com.google.android.exoplayer:exoplayer:2.18.6")
+    implementation("com.google.android.exoplayer:extension-okhttp:2.18.6")
+    implementation("com.squareup.okhttp3:okhttp:4.10.0")
     implementation("net.mm2d.mmupnp:mmupnp:3.1.6")
     implementation("com.github.re-ovo:compose-setting:1.1")
 }
