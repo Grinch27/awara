@@ -26,7 +26,7 @@ jobs:
       run:
         shell: bash
     container:
-      image: ubuntu:devel
+      image: ubuntu:24.04
       options: >-
         --privileged
         --user=0:0
@@ -85,11 +85,6 @@ jobs:
             "platform-tools" \
             "platforms;android-34"
 
-      - name: Sync Gradle wrapper to latest stable
-        run: |
-          set -euo pipefail
-          chmod +x gradlew
-          bash ./scripts/sync-gradle-wrapper.sh
 
       - name: Build debug APK
         env:
