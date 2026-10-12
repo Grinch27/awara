@@ -19,7 +19,6 @@ import me.rerere.awara.data.entity.DownloadType
 import me.rerere.awara.di.AppDatabase
 import me.rerere.awara.util.await
 import me.rerere.awara.util.prettyFileSize
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -42,7 +41,7 @@ class DownloadWorker(
     private val appContext: Context,
     params: WorkerParameters
 ) : CoroutineWorker(appContext, params), KoinComponent {
-    private val okHttpClient = OkHttpClient.Builder().build()
+    private val okHttpClient by inject<okhttp3.OkHttpClient>()
     private val appDatabase by inject<AppDatabase>()
     private val notificationId = notificationIdCounter++
     private val notification = NotificationCompat.Builder(appContext, "download")

@@ -1,10 +1,7 @@
 package me.rerere.awara.util
 
-// TODO(user): Decide whether built-in DoH should stay enabled by default for all installs.
-// TODO(agent): If future Iwara networking needs per-host routing, split media and API DNS policies instead of overloading one global resolver.
-// TODO(agent): If users report resolver incompatibilities, add explicit validation and a one-tap reset action in Settings.
-
 import java.net.InetAddress
+import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
 import me.rerere.compose_setting.preference.mmkvPreference
 import okhttp3.Dns
@@ -19,6 +16,21 @@ const val SETTING_NETWORK_DOH_UPSTREAM = "setting.network_doh_upstream"
 
 const val DEFAULT_NETWORK_DOH_ENDPOINT = "doh.opendns.com/dns-query"
 const val DEFAULT_NETWORK_DOH_UPSTREAM = DEFAULT_NETWORK_DOH_ENDPOINT
+
+// This list is intentionally explicit. We must never resolve a DoH bootstrap host using Dns.SYSTEM.
+// Cisco publishes doh.opendns.com -> 146.112.41.2 / 2620:119:fc::2.
+// Other providers are included only as optional upstream choices.
+private val pinnedBootstrapAddresses: Map<String, List<InetAddress>> by lazy {
+    mapOf(
+        "doh.opendns.com" to listOf("146.112.41.2", "2620:119:fc::2"),
+        "dns.google" to listOf("8.8.8.8", "8.8.4.4", "2001:4860:4860::8888"),
+        "cloudflare-dns.com" to listOf("1.1.1.1", "1.0.0.1", "2606:4700:4700::1111"),
+        "dns.quad9.net" to listOf("9.9.9.9", "149.112.112.112", "2620:fe::fe"),
+    ).mapValues { (_, literals) ->
+        // InetAddress.getByName with numeric IP literals never performs hostname resolution.
+        literals.map(InetAddress::getByName)
+    }
+}
 
 data class NetworkStackSnapshot(
     val dohEnabled: Boolean,
@@ -44,7 +56,6 @@ data class NetworkStackSnapshot(
 
 interface NetworkTransportPolicy {
     fun currentSnapshot(): NetworkStackSnapshot
-
     fun apply(builder: OkHttpClient.Builder): OkHttpClient.Builder
 }
 
@@ -53,86 +64,85 @@ private data class DohResolverCache(
     val dns: Dns,
 )
 
-private fun String.toDohUrlOrNull(fallback: String): HttpUrl? {
-    val value = trim().ifBlank { fallback }
-    val normalized = when {
-        value.startsWith("https://") -> value
-        value.startsWith("http://") -> "https://${value.removePrefix("http://")}"
-        else -> "https://$value"
+internal fun strictDohUrl(value: String, field: String): HttpUrl {
+    val trimmed = value.trim()
+    if (trimmed.isBlank() || trimmed.startsWith("http://", ignoreCase = true)) {
+        throw UnknownHostException("$field must be a non-empty HTTPS DoH endpoint")
     }
-
-    return normalized.toHttpUrlOrNull()?.takeIf {
-        it.isHttps && it.encodedPath != "/"
+    val url = (if (trimmed.startsWith("https://", ignoreCase = true)) trimmed else "https://$trimmed")
+        .toHttpUrlOrNull()
+    if (url == null || !url.isHttps || url.encodedPath == "/" ||
+        url.username.isNotEmpty() || url.password.isNotEmpty() ||
+        url.query != null || url.fragment != null) {
+        throw UnknownHostException("$field is not a valid HTTPS DoH endpoint")
     }
+    return url
 }
 
 class ConfigurableDohDns(
     private val timeoutSeconds: Long = 10,
+    private val snapshotProvider: () -> NetworkStackSnapshot = NetworkStackSnapshot::fromPreferences,
 ) : Dns {
     @Volatile
     private var cache: DohResolverCache? = null
 
-    override fun lookup(hostname: String): List<InetAddress> {
-        return currentDns().lookup(hostname)
-    }
+    override fun lookup(hostname: String): List<InetAddress> = currentDns().lookup(hostname)
 
     private fun currentDns(): Dns {
-        val snapshot = NetworkStackSnapshot.fromPreferences()
+        val snapshot = snapshotProvider()
         val cached = cache
-        if (cached?.snapshot == snapshot) {
-            return cached.dns
-        }
+        if (cached?.snapshot == snapshot) return cached.dns
 
         synchronized(this) {
             val synchronizedCache = cache
-            if (synchronizedCache?.snapshot == snapshot) {
-                return synchronizedCache.dns
+            if (synchronizedCache?.snapshot == snapshot) return synchronizedCache.dns
+            return buildDns(snapshot).also {
+                cache = DohResolverCache(snapshot, it)
             }
-
-            val dns = buildDns(snapshot)
-            cache = DohResolverCache(snapshot = snapshot, dns = dns)
-            return dns
         }
     }
 
     private fun buildDns(snapshot: NetworkStackSnapshot): Dns {
-        if (!snapshot.dohEnabled) {
-            return Dns.SYSTEM
+        // The only path allowed to use system DNS is an explicit user opt-out.
+        if (!snapshot.dohEnabled) return Dns.SYSTEM
+
+        val upstreamUrl = strictDohUrl(snapshot.dohUpstream, "DoH upstream")
+        val endpointUrl = strictDohUrl(snapshot.dohEndpoint, "DoH endpoint")
+        val bootstrap = pinnedBootstrapAddresses[upstreamUrl.host]
+            ?: throw UnknownHostException(
+                "No trusted bootstrap IP is configured for ${upstreamUrl.host}; DoH fails closed"
+            )
+
+        // Reject any DNS lookup that is not for the approved bootstrap hostname.
+        val bootstrapOnly = Dns { hostname ->
+            if (hostname.equals(upstreamUrl.host, ignoreCase = true)) bootstrap
+            else throw UnknownHostException("Plaintext DNS bootstrap denied: $hostname")
         }
-
-        val upstreamUrl = snapshot.dohUpstream.toDohUrlOrNull(DEFAULT_NETWORK_DOH_UPSTREAM)
-            ?: return Dns.SYSTEM
-        val endpointUrl = snapshot.dohEndpoint.toDohUrlOrNull(DEFAULT_NETWORK_DOH_ENDPOINT)
-            ?: return Dns.SYSTEM
-
         val upstreamDns = DnsOverHttps.Builder()
-            .client(baseClient())
+            .client(baseClient(bootstrapOnly))
             .url(upstreamUrl)
+            .bootstrapDnsHosts(bootstrap)
             .build()
 
+        // Resolve the endpoint through the encrypted upstream, including custom endpoints.
+        // TLS validation continues to use endpointUrl.host, not the bootstrap IP.
         return DnsOverHttps.Builder()
-            .client(baseClient(dns = upstreamDns))
+            .client(baseClient(upstreamDns))
             .url(endpointUrl)
             .build()
     }
 
-    private fun baseClient(dns: Dns = Dns.SYSTEM): OkHttpClient {
-        return OkHttpClient.Builder()
-            .dns(dns)
-            .connectTimeout(timeoutSeconds, TimeUnit.SECONDS)
-            .readTimeout(timeoutSeconds, TimeUnit.SECONDS)
-            .build()
-    }
+    private fun baseClient(dns: Dns): OkHttpClient = OkHttpClient.Builder()
+        .dns(dns)
+        .connectTimeout(timeoutSeconds, TimeUnit.SECONDS)
+        .readTimeout(timeoutSeconds, TimeUnit.SECONDS)
+        .build()
 }
 
 class AppNetworkTransportPolicy(
     private val dns: ConfigurableDohDns,
 ) : NetworkTransportPolicy {
-    override fun currentSnapshot(): NetworkStackSnapshot {
-        return NetworkStackSnapshot.fromPreferences()
-    }
+    override fun currentSnapshot(): NetworkStackSnapshot = NetworkStackSnapshot.fromPreferences()
 
-    override fun apply(builder: OkHttpClient.Builder): OkHttpClient.Builder {
-        return builder.dns(dns)
-    }
+    override fun apply(builder: OkHttpClient.Builder): OkHttpClient.Builder = builder.dns(dns)
 }
