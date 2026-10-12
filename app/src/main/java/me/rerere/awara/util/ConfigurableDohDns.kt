@@ -114,9 +114,10 @@ class ConfigurableDohDns(
             )
 
         // Reject any DNS lookup that is not for the approved bootstrap hostname.
-        val bootstrapOnly = Dns { hostname ->
-            if (hostname.equals(upstreamUrl.host, ignoreCase = true)) bootstrap
-            else throw UnknownHostException("Plaintext DNS bootstrap denied: $hostname")
+        val bootstrapOnly = object : Dns {
+            override fun lookup(hostname: String): List<InetAddress> =
+                if (hostname.equals(upstreamUrl.host, ignoreCase = true)) bootstrap
+                else throw UnknownHostException("Plaintext DNS bootstrap denied: $hostname")
         }
         val upstreamDns = DnsOverHttps.Builder()
             .client(baseClient(bootstrapOnly))
