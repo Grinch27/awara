@@ -21,3 +21,8 @@ migration, not an unverified version sweep.
 These upgrades require Debug/Release + R8 build checks and real-device
 regression tests for notifications, downloads, lifecycle, paging/search,
 permissions, rotation, cold start, and process recreation.
+
+The ordinary GitHub Actions Debug lane now invokes `testDebugUnitTest` after APK
+compilation, so JVM tests such as strict DoH configuration validation and
+trusted-host checks must pass before artifacts are accepted. Instrumented
+Android UI/device tests are **not** run by this workflow.

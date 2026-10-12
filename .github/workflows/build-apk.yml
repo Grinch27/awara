@@ -61,6 +61,12 @@ jobs:
           ./gradlew --version
           ./gradlew assemble${{ matrix.build_type == 'debug' && 'Debug' || 'Release' }} --stacktrace
 
+      - name: JVM unit tests
+        if: matrix.build_type == 'debug'
+        run: |
+          set -euo pipefail
+          ./gradlew testDebugUnitTest --stacktrace
+
       - name: Upload APK
         uses: actions/upload-artifact@main
         with:
