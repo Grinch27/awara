@@ -13,7 +13,7 @@ android {
 dependencies {
     // Stable BOM: Compose 1.6.8 / Material3 1.2.1, within the current compileSdk 34 lane.
     implementation(platform("androidx.compose:compose-bom:2024.06.00"))
-    implementation("androidx.core:core-ktx:1.10.0")
+    implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-util")

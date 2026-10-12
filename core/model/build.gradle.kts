@@ -12,6 +12,7 @@ android {
 }
 
 dependencies {
-    implementation("androidx.compose.runtime:runtime:1.4.2")
+    implementation(platform("androidx.compose:compose-bom:2024.06.00"))
+    implementation("androidx.compose.runtime:runtime")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0")
 }
