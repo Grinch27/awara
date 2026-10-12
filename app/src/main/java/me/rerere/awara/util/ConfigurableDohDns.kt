@@ -124,11 +124,16 @@ class ConfigurableDohDns(
             .bootstrapDnsHosts(bootstrap)
             .build()
 
-        // Resolve the endpoint through the encrypted upstream, including custom endpoints.
-        // TLS validation continues to use endpointUrl.host, not the bootstrap IP.
+        // The upstream DoH resolver is already sufficient when both URLs are identical.
+        if (endpointUrl == upstreamUrl) return upstreamDns
+
+        // Resolve a distinct endpoint through the encrypted upstream. Set systemDns
+        // explicitly: DnsOverHttps.Builder must not silently replace the client's DNS.
+        // TLS validation still uses endpointUrl.host, never the bootstrap IP.
         return DnsOverHttps.Builder()
             .client(baseClient(upstreamDns))
             .url(endpointUrl)
+            .systemDns(upstreamDns)
             .build()
     }
 
