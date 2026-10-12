@@ -56,15 +56,21 @@ import me.rerere.awara.ui.component.player.PlayerState
 import me.rerere.awara.ui.component.player.rememberPlayerState
 import me.rerere.awara.ui.hooks.rememberRequestedScreenOrientation
 import me.rerere.awara.util.toLocalDateTimeString
+import okhttp3.OkHttpClient
+import org.koin.androidx.compose.get
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
-fun DownloadPage(vm: DownloadVM = koinViewModel()) {
+fun DownloadPage(
+    vm: DownloadVM = koinViewModel(),
+    publicHttpClient: OkHttpClient = get(),
+) {
     val items = vm.downloadedItems.collectAsLazyPagingItems()
     val appBarScrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
-    val state = rememberPlayerState {
-        ExoPlayer.Builder(it).build()
+    // Local downloaded files keep their existing ExoPlayer path: no network request.
+    val state = rememberPlayerState(publicHttpClient) { context, _ ->
+        ExoPlayer.Builder(context).build()
     }
     var requestOrientation by rememberRequestedScreenOrientation()
     var fullscreen by remember { mutableStateOf(false) }
