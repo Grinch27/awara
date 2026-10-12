@@ -21,7 +21,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     defaults:
       run:
         shell: bash
@@ -50,6 +50,10 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Sync Gradle wrapper to latest stable
+        run: |
+          set -euo pipefail
+          bash ./scripts/sync-gradle-wrapper.sh
 
       - name: Build APK
         run: |
