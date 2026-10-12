@@ -92,7 +92,10 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
 
     // Media
-    implementation("com.google.android.exoplayer:exoplayer:2.18.6")
+    // Media3 replaces legacy ExoPlayer 2. All media3 artifacts use the same version.
+    val media3Version = "1.4.1"
+    implementation("androidx.media3:media3-exoplayer:$media3Version")
+    implementation("androidx.media3:media3-ui:$media3Version")
 
     // WorkManager
     implementation("androidx.work:work-runtime-ktx:2.8.1")

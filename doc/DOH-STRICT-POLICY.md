@@ -30,3 +30,22 @@
   playback performance, signed CDN URL validity, caching, or DLNA behavior.
 - Manual validation must observe actual DNS and traffic; JVM unit tests
   cover invalid config and token host checks, not packet-level leak proof.
+
+## Media3 migration (P2-A / P2-B)
+- Deprecated `com.google.android.exoplayer2` playback dependencies were
+  replaced with AndroidX Media3 `1.4.1` in app and player modules.
+- Player UI uses Media3 `PlayerView`; the screen UI, aspect resizing,
+  state callbacks, local-file preview, loop, quality selection and DLNA
+  handoff logic are preserved in application code.
+- HLS and DASH extensions are explicitly included to preserve adaptive
+  streaming supported by the legacy aggregate ExoPlayer artifact.
+- Online playback still uses `androidx.media3.datasource.okhttp.OkHttpDataSource`
+  created with the unauthenticated public OkHttpClient (shared strict DoH).
+- Existing on-disk cache directory `player_cache` and cache key behavior
+  remain unchanged; runtime compatibility of the previously populated
+  cache must be checked with real media playback.
+- The selected Media3 release is a stable first migration baseline compatible
+  with the conservative Compose/SDK lane, not a claim of newest Media3 support.
+- GitHub CI can confirm Debug/Release compilation and shrinker success,
+  not real video decoding, seek, quality-switch, caching, DLNA or DNS leak
+  behavior. Device tests are still required.
