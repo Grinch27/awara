@@ -11,12 +11,14 @@ android {
 }
 
 dependencies {
+    // Stable BOM: Compose 1.6.8 / Material3 1.2.1, within the current compileSdk 34 lane.
+    implementation(platform("androidx.compose:compose-bom:2024.06.00"))
     implementation("androidx.core:core-ktx:1.10.0")
-    implementation("androidx.compose.ui:ui:1.4.2")
-    implementation("androidx.compose.ui:ui-graphics:1.4.2")
-    implementation("androidx.compose.ui:ui-util:1.4.2")
-    implementation("androidx.compose.material3:material3:1.1.0-rc01")
-    implementation("androidx.compose.material:material-icons-extended:1.4.2")
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-util")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-extended")
     implementation("com.google.android.exoplayer:exoplayer:2.18.6")
     implementation("com.google.android.exoplayer:extension-okhttp:2.18.6")
     implementation("com.squareup.okhttp3:okhttp:4.10.0")
