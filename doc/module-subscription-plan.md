@@ -70,7 +70,7 @@
 7. `git add` 相关文件。
 8. `git commit`。
 9. `git push`。
-10. `gh workflow run build-apk.yml --ref ci/privacy-gradle9-actions`。
+10. `gh workflow run build-apk.yml --ref dev`。
 11. 使用 `GH_PAGER=cat gh run view <run_id> --json status,conclusion,jobs,url,headSha` 查看结果。
 
 ## 3. 当前产品事实
