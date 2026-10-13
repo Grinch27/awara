@@ -17,7 +17,7 @@ import me.rerere.awara.data.source.onSuccess
 import me.rerere.awara.data.source.runAPICatching
 import me.rerere.compose_setting.preference.mmkvPreference
 import me.rerere.compose_setting.preference.rememberStringPreference
-import org.koin.androidx.compose.get
+import org.koin.compose.koinInject
 import org.koin.core.component.KoinComponent
 
 private const val TAG = "UserStore"
@@ -81,7 +81,7 @@ sealed class UserStoreAction {
 
 @Composable
 fun UserStoreProvider(
-    userRepo: UserRepo = get(),
+    userRepo: UserRepo = koinInject(),
     content: @Composable () -> Unit
 ) {
     val store = LocalUserStore.current

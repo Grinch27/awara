@@ -13,13 +13,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import coil.ImageLoader
-import coil.compose.AsyncImage
-import coil.compose.AsyncImagePainter
-import coil.compose.rememberAsyncImagePainter
+import coil3.ImageLoader
+import coil3.compose.AsyncImage
+import coil3.compose.AsyncImagePainter
+import coil3.compose.rememberAsyncImagePainter
 
 @Composable
 fun Avatar(
@@ -29,7 +30,7 @@ fun Avatar(
 ) {
     val state = rememberAsyncImagePainter(model = model)
     SkeletonBox(
-        show = state.state is AsyncImagePainter.State.Loading,
+        show = state.state.collectAsState().value is AsyncImagePainter.State.Loading,
         modifier = modifier
             .clip(CircleShape)
             .clickable {

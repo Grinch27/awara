@@ -22,6 +22,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,8 +30,8 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImagePainter
-import coil.compose.rememberAsyncImagePainter
+import coil3.compose.AsyncImagePainter
+import coil3.compose.rememberAsyncImagePainter
 import me.rerere.awara.R
 import me.rerere.awara.data.entity.Image as GalleryImage
 import me.rerere.awara.data.entity.Media
@@ -220,7 +221,7 @@ private fun MediaCover(
             )
         } else {
             SkeletonBox(
-                show = painter.state is AsyncImagePainter.State.Loading,
+                show = painter.state.collectAsState().value is AsyncImagePainter.State.Loading,
                 modifier = Modifier.fillMaxSize(),
             ) {
                 Image(

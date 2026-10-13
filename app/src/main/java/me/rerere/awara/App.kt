@@ -3,11 +3,12 @@ package me.rerere.awara
 import android.app.Application
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationManagerCompat
-import coil.ImageLoader
-import coil.ImageLoaderFactory
-import coil.decode.SvgDecoder
-import coil.disk.DiskCache
-import coil.memory.MemoryCache
+import coil3.ImageLoader
+import coil3.SingletonImageLoader
+import coil3.svg.SvgDecoder
+import coil3.disk.DiskCache
+import coil3.memory.MemoryCache
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import me.rerere.awara.di.databaseModule
 import me.rerere.awara.di.networkModule
 import me.rerere.awara.di.repoModule
@@ -23,7 +24,7 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 import org.koin.core.context.startKoin
 
-class App : Application(), ImageLoaderFactory, KoinComponent {
+class App : Application(), SingletonImageLoader.Factory, KoinComponent {
     override fun onCreate() {
         super.onCreate()
         registerErrorHandler()
@@ -52,20 +53,20 @@ class App : Application(), ImageLoaderFactory, KoinComponent {
         )
     }
 
-    override fun newImageLoader(): ImageLoader {
-        return ImageLoader.Builder(this)
-            .okHttpClient(get<OkHttpClient>())
+    override fun newImageLoader(context: android.content.Context): ImageLoader {
+        return ImageLoader.Builder(context)
             .components {
+                add(OkHttpNetworkFetcherFactory(callFactory = { get<OkHttpClient>() }))
                 add(SvgDecoder.Factory())
             }
             .memoryCache {
-                MemoryCache.Builder(this)
-                    .maxSizePercent(0.25)
+                MemoryCache.Builder()
+                    .maxSizePercent(context, 0.25)
                     .build()
             }
             .diskCache {
                 DiskCache.Builder()
-                    .directory(this.cacheDir.resolve("image_cache"))
+                    .directory(context.cacheDir.resolve("image_cache"))
                     .maxSizePercent(0.02)
                     .build()
             }

@@ -143,8 +143,10 @@ dependencies {
     implementation("org.jetbrains:markdown:+")
 
     // Coil
-    implementation("io.coil-kt:coil-compose:+")
-    implementation("io.coil-kt:coil-svg:+")
+    implementation("io.coil-kt.coil3:coil:+")
+    implementation("io.coil-kt.coil3:coil-compose:+")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:+")
+    implementation("io.coil-kt.coil3:coil-svg:+")
 
     // Profile Installer
     implementation("androidx.profileinstaller:profileinstaller:+")

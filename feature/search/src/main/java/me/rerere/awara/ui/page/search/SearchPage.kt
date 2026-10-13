@@ -80,7 +80,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import me.rerere.awara.feature.search.R
@@ -92,7 +92,7 @@ import me.rerere.awara.ui.component.iwara.param.rating.SETTING_MEDIA_SEARCH_RATI
 import me.rerere.awara.ui.component.iwara.param.sort.DEFAULT_MEDIA_SORT
 import me.rerere.awara.ui.component.iwara.param.sort.MediaSortKeys
 import me.rerere.compose_setting.preference.rememberStringPreference
-import org.koin.androidx.compose.get
+import org.koin.compose.koinInject
 import org.koin.androidx.compose.koinViewModel
 import java.util.Calendar
 
@@ -840,7 +840,7 @@ private fun TagBrowseButton(
     onTagSelected: (String) -> Unit,
     onTagRemove: (FilterValue) -> Unit,
 ) {
-    val searchRepository = get<SearchRepository>()
+    val searchRepository = koinInject<SearchRepository>()
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val defaultError = stringResource(R.string.search_error_default)

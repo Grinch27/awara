@@ -43,7 +43,7 @@ import me.rerere.awara.data.source.stringResource
 import me.rerere.awara.ui.LocalMessageProvider
 import me.rerere.awara.ui.component.iwara.param.FilterChipCloseIcon
 import me.rerere.awara.ui.component.iwara.param.FilterValue
-import org.koin.androidx.compose.get
+import org.koin.compose.koinInject
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -60,7 +60,7 @@ fun TagFilter(
 
     // query
     val message = LocalMessageProvider.current
-    val mediaRepo = get<MediaRepo>()
+    val mediaRepo = koinInject<MediaRepo>()
     val scope = rememberCoroutineScope()
     var query by remember {
         mutableStateOf("")
