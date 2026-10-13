@@ -81,9 +81,9 @@ jobs:
           set -o pipefail
 
           sdkmanager \
-            "build-tools;34.0.0" \
+            "build-tools;36.0.0" \
             "platform-tools" \
-            "platforms;android-34"
+            "platforms;android-37"
 
       - name: Sync Gradle wrapper to latest stable
         run: |
@@ -98,12 +98,37 @@ jobs:
         run: |
           set -euo pipefail
           ./gradlew --version
-          ./gradlew assembleDebug --stacktrace --no-daemon
+          ./gradlew --refresh-dependencies assembleDebug --stacktrace --no-daemon
+
+      - name: Record actual resolved versions
+        if: always()
+        env:
+          JAVA_HOME: /usr/lib/jvm/java-21-openjdk-amd64
+        run: |
+          set -e
+          mkdir -p build/reports/versions
+          ./gradlew :app:reportResolvedVersions > build/reports/versions/report.log 2>&1 || cat build/reports/versions/report.log
+          ./gradlew -p build-logic reportBuildPluginVersions > build/reports/versions/plugins.log 2>&1 || cat build/reports/versions/plugins.log
+          cp -f build-logic/build/reports/versions/build-plugins.txt build/reports/versions/ 2>/dev/null || true
+          python3 - <<'PY'
+          import datetime, hashlib, json, os, pathlib
+          root = pathlib.Path("build/reports/versions")
+          apks = sorted(pathlib.Path("app/build/outputs/apk").glob("**/*.apk"))
+          files = [{"file": str(p), "sha256": hashlib.sha256(p.read_bytes()).hexdigest(), "bytes": p.stat().st_size} for p in apks]
+          info = {"utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                  "commit": os.environ.get("GITHUB_SHA", ""), "ref": os.environ.get("GITHUB_REF", ""),
+                  "build_type": "debug-docker", "apks": files}
+          (root/"build-info.json").write_text(json.dumps(info, indent=2)+"\n")
+          (root/"checksums.sha256").write_text("".join(f'{a["sha256"]}  {a["file"]}\n' for a in files))
+          PY
 
       - name: Upload APK
         uses: actions/upload-artifact@main
         with:
           name: app-debug-docker
-          path: app/build/outputs/apk/debug/*.apk
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/reports/versions/
+            build/reports/versions/
           compression-level: 9
-          retention-days: 1
+          retention-days: 30

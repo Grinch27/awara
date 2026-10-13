@@ -59,7 +59,7 @@ jobs:
         run: |
           set -euo pipefail
           ./gradlew --version
-          ./gradlew assemble${{ matrix.build_type == 'debug' && 'Debug' || 'Release' }} --stacktrace
+          ./gradlew --refresh-dependencies assemble${{ matrix.build_type == 'debug' && 'Debug' || 'Release' }} --stacktrace
 
       - name: JVM unit tests
         if: matrix.build_type == 'debug'
@@ -67,10 +67,34 @@ jobs:
           set -euo pipefail
           ./gradlew testDebugUnitTest --stacktrace
 
+      - name: Record actual resolved versions
+        if: always()
+        run: |
+          mkdir -p build/reports/versions
+          ./gradlew :app:reportResolvedVersions > build/reports/versions/report.log 2>&1 || cat build/reports/versions/report.log
+          ./gradlew -p build-logic reportBuildPluginVersions > build/reports/versions/plugins.log 2>&1 || cat build/reports/versions/plugins.log
+          cp -f build-logic/build/reports/versions/build-plugins.txt build/reports/versions/ 2>/dev/null || true
+          python3 - <<'PY'
+          import datetime, hashlib, json, os, pathlib, subprocess
+          root = pathlib.Path("build/reports/versions")
+          root.mkdir(parents=True, exist_ok=True)
+          apks = sorted(pathlib.Path("app/build/outputs/apk").glob("**/*.apk"))
+          files = [{"file": str(p), "sha256": hashlib.sha256(p.read_bytes()).hexdigest(), "bytes": p.stat().st_size} for p in apks]
+          data = {"utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                  "commit": os.environ.get("GITHUB_SHA", ""), "ref": os.environ.get("GITHUB_REF", ""),
+                  "build_type": "${{ matrix.build_type }}", "java_home": os.environ.get("JAVA_HOME", ""),
+                  "apks": files}
+          (root/"build-info.json").write_text(json.dumps(data, indent=2, ensure_ascii=False)+"\n")
+          (root/"checksums.sha256").write_text("".join(f'{a["sha256"]}  {a["file"]}\n' for a in files))
+          PY
+
       - name: Upload APK
         uses: actions/upload-artifact@main
         with:
           name: app-${{ matrix.build_type }}
-          path: app/build/outputs/apk/${{ matrix.build_type }}/*.apk
+          path: |
+            app/build/outputs/apk/${{ matrix.build_type }}/*.apk
+            app/build/reports/versions/
+            build/reports/versions/
           compression-level: 9 # maximum compression
-          retention-days: 1
+          retention-days: 30

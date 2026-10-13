@@ -11,7 +11,7 @@ import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.dsl.KotlinTopLevelExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 
-private const val COMPILE_SDK = 34
+private const val COMPILE_SDK = 37
 private const val MIN_SDK = 26
 private const val TARGET_SDK = 33
 private const val JVM_VERSION = 17

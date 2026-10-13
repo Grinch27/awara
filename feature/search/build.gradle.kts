@@ -12,17 +12,17 @@ android {
 
 dependencies {
     // Stable BOM: Compose 1.6.8 / Material3 1.2.1, within the current compileSdk 34 lane.
-    implementation(platform("androidx.compose:compose-bom:2024.06.00"))
+    implementation(platform("androidx.compose:compose-bom:latest.release"))
     implementation(project(":core:model"))
     implementation(project(":data"))
 
-    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.core:core-ktx:latest.release")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-util")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
-    implementation("io.coil-kt:coil-compose:2.3.0")
-    implementation("com.github.re-ovo:compose-setting:1.1")
-    implementation("io.insert-koin:koin-androidx-compose:3.4.4")
+    implementation("io.coil-kt:coil-compose:latest.release")
+    implementation("com.github.re-ovo:compose-setting:latest.release")
+    implementation("io.insert-koin:koin-androidx-compose:latest.release")
 }
