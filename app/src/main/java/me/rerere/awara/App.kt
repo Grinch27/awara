@@ -7,6 +7,7 @@ import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.svg.SvgDecoder
 import coil3.disk.DiskCache
+import coil3.asImage
 import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import me.rerere.awara.di.databaseModule
@@ -70,8 +71,8 @@ class App : Application(), SingletonImageLoader.Factory, KoinComponent {
                     .maxSizePercent(0.02)
                     .build()
             }
-            .fallback(R.drawable.default_background)
-            .error(R.drawable.cancel)
+            .fallback(context.getDrawable(R.drawable.default_background)?.asImage())
+            .error(context.getDrawable(R.drawable.cancel)?.asImage())
             .build()
     }
 }
