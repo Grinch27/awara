@@ -1,5 +1,6 @@
 package me.rerere.awara.ui.page.download
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
@@ -9,11 +10,14 @@ import kotlinx.coroutines.launch
 import me.rerere.awara.data.entity.DownloadItem
 import me.rerere.awara.di.AppDatabase
 import org.koin.core.component.KoinComponent
-import java.io.File
+import me.rerere.awara.util.ManagedDownloadFiles
+import org.koin.core.component.inject
 
 class DownloadVM(
     private val appDatabase: AppDatabase,
 ) : ViewModel(), KoinComponent {
+    private val appContext: Context by inject()
+
     val downloadedItems = Pager(
         config = PagingConfig(
             pageSize = 32,
@@ -29,7 +33,7 @@ class DownloadVM(
     fun delete(item: DownloadItem) {
         viewModelScope.launch {
             kotlin.runCatching {
-                File(item.path).takeIf { it.exists() }?.delete()
+                ManagedDownloadFiles.deleteIfManaged(appContext, item)
                 appDatabase.downloadDao().deleteDownloadItem(item)
             }
         }

@@ -3,7 +3,6 @@ package me.rerere.awara.worker
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.os.Environment
 import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
@@ -19,6 +18,7 @@ import me.rerere.awara.data.entity.DownloadType
 import me.rerere.awara.di.AppDatabase
 import me.rerere.awara.util.await
 import me.rerere.awara.util.prettyFileSize
+import me.rerere.awara.util.ManagedDownloadFiles
 import okhttp3.Request
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -69,22 +69,11 @@ class DownloadWorker(
         val type = inputData.getString(KEY_DOWNLOAD_TYPE) ?: return Result.failure()
         val resourceId = inputData.getString(KEY_DOWNLOAD_RESOURCE_ID) ?: return Result.failure()
 
-        val destinationDir =
-            appContext.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)?.resolve(type)
-                ?: return Result.failure()
-        if (!destinationDir.exists()) {
-            destinationDir.mkdirs()
-        }
-
-        val fileName = "${title.trim()}.$resourceId.${Instant.now().epochSecond}"
-        val destinationFile = destinationDir.resolve(fileName)
-        if (destinationFile.exists()) {
-            destinationFile.delete()
-        }
-
-        withContext(Dispatchers.IO) {
-            destinationFile.createNewFile()
-        }
+        val downloadType = runCatching { DownloadType.valueOf(type) }.getOrNull()
+            ?: return Result.failure()
+        val destinationFile = runCatching {
+            ManagedDownloadFiles.create(appContext, downloadType)
+        }.getOrNull() ?: return Result.failure()
 
         Log.i(TAG, "doWork: 开始下载: $url => ${destinationFile.absolutePath}")
         setForeground(
@@ -146,7 +135,7 @@ class DownloadWorker(
                         DownloadItem(
                             title = title,
                             thumbnail = thumbnail,
-                            type = DownloadType.valueOf(type),
+                            type = downloadType,
                             resourceId = resourceId,
                             path = destinationFile.absolutePath,
                             time = Instant.now()
