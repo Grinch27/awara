@@ -57,7 +57,8 @@ jobs:
 
       - name: Install Android 17 compile SDK
         run: |
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "build-tools;36.0.0"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/android" --sdk="$ANDROID_HOME" sdk install \
+            "platforms/android-37.0" "build-tools/36.0.0"
 
       - name: Build APK
         run: |

@@ -75,16 +75,12 @@ jobs:
           mv "${ANDROID_SDK_ROOT}/cmdline-tools/cmdline-tools" "${ANDROID_SDK_ROOT}/cmdline-tools/latest"
           export PATH="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin:${ANDROID_SDK_ROOT}/platform-tools:${PATH}"
 
-          # sdkmanager exits as soon as it has enough answers, which would otherwise trip pipefail via yes(1).
-          set +o pipefail
-          yes | sdkmanager --licenses >/dev/null
-          set -o pipefail
-
-          sdkmanager "cmdline-tools;latest"
-          sdkmanager \
-            "build-tools;36.0.0" \
+          # Android CLI replaces sdkmanager; avoid duplicate cmdline-tools/latest-2 installation.
+          # SDK installation fails closed if required licenses have not been accepted.
+          "${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/android" --sdk="${ANDROID_SDK_ROOT}" sdk install \
+            "build-tools/36.0.0" \
             "platform-tools" \
-            "platforms;android-37.0"
+            "platforms/android-37.0"
 
       - name: Sync Gradle wrapper to latest stable
         run: |
