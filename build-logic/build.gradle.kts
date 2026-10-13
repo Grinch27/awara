@@ -23,7 +23,7 @@ configurations.configureEach {
     val currentConfiguration = this
     resolutionStrategy.componentSelection.all {
         // Do not reject pre-release transitive dependencies required by stable artifacts.
-        val requestedDirectly = currentConfiguration.dependencies.any { dependency ->
+        val requestedDirectly = currentConfiguration.allDependencies.any { dependency ->
             dependency.group == candidate.group && dependency.name == candidate.module &&
                 dependency.version == "+"
         }
