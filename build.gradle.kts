@@ -1,18 +1,17 @@
-// TODO(user): Decide whether dependency versions should move next into a version catalog once build-logic is stable.
-// TODO(agent): If root-level shared verification tasks are added later, keep them here and leave module conventions inside build-logic.
-// Resolve new releases on each build, but never opt into preview, RC or snapshots.
-configurations.configureEach {
-    val currentConfiguration = this
-    resolutionStrategy.componentSelection.all {
-        // Do not reject pre-release transitive dependencies required by stable artifacts.
-        val requestedDirectly = currentConfiguration.allDependencies.any { dependency ->
-            dependency.group == candidate.group && dependency.name == candidate.module &&
-                dependency.version == "+"
-        }
-        if (requestedDirectly) {
-            val unstable = Regex("(?i)(?:^|[.-])(?:alpha|beta|rc|cr|snapshot|preview|canary|dev|eap|milestone|m[0-9]+)(?:[.-]?[0-9]+)?(?:$|[.-])")
-            if (unstable.containsMatchIn(candidate.version)) {
-                reject("Awara selects stable versions for dynamic direct dependencies")
+// TODO(user): Confirm whether preview-only libraries will ever need an explicit allowlist.
+// TODO(agent): If a stable library requires a preview transitive, diagnose with dependencyInsight;
+// never force an incompatible ABI or silently accept a preview version.
+// Risk: newly published stable artifacts may expose previously hidden preview transitive requirements.
+// Verify: Debug, Release and Docker Debug builds and resolved classpaths, without application tests.
+// Resolve latest stable candidates during the build in every project, including transitive dependencies.
+val prereleaseVersion = Regex(
+    "(?i)(?:^|[._-])(?:alpha|beta|rc|cr|snapshot|preview|canary|dev|eap|milestone|m[0-9]+)(?:[._-]?[0-9]+)?(?=$|[._-])"
+)
+allprojects {
+    configurations.configureEach {
+        resolutionStrategy.componentSelection.all {
+            if (prereleaseVersion.containsMatchIn(candidate.version)) {
+                reject("Awara forbids prerelease artifacts: ${candidate.version}")
             }
         }
     }

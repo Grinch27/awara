@@ -18,20 +18,16 @@ dependencies {
     implementation("org.jetbrains.kotlin.plugin.serialization:org.jetbrains.kotlin.plugin.serialization.gradle.plugin:+")
     implementation("com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin:+")
 }
-// Resolve new releases on each build, but never opt into preview, RC or snapshots.
+// TODO(agent): If stable plugin metadata requires preview transitives, stop and inspect the graph.
+// Risk: rejecting prerelease build plugins may expose an incompatible stable-only dependency graph.
+// Verify: resolve build plugins and compile Debug, Release and Docker Debug without application tests.
+val prereleaseVersion = Regex(
+    "(?i)(?:^|[._-])(?:alpha|beta|rc|cr|snapshot|preview|canary|dev|eap|milestone|m[0-9]+)(?:[._-]?[0-9]+)?(?=$|[._-])"
+)
 configurations.configureEach {
-    val currentConfiguration = this
     resolutionStrategy.componentSelection.all {
-        // Do not reject pre-release transitive dependencies required by stable artifacts.
-        val requestedDirectly = currentConfiguration.allDependencies.any { dependency ->
-            dependency.group == candidate.group && dependency.name == candidate.module &&
-                dependency.version == "+"
-        }
-        if (requestedDirectly) {
-            val unstable = Regex("(?i)(?:^|[.-])(?:alpha|beta|rc|cr|snapshot|preview|canary|dev|eap|milestone|m[0-9]+)(?:[.-]?[0-9]+)?(?:$|[.-])")
-            if (unstable.containsMatchIn(candidate.version)) {
-                reject("Awara selects stable versions for dynamic direct dependencies")
-            }
+        if (prereleaseVersion.containsMatchIn(candidate.version)) {
+            reject("Awara build plugins must resolve stable artifacts: ${candidate.version}")
         }
     }
 }
