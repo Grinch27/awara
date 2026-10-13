@@ -9,6 +9,23 @@ val prereleaseVersion = Regex(
 )
 allprojects {
     configurations.configureEach {
+        // TODO(agent): Revisit these two exact transitive dependencies when upstream metadata stabilizes.
+        // Risk: substituting a stable ABI for a preview dependency may expose runtime incompatibilities.
+        // Verify: inspect resolved Kotlin/JetBrains Lifecycle versions and all three APK builds.
+        // Koin 4.2.2 requests JetBrains Lifecycle beta while its stable release exists.
+        // Kotlin stdlib preview can otherwise dominate version conflict selection.
+        resolutionStrategy.eachDependency {
+            val requestedVersion = requested.version
+            val stableReplacement =
+                (requested.group == "org.jetbrains.kotlin" && requested.name == "kotlin-stdlib") ||
+                (requested.group == "org.jetbrains.androidx.lifecycle" &&
+                    requested.name == "lifecycle-viewmodel-compose")
+            if (stableReplacement && requestedVersion != null &&
+                prereleaseVersion.containsMatchIn(requestedVersion)) {
+                useVersion("+")
+                because("Replace known preview transitive request with latest stable candidate")
+            }
+        }
         resolutionStrategy.componentSelection.all {
             if (prereleaseVersion.containsMatchIn(candidate.version)) {
                 reject("Awara forbids prerelease artifacts: ${candidate.version}")
