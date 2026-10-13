@@ -20,10 +20,18 @@ dependencies {
 }
 // Resolve new releases on each build, but never opt into preview, RC or snapshots.
 configurations.configureEach {
+    val currentConfiguration = this
     resolutionStrategy.componentSelection.all {
-        val unstable = Regex("(?i)(?:^|[.-])(?:alpha|beta|rc|cr|snapshot|preview|canary|dev|eap|milestone|m[0-9]+)(?:[.-]?[0-9]+)?(?:$|[.-])")
-        if (unstable.containsMatchIn(candidate.version)) {
-            reject("Awara uses stable releases only")
+        // Do not reject pre-release transitive dependencies required by stable artifacts.
+        val requestedDirectly = currentConfiguration.dependencies.any { dependency ->
+            dependency.group == candidate.group && dependency.name == candidate.module &&
+                dependency.version == "+"
+        }
+        if (requestedDirectly) {
+            val unstable = Regex("(?i)(?:^|[.-])(?:alpha|beta|rc|cr|snapshot|preview|canary|dev|eap|milestone|m[0-9]+)(?:[.-]?[0-9]+)?(?:$|[.-])")
+            if (unstable.containsMatchIn(candidate.version)) {
+                reject("Awara selects stable versions for dynamic direct dependencies")
+            }
         }
     }
 }
