@@ -57,8 +57,19 @@ jobs:
 
       - name: Install Android 17 compile SDK
         run: |
-          "$ANDROID_HOME/cmdline-tools/latest/bin/android" --sdk="$ANDROID_HOME" sdk install \
-            "platforms/android-37.0" "build-tools/36.0.0"
+          set -euo pipefail
+          android_cli="$ANDROID_HOME/cmdline-tools/latest/bin/android"
+          if [[ -x "${android_cli}" ]]; then
+            "${android_cli}" --sdk="$ANDROID_HOME" sdk install \
+              "platforms/android-37.0" "build-tools/36.0.0"
+          else
+            # TODO(agent): Remove this compatibility branch only after runner-images ships Android CLI.
+            # Risk: GitHub-hosted runners can still provide sdkmanager without the android binary.
+            # Verify: both runner and Docker compile SDK installation paths and fail closed on errors.
+            echo "Android CLI unavailable on this runner; using existing sdkmanager compatibility path." >&2
+            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+              "platforms;android-37.0" "build-tools;36.0.0"
+          fi
 
       - name: Build APK
         run: |
