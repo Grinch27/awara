@@ -9,6 +9,13 @@ val prereleaseVersion = Regex(
 )
 allprojects {
     configurations.configureEach {
+        // TODO(agent): Only filter APK dependency classpaths, not AGP/Kotlin compiler tool classpaths.
+        // Risk: Kotlin and AGP internal tools legitimately request preview-classified dependencies.
+        // Verify: no previews in app compile/runtime reports; Kotlin compiler configs still resolve.
+        if (!name.endsWith("CompileClasspath", ignoreCase = true) &&
+            !name.endsWith("RuntimeClasspath", ignoreCase = true)) {
+            return@configureEach
+        }
         // TODO(agent): Revisit these two exact transitive dependencies when upstream metadata stabilizes.
         // Risk: substituting a stable ABI for a preview dependency may expose runtime incompatibilities.
         // Verify: inspect resolved Kotlin/JetBrains Lifecycle versions and all three APK builds.
