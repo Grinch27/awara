@@ -12,11 +12,11 @@ java {
 }
 
 dependencies {
-    implementation("com.android.tools.build:gradle:latest.release")
-    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:latest.release")
-    implementation("org.jetbrains.kotlin.plugin.compose:org.jetbrains.kotlin.plugin.compose.gradle.plugin:latest.release")
-    implementation("org.jetbrains.kotlin.plugin.serialization:org.jetbrains.kotlin.plugin.serialization.gradle.plugin:latest.release")
-    implementation("com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin:latest.release")
+    implementation("com.android.tools.build:gradle:+")
+    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:+")
+    implementation("org.jetbrains.kotlin.plugin.compose:org.jetbrains.kotlin.plugin.compose.gradle.plugin:+")
+    implementation("org.jetbrains.kotlin.plugin.serialization:org.jetbrains.kotlin.plugin.serialization.gradle.plugin:+")
+    implementation("com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin:+")
 }
 // Resolve new releases on each build, but never opt into preview, RC or snapshots.
 configurations.configureEach {

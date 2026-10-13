@@ -17,7 +17,7 @@ private const val TARGET_SDK = 33
 private const val JVM_VERSION = 17
 
 internal fun ApplicationExtension.configureAwaraAndroidApplication() {
-    compileSdk = COMPILE_SDK
+    compileSdk { version = release(COMPILE_SDK) { minorApiLevel = 0 } }
 
     defaultConfig {
         minSdk = MIN_SDK
@@ -45,7 +45,7 @@ internal fun ApplicationExtension.configureAwaraAndroidApplication() {
 }
 
 internal fun LibraryExtension.configureAwaraAndroidLibrary() {
-    compileSdk = COMPILE_SDK
+    compileSdk { version = release(COMPILE_SDK) { minorApiLevel = 0 } }
 
     defaultConfig {
         minSdk = MIN_SDK

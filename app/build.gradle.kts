@@ -66,8 +66,8 @@ kotlin {
 
 dependencies {
     // Stable BOM: Compose 1.6.8 / Material3 1.2.1, within the current compileSdk 34 lane.
-    implementation(platform("androidx.compose:compose-bom:latest.release"))
-    val roomVersion = "latest.release"
+    implementation(platform("androidx.compose:compose-bom:+"))
+    val roomVersion = "+"
 
     implementation(project(":core:model"))
     implementation(project(":data"))
@@ -75,12 +75,12 @@ dependencies {
     implementation(project(":feature:search"))
 
     // Android KTX
-    implementation("androidx.core:core-ktx:latest.release")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:latest.release")
-    implementation("androidx.activity:activity-compose:latest.release")
+    implementation("androidx.core:core-ktx:+")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:+")
+    implementation("androidx.activity:activity-compose:+")
 
     // MDC (仅用于提供动态取色算法，用于在视频页面动态取色)
-    implementation("com.google.android.material:material:latest.release")
+    implementation("com.google.android.material:material:+")
 
     // Compose
     implementation("androidx.compose.ui:ui")
@@ -93,12 +93,12 @@ dependencies {
 
     // Media
     // Media3 replaces legacy ExoPlayer 2. All media3 artifacts use the same version.
-    val media3Version = "latest.release"
+    val media3Version = "+"
     implementation("androidx.media3:media3-exoplayer:$media3Version")
     implementation("androidx.media3:media3-ui:$media3Version")
 
     // WorkManager
-    implementation("androidx.work:work-runtime-ktx:latest.release")
+    implementation("androidx.work:work-runtime-ktx:+")
 
     // Room
     implementation("androidx.room:room-runtime:$roomVersion")
@@ -107,55 +107,55 @@ dependencies {
     ksp("androidx.room:room-compiler:$roomVersion")
 
     // Paging3
-    implementation("androidx.paging:paging-runtime:latest.release")
-    implementation("androidx.paging:paging-compose:latest.release")
+    implementation("androidx.paging:paging-runtime:+")
+    implementation("androidx.paging:paging-compose:+")
 
     // Accompanist
-    implementation("androidx.navigation:navigation-compose:latest.release")
-    implementation("com.google.accompanist:accompanist-permissions:latest.release")
+    implementation("androidx.navigation:navigation-compose:+")
+    implementation("com.google.accompanist:accompanist-permissions:+")
 
     // Splash
-    implementation("androidx.core:core-splashscreen:latest.release")
+    implementation("androidx.core:core-splashscreen:+")
 
     // MMUPnP
-    implementation("net.mm2d.mmupnp:mmupnp:latest.release")
+    implementation("net.mm2d.mmupnp:mmupnp:+")
     // Setting
-    implementation("com.github.re-ovo:compose-setting:latest.release")
+    implementation("com.github.re-ovo:compose-setting:+")
 
     // Koin
-    implementation("io.insert-koin:koin-androidx-compose:latest.release")
+    implementation("io.insert-koin:koin-androidx-compose:+")
 
     // OkHttp
-    implementation("com.squareup.okhttp3:okhttp:latest.release")
-    implementation("com.squareup.okhttp3:okhttp-dnsoverhttps:latest.release")
-    implementation("com.squareup.okhttp3:logging-interceptor:latest.release")
+    implementation("com.squareup.okhttp3:okhttp:+")
+    implementation("com.squareup.okhttp3:okhttp-dnsoverhttps:+")
+    implementation("com.squareup.okhttp3:logging-interceptor:+")
 
     // Retrofit
-    implementation("com.squareup.retrofit2:retrofit:latest.release")
+    implementation("com.squareup.retrofit2:retrofit:+")
 
     // Lottie
-    implementation("com.airbnb.android:lottie-compose:latest.release")
+    implementation("com.airbnb.android:lottie-compose:+")
 
     // Kotlinx Serialization
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:latest.release")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:+")
 
     // Markdown
-    implementation("org.jetbrains:markdown:latest.release")
+    implementation("org.jetbrains:markdown:+")
 
     // Coil
-    implementation("io.coil-kt:coil-compose:latest.release")
-    implementation("io.coil-kt:coil-svg:latest.release")
+    implementation("io.coil-kt:coil-compose:+")
+    implementation("io.coil-kt:coil-svg:+")
 
     // Profile Installer
-    implementation("androidx.profileinstaller:profileinstaller:latest.release")
+    implementation("androidx.profileinstaller:profileinstaller:+")
 
     // Test
-    testImplementation("junit:junit:latest.release")
-    androidTestImplementation("androidx.test.ext:junit:latest.release")
-    androidTestImplementation("androidx.test.espresso:espresso-core:latest.release")
+    testImplementation("junit:junit:+")
+    androidTestImplementation("androidx.test.ext:junit:+")
+    androidTestImplementation("androidx.test.espresso:espresso-core:+")
     // Instrumented Media3/DoH transport smoke tests need a direct test compile dependency.
     androidTestImplementation("androidx.media3:media3-datasource-okhttp:$media3Version")
-    androidTestImplementation(platform("androidx.compose:compose-bom:latest.release"))
+    androidTestImplementation(platform("androidx.compose:compose-bom:+"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
@@ -183,7 +183,7 @@ tasks.register("reportResolvedVersions") {
         output.resolve("build-environment.txt").writeText(
             "gradle=${gradle.gradleVersion}\n" +
                 "java=${System.getProperty("java.version")}\n" +
-                "compileSdk=37\nminSdk=26\ntargetSdk=33\n"
+                "compileSdk=37.0\nminSdk=26\ntargetSdk=33\n"
         )
     }
 }

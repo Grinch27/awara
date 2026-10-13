@@ -12,20 +12,20 @@ android {
 
 dependencies {
     // Stable BOM: Compose 1.6.8 / Material3 1.2.1, within the current compileSdk 34 lane.
-    implementation(platform("androidx.compose:compose-bom:latest.release"))
-    implementation("androidx.core:core-ktx:latest.release")
+    implementation(platform("androidx.compose:compose-bom:+"))
+    implementation("androidx.core:core-ktx:+")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-util")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
-    val media3Version = "latest.release"
+    val media3Version = "+"
     implementation("androidx.media3:media3-exoplayer:$media3Version")
     implementation("androidx.media3:media3-exoplayer-hls:$media3Version")
     implementation("androidx.media3:media3-exoplayer-dash:$media3Version")
     implementation("androidx.media3:media3-ui:$media3Version")
     implementation("androidx.media3:media3-datasource-okhttp:$media3Version")
-    implementation("com.squareup.okhttp3:okhttp:latest.release")
-    implementation("net.mm2d.mmupnp:mmupnp:latest.release")
-    implementation("com.github.re-ovo:compose-setting:latest.release")
+    implementation("com.squareup.okhttp3:okhttp:+")
+    implementation("net.mm2d.mmupnp:mmupnp:+")
+    implementation("com.github.re-ovo:compose-setting:+")
 }

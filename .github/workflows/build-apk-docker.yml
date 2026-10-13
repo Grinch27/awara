@@ -69,7 +69,7 @@ jobs:
           set -euo pipefail
           mkdir -p "${ANDROID_SDK_ROOT}/cmdline-tools"
           curl -fsSL \
-            https://dl.google.com/android/repository/commandlinetools-linux-13114758_latest.zip \
+            https://dl.google.com/android/repository/commandlinetools-linux-15859902_latest.zip \
             -o /tmp/android-cmdline-tools.zip
           unzip -q /tmp/android-cmdline-tools.zip -d "${ANDROID_SDK_ROOT}/cmdline-tools"
           mv "${ANDROID_SDK_ROOT}/cmdline-tools/cmdline-tools" "${ANDROID_SDK_ROOT}/cmdline-tools/latest"
@@ -80,10 +80,11 @@ jobs:
           yes | sdkmanager --licenses >/dev/null
           set -o pipefail
 
+          sdkmanager "cmdline-tools;latest"
           sdkmanager \
             "build-tools;36.0.0" \
             "platform-tools" \
-            "platforms;android-37"
+            "platforms;android-37.0"
 
       - name: Sync Gradle wrapper to latest stable
         run: |
@@ -123,6 +124,7 @@ jobs:
           PY
 
       - name: Upload APK
+        if: always()
         uses: actions/upload-artifact@main
         with:
           name: app-debug-docker

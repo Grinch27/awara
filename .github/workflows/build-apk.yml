@@ -55,6 +55,10 @@ jobs:
           set -euo pipefail
           bash ./scripts/sync-gradle-wrapper.sh
 
+      - name: Install Android 17 compile SDK
+        run: |
+          sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
+
       - name: Build APK
         run: |
           set -euo pipefail
@@ -89,6 +93,7 @@ jobs:
           PY
 
       - name: Upload APK
+        if: always()
         uses: actions/upload-artifact@main
         with:
           name: app-${{ matrix.build_type }}
