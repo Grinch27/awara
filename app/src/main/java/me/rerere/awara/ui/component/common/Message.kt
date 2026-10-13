@@ -108,7 +108,7 @@ private fun BoxScope.MessageList(
         items(messages) { message ->
             OutlinedCard(
                 modifier = Modifier
-                    .animateItemPlacement()
+                    .animateItem()
                     .padding(2.dp),
                 shape = MaterialTheme.shapes.medium,
             ) {

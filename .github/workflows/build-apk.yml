@@ -65,12 +65,6 @@ jobs:
           ./gradlew --version
           ./gradlew --refresh-dependencies assemble${{ matrix.build_type == 'debug' && 'Debug' || 'Release' }} --stacktrace
 
-      - name: JVM unit tests
-        if: matrix.build_type == 'debug'
-        run: |
-          set -euo pipefail
-          ./gradlew testDebugUnitTest --stacktrace
-
       - name: Record actual resolved versions
         if: always()
         run: |

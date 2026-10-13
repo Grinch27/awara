@@ -59,11 +59,11 @@ import androidx.work.Data
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
-import androidx.work.await
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 import me.rerere.awara.R
 import me.rerere.awara.data.entity.Video
 import me.rerere.awara.data.entity.fixUrl
@@ -268,7 +268,7 @@ private fun VideoInfoCard(video: Video, vm: VideoVM) {
                                 return@launch
                             }
 
-                            if (workManager.getWorkInfosByTag(vm.id).await().any { it.state == WorkInfo.State.RUNNING || it.state == WorkInfo.State.ENQUEUED }) {
+                            if (workManager.getWorkInfosByTagFlow(vm.id).first().any { it.state == WorkInfo.State.RUNNING || it.state == WorkInfo.State.ENQUEUED }) {
                                 message.error { Text(stringResource(R.string.already_downloading)) }
                                 return@launch
                             }
