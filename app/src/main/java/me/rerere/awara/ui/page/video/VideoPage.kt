@@ -52,13 +52,13 @@ import me.rerere.awara.ui.theme.DynamicColorTheme
 import me.rerere.awara.ui.theme.rememberDynamicColorSchemeState
 import me.rerere.compose_setting.preference.mmkvPreference
 import okhttp3.OkHttpClient
-import org.koin.androidx.compose.get
+import org.koin.compose.koinInject
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun VideoPage(
     vm: VideoVM = koinViewModel(),
-    publicHttpClient: OkHttpClient = get(),
+    publicHttpClient: OkHttpClient = koinInject(),
 ) {
     ForceSystemBarColor(appearanceLight = false)
 

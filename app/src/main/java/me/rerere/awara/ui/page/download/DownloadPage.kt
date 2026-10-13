@@ -42,7 +42,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.collectAsLazyPagingItems
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.common.MediaItem
 import androidx.media3.ui.AspectRatioFrameLayout
@@ -57,13 +57,13 @@ import me.rerere.awara.ui.component.player.rememberPlayerState
 import me.rerere.awara.ui.hooks.rememberRequestedScreenOrientation
 import me.rerere.awara.util.toLocalDateTimeString
 import okhttp3.OkHttpClient
-import org.koin.androidx.compose.get
+import org.koin.compose.koinInject
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun DownloadPage(
     vm: DownloadVM = koinViewModel(),
-    publicHttpClient: OkHttpClient = get(),
+    publicHttpClient: OkHttpClient = koinInject(),
 ) {
     val items = vm.downloadedItems.collectAsLazyPagingItems()
     val appBarScrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
