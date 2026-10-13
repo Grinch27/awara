@@ -19,7 +19,7 @@ import me.rerere.awara.ui.page.search.SearchVM
 import me.rerere.awara.ui.page.setting.SettingVM
 import me.rerere.awara.ui.page.user.UserVM
 import me.rerere.awara.ui.page.video.VideoVM
-import org.koin.androidx.viewmodel.dsl.viewModelOf
+import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
 val viewModelModule = module {

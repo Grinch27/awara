@@ -8,7 +8,7 @@ import com.android.build.api.dsl.LibraryExtension
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.withType
-import org.jetbrains.kotlin.gradle.dsl.KotlinTopLevelExtension
+import org.jetbrains.kotlin.gradle.dsl.KotlinBaseExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 
 private const val COMPILE_SDK = 37
@@ -58,7 +58,7 @@ internal fun LibraryExtension.configureAwaraAndroidLibrary() {
 }
 
 internal fun Project.configureAwaraKotlinJvm() {
-    extensions.findByType(KotlinTopLevelExtension::class.java)?.jvmToolchain(JVM_VERSION)
+    extensions.findByType(KotlinBaseExtension::class.java)?.jvmToolchain(JVM_VERSION)
 }
 
 internal fun Project.configureAwaraComposeCompiler() {

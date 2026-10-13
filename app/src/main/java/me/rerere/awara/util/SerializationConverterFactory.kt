@@ -66,7 +66,7 @@ internal class SerializationRequestBodyConverter<T>(
     }
 
     @Throws(IOException::class)
-    override fun convert(value: T): RequestBody {
+    override fun convert(value: T & Any): RequestBody? {
         val string = json.encodeToString(type, value)
         return string.toRequestBody(MEDIA_TYPE)
     }
