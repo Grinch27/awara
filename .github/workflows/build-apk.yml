@@ -4,8 +4,7 @@ name: Build APK
 # TODO(agent): If the latest stable Gradle moves ahead of AGP support, disable wrapper auto-sync before changing app code.
 # TODO(agent): If compilation fails after the toolchain phase, the next research surface is the Compose and Accompanist dependency set.
 
-permissions:
-  contents: read
+permissions: write-all
 
 concurrency:
   group: build-apk-${{ github.ref }}
@@ -23,8 +22,6 @@ jobs:
   runner-image:
     name: ubuntu-latest - runner-image
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     outputs:
       RUNNER_IMAGE: ${{ steps.resolve-runner-image.outputs.RUNNER_IMAGE }}
     steps:
