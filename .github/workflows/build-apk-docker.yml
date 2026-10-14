@@ -4,8 +4,7 @@ name: Build APK (Docker)
 # TODO(agent): If Android SDK installation starts failing, first inspect the command line tools package URL and accepted license flow.
 # TODO(agent): If the latest stable Gradle moves ahead of AGP support, disable wrapper auto-sync here before changing app code.
 
-permissions:
-  contents: read
+permissions: write-all
 
 concurrency:
   group: build-apk-docker-${{ github.ref }}
@@ -37,8 +36,6 @@ jobs:
   runner-image:
     name: ubuntu-latest - runner-image
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     outputs:
       RUNNER_IMAGE: ${{ steps.resolve-runner-image.outputs.RUNNER_IMAGE }}
     steps:
