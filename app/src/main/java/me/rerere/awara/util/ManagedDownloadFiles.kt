@@ -27,12 +27,12 @@ internal object ManagedDownloadFiles {
         return null
     }
 
-    fun resolveIfManaged(context: Context, item: DownloadItem): File? {
-        val directory = managedDirectory(context, item.type, create = false) ?: return null
+    fun resolveIfManaged(context: Context, item: DownloadItem): File? = runCatching {
+        val directory = managedDirectory(context, item.type, create = false) ?: return@runCatching null
         val file = File(item.path)
-        return file.takeIf { it.isAbsolute && it.parentFile?.canonicalFile == directory &&
+        file.takeIf { it.isAbsolute && it.parentFile?.canonicalFile == directory &&
             it.canonicalFile.parentFile == directory && it.isFile }
-    }
+    }.getOrNull()
 
     fun deleteIfManaged(context: Context, item: DownloadItem): Boolean =
         resolveIfManaged(context, item)?.delete() == true

@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.CancellationException
 import me.rerere.awara.data.session.SecureSession
 import me.rerere.awara.util.ManagedDownloadFiles
-import me.rerere.awara.ui.component.iwara.rememberBlockMediaThumbnailsPreference
+import me.rerere.awara.ui.component.iwara.MediaThumbnail
 import me.rerere.awara.util.prettyFileSize
 import android.net.Uri
 import android.util.Log
@@ -312,7 +312,6 @@ fun DownloadPage(
 
 @Composable
 fun DownloadItem(item: DownloadItem, selected: Boolean, onSelect: () -> Unit, onExport: () -> Unit, onDelete: () -> Unit, onClick: () -> Unit) {
-    val blocked by rememberBlockMediaThumbnailsPreference()
     val context = LocalContext.current
     val missing = ManagedDownloadFiles.resolveIfManaged(context, item) == null
     Card(onClick = onClick) {
@@ -328,14 +327,13 @@ fun DownloadItem(item: DownloadItem, selected: Boolean, onSelect: () -> Unit, on
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Checkbox(checked = selected, onCheckedChange = { onSelect() })
-                if (!blocked) AsyncImage(
-                    model = item.thumbnail,
+                MediaThumbnail(id = "download:" + item.resourceId,
+                    url = item.thumbnail,
                     contentDescription = null,
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
                         .height(64.dp)
-                        .aspectRatio(16f / 9f),
-                    contentScale = ContentScale.Crop
+                        .aspectRatio(16f / 9f)
                 )
 
                 Column(

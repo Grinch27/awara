@@ -11,17 +11,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
-import coil3.request.ImageRequest
 import me.rerere.awara.domain.media.MediaCardModel
-import me.rerere.compose_setting.preference.rememberBooleanPreference
 
 val LocalMediaCacheScope = staticCompositionLocalOf { "public" }
 
@@ -37,17 +31,6 @@ fun CompactMediaCard(
     onLongClick: (() -> Unit)? = null,
     onClick: () -> Unit,
 ) {
-    val blocked by rememberBlockMediaThumbnailsPreference()
-    val blurred by rememberBooleanPreference("setting.work_mode", false)
-    val scope = LocalMediaCacheScope.current
-    val context = LocalContext.current
-    val request = remember(media, scope, blocked) {
-        if (blocked) null else {
-            val key = scope + ":" + (if (media.image) "image:" else "video:") + media.id + ":" + media.thumbnail
-            ImageRequest.Builder(context).data(media.thumbnail)
-                .memoryCacheKey(key).diskCacheKey(key).build()
-        }
-    }
     Surface(
         color = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
         shape = MaterialTheme.shapes.small,
@@ -59,14 +42,8 @@ fun CompactMediaCard(
             @Composable
             fun Cover(coverModifier: Modifier) {
                 Box(coverModifier.background(MaterialTheme.colorScheme.surfaceVariant)) {
-                    if (!blocked) {
-                        AsyncImage(
-                            model = request,
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize().then(if (blurred) Modifier.blur(8.dp) else Modifier),
-                        )
-                    }
+                    MediaThumbnail(id = (if (media.image) "image:" else "video:") + media.id,
+                        url = media.thumbnail, modifier = Modifier.fillMaxSize())
                     if (media.isPrivate || selected) {
                         Text(if (selected) "✓" else privateLabel,
                             style = MaterialTheme.typography.labelSmall,

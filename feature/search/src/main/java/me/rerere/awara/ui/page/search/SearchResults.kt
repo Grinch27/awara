@@ -226,10 +226,9 @@ internal fun SearchPlaylistCard(
     SearchResultCard(onClick = onClick) {
         Row(modifier = Modifier.fillMaxWidth()) {
             playlist.thumbnailUrl?.let { thumbnailUrl ->
-                AsyncImage(
-                    model = thumbnailUrl,
+                MediaThumbnail(id = "playlist:" + playlist.id,
+                    url = thumbnailUrl,
                     contentDescription = null,
-                    contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .width(132.dp)
                         .aspectRatio(16f / 9f),

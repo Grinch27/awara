@@ -1,3 +1,5 @@
+> Historical staged upgrade record. Current modules and dependency policy are documented in [module-subscription-plan.md](module-subscription-plan.md); these old version numbers are not current pins.
+
 # Compose BOM and official Navigation migration (P1-B / P1-C)
 
 - Stable Compose BOM `2024.06.00` is used in `:app`, `:feature:player`, and

@@ -23,6 +23,9 @@ import me.rerere.awara.util.writeToClipboard
 
 class ErrorActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        if (me.rerere.compose_setting.preference.mmkvPreference.getBoolean("setting.secure_screen", false)) {
+            window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
+        }
         WindowCompat.setDecorFitsSystemWindows(window, false)
         super.onCreate(savedInstanceState)
 

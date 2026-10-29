@@ -4,7 +4,7 @@
 Repository: Grinch27/awara
 Part I: canonical v1.2.0 from Grinch27/github-actions/docs/agents/part-i.md.
 Part II: repository-specific rules; not part of canonical synchronization.
-Only this document is added in the current task; no workflows or application sources are changed.
+The shared Part I is maintained upstream; project changes are recorded in doc/module-subscription-plan.md.
 -->
 
 # Part I — GitHub Actions 通用规范（统一维护）
@@ -531,5 +531,11 @@ https://docs.github.com/en/actions/reference/workflows-and-actions/reusing-workf
 ## 发布与授权
 
 README 的第三方项目及使用限制说明、现有 LICENSE 和第三方接口约束需要保留。不要将旧版或其他项目的 APK 当作本次产物；上传 Artifact、发布 Release、签名密钥变更、访问用户数据或修改外部账号，都必须在当前任务授权范围内。未经明确授权，本次不执行构建和发布。
+
+## 当前改进任务的实施入口
+
+本任务已明确授权源码改造、提交和 CI 构建。进入后阅读 `doc/module-subscription-plan.md` 的实际状态，保留 Material 3 与既定首页/搜索行为。`core:model` 不依赖 Compose；共享展示与封面策略在 `core:ui`。
+
+本地仅进行源码与适用静态检查，Kotlin 编译、JVM 回归和 APK 构建由 Actions 执行。不要把历史文档中的旧 SDK/BOM 版本当作当前锁定策略；不要修改 testing 历史基线。正式签名、真实设备验证和可选产品扩展按实际条件记录，不把构建成功写成全部设备场景通过。
 
 <!-- END: PROJECT-SPECIFIC RULES -->

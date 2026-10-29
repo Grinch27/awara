@@ -61,8 +61,13 @@ class DownloadWorker(private val appContext: Context, params: WorkerParameters) 
         var bytes = task.bytes
         var total = task.totalBytes
         var validator = task.validator
-        val partial = ManagedDownloadFiles.taskFile(appContext, taskId, true)
-        val target = ManagedDownloadFiles.taskFile(appContext, taskId, false)
+        val files = runCatching {
+            ManagedDownloadFiles.taskFile(appContext, taskId, true) to ManagedDownloadFiles.taskFile(appContext, taskId, false)
+        }.getOrElse {
+            dao.progress(taskId, task.generation, "FAILED", bytes, total, validator, task.targetPath, "STORAGE_UNAVAILABLE")
+            return@withContext Result.failure()
+        }
+        val (partial, target) = files
         suspend fun update(state: String, error: String = "") =
             dao.progress(taskId, task.generation, state, bytes, total, validator, target.absolutePath, error)
         fun checkOwner() {

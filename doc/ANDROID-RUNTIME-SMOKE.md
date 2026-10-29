@@ -1,21 +1,22 @@
-# Android runtime smoke tests
+# Android runtime acceptance scope
 
-The standard `Build APK` and `Build APK (Docker)` workflows already build
-Debug/Release artifacts, automatically update Gradle, and execute JVM tests.
-They cannot establish Android runtime correctness.
+The current ordinary workflow builds Debug and Release and runs JVM regression tests in its Debug lane. The Docker workflow builds Debug. APK generation and JVM tests do not establish device runtime correctness.
 
-The isolated `Android Emulator Smoke Tests` workflow tests Android API 34
-with a Google APIs x86_64 image and `connectedDebugAndroidTest`, while
-continuing to query the latest stable Gradle before the run. AndroidX
-instrumentation also exercises the existing application-context smoke test.
+The repository contains Media3NetworkSmokeTest and ExampleInstrumentedTest. The current main/dev workflows do not run connectedDebugAndroidTest; no new emulator/device success is claimed. Historical branch-specific emulator experiments are not this delivery evidence.
 
-`Media3NetworkSmokeTest` checks two bounded runtime behaviors:
-1. A Media3 OkHttp-backed HTTP DataSource observes a strict DoH resolver and
-   fails rather than querying a hostname with system DNS on invalid config.
-2. A Media3 ExoPlayer instance prepares a local generated PCM WAV file without
-   network access.
+For this improvement, remaining runtime acceptance covers:
 
-This is not a proof of packet-level DNS isolation, active-video CDN playback,
-signed URL handling, HLS/DASH, caching/seek/quality switching, DLNA, or
-navigation across real devices. Run those separately before production use.
-The workflow retains test reports for seven days. Main/testing stay unchanged.
+| Area | Necessary scenario | Status |
+| --- | --- | --- |
+| Material 3 density | narrow phone, tablet, large fonts, dark theme, 48 dp actions | Device verification pending |
+| Session | legacy migration, lost key, expired login, logout during refresh | Mocked refresh tests; device verification pending |
+| Search | all seven types, rapid switching, paging retry, process recreation | Request tests; device verification pending |
+| Backup | preview merge/replace, interrupted transaction and next-launch recovery | Codec tests; runtime interruption verification pending |
+| Playback | real CDN, quality/seek/speed, expired source, saved position, audio focus | Build only; device verification pending |
+| Gallery | empty/error/retry, zoom versus swipe, restored page | Build only; device verification pending |
+| Downloads | background notification, pause/resume/restart, full/partial/range rejection, low storage, export | Range-policy tests; real service/device verification pending |
+| Local data | Room 1/2/6 to 7 on existing installs, missing files, bulk deletion | Explicit migration and compiler schema; device verification pending |
+| Native dependency | existing MMKV preference migration and 64-bit devices | Build only; device verification pending |
+| DLNA | discover, select, disconnect, dispose | Build only; real device verification pending |
+
+Do not infer 16 KiB-device compatibility, packet-level DNS isolation, performance improvement percentages, production signing, or a production release from APK generation. Follow AGENTS.md minimal verification; do not add artifact hash/certificate/DEX scans.

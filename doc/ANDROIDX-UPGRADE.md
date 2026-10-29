@@ -1,3 +1,5 @@
+> Historical staged upgrade record. Current modules and dependency policy are documented in [module-subscription-plan.md](module-subscription-plan.md); these old version numbers are not current pins.
+
 # P3 AndroidX dependency upgrade — conservative stable lane
 
 This stage upgrades AndroidX libraries without changing minSdk (26),

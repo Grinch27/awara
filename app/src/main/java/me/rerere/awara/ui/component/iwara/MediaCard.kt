@@ -2,6 +2,7 @@
 // Verify: existing video/image routes and current list-mode preferences remain intact.
 package me.rerere.awara.ui.component.iwara
 
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -34,8 +35,8 @@ fun MediaCard(
         modifier = modifier,
         onClick = {
             when (media) {
-                is Video -> router.navigate("video/" + media.id)
-                is GalleryImage -> router.navigate("image/" + media.id)
+                is Video -> router.navigate("video/" + Uri.encode(media.id))
+                is GalleryImage -> router.navigate("image/" + Uri.encode(media.id))
             }
         },
     )

@@ -118,9 +118,12 @@ object LocalDataBackupCodec {
         }
         require(bundle.settings.darkMode in 0..2)
         text(bundle.settings.playerQuality, 128)
-        val endpoint = bundle.settings.builtInDohEndpoint.toHttpUrlOrNull()
-        require(endpoint != null && endpoint.isHttps && endpoint.username.isEmpty() && endpoint.password.isEmpty()) { "Invalid DNS endpoint" }
-        text(bundle.settings.builtInDohUpstream, 256)
+        text(bundle.settings.builtInDohEndpoint, 4096)
+        text(bundle.settings.builtInDohUpstream, 4096)
+        require(runCatching {
+            me.rerere.awara.util.strictDohUrl(bundle.settings.builtInDohEndpoint, "Backup DoH endpoint")
+            me.rerere.awara.util.strictDohUrl(bundle.settings.builtInDohUpstream, "Backup DoH upstream")
+        }.isSuccess) { "Invalid DNS settings" }
         return bundle
     }
 }

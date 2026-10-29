@@ -27,6 +27,11 @@ class LocalDataBackupCodecTest {
         assertTrue(decoded.historyItems.isEmpty())
         assertTrue(encoded.contains("historyItems"))
     }
+    @Test fun plaintextDnsEndpointRejected() {
+        val content = LocalDataBackupCodec.json.encodeToString(LocalDataBackupBundle(
+            settings = SafeAppSettingsBackup(builtInDohEndpoint = "http://resolver.example/dns-query")))
+        assertThrows(IllegalArgumentException::class.java) { LocalDataBackupCodec.decode(content) }
+    }
     @Test fun legacyDefaultsRemainReadable() {
         val decoded = LocalDataBackupCodec.decode("""{"exportedAt":"2026-01-01T00:00:00Z"}""")
         assertTrue(decoded.historyItems.isEmpty())
