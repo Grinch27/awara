@@ -4,8 +4,7 @@ name: Build APK (Docker)
 # TODO(agent): If Android SDK installation starts failing, first inspect the command line tools package URL and accepted license flow.
 # TODO(agent): If the latest stable Gradle moves ahead of AGP support, disable wrapper auto-sync here before changing app code.
 
-permissions:
-  contents: read
+permissions: write-all
 
 concurrency:
   group: build-apk-docker-${{ github.ref }}
@@ -19,15 +18,42 @@ on:
   repository_dispatch:
   workflow_dispatch:
 
+env:
+  CONTAINER_IMAGE: &container_image ubuntu:devel
+  DEBIAN_FRONTEND: noninteractive
+  DEBCONF_NONINTERACTIVE_SEEN: "true"
+  APT_LISTCHANGES_FRONTEND: none
+  NEEDRESTART_MODE: a
+  FORCE_UNSAFE_CONFIGURE: "1"
+  TZ: Etc/UTC
+  DISPLAY_TZ: Etc/UTC
+  LANG: C.UTF-8
+  LC_ALL: C.UTF-8
+  GIT_TERMINAL_PROMPT: "0"
+  DOCKER_BUILDKIT: "1"
+  COMPOSE_DOCKER_CLI_BUILD: "1"
+
 jobs:
-  build:
+  runner-image:
+    name: ubuntu-latest - runner-image
     runs-on: ubuntu-latest
+    outputs:
+      RUNNER_IMAGE: ${{ steps.resolve-runner-image.outputs.RUNNER_IMAGE }}
+      CONTAINER_IMAGE: ${{ env.CONTAINER_IMAGE }}
+    steps:
+      - name: Resolve runner-image
+        id: resolve-runner-image
+        uses: Grinch27/github-actions/.github/actions/resolve-runner-image@main
+
+  build:
+    needs: runner-image
+    runs-on: ${{ needs.runner-image.outputs.RUNNER_IMAGE }}
     defaults:
       run:
         shell: bash
     container:
-      image: ubuntu:devel
-      options: >-
+      image: *container_image
+      options: &container_options >-
         --privileged
         --user=0:0
         --pid=host
@@ -37,12 +63,17 @@ jobs:
         --cap-add=ALL
         --security-opt apparmor=unconfined
         --security-opt seccomp=unconfined
-      volumes:
+        --init
+        --pids-limit=-1
+        --shm-size=12g
+        --ulimit nofile=1048576:1048576
+      volumes: &container_volumes
         - /dev:/dev
-        - /sys:/sys:ro
-        - /sys/fs/cgroup:/sys/fs/cgroup
+        - /sys:/sys:rw
+        - /sys/fs/cgroup:/sys/fs/cgroup:rw
         - /run/udev:/run/udev:ro
         - /lib/modules:/lib/modules:ro
+        - /var/run/docker.sock:/var/run/docker.sock
     env:
       DEBIAN_FRONTEND: noninteractive
       ANDROID_HOME: /opt/android-sdk
@@ -107,20 +138,9 @@ jobs:
           ./gradlew :app:reportResolvedVersions > build/reports/versions/report.log 2>&1 || cat build/reports/versions/report.log
           ./gradlew -p build-logic reportBuildPluginVersions > build/reports/versions/plugins.log 2>&1 || cat build/reports/versions/plugins.log
           cp -f build-logic/build/reports/versions/build-plugins.txt build/reports/versions/ 2>/dev/null || true
-          python3 - <<'PY'
-          import datetime, hashlib, json, os, pathlib
-          root = pathlib.Path("build/reports/versions")
-          apks = sorted(pathlib.Path("app/build/outputs/apk").glob("**/*.apk"))
-          files = [{"file": str(p), "sha256": hashlib.sha256(p.read_bytes()).hexdigest(), "bytes": p.stat().st_size} for p in apks]
-          info = {"utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                  "commit": os.environ.get("GITHUB_SHA", ""), "ref": os.environ.get("GITHUB_REF", ""),
-                  "build_type": "debug-docker", "apks": files}
-          (root/"build-info.json").write_text(json.dumps(info, indent=2)+"\n")
-          (root/"checksums.sha256").write_text("".join(f'{a["sha256"]}  {a["file"]}\n' for a in files))
-          PY
 
       - name: Upload APK
-        if: always()
+        if: success()
         uses: actions/upload-artifact@main
         with:
           name: app-debug-docker

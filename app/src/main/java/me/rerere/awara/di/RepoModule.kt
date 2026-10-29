@@ -19,7 +19,7 @@ val repoModule = module {
     }
 
     single {
-        MediaRepo(get(named(IWARA_HTTP_CLIENT)), get())
+        MediaRepo(get<okhttp3.OkHttpClient>(), get())
     }
 
     single<SearchRepository> {

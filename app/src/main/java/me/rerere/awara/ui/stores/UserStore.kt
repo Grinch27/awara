@@ -5,6 +5,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.collectAsState
+import me.rerere.awara.data.session.SecureSession
+import me.rerere.awara.data.session.SessionRepository
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import me.rerere.awara.data.dto.ProfileDto
@@ -35,13 +38,13 @@ val LocalUserStore = staticCompositionLocalOf {
                     is UserStoreAction.SetUser -> prevState.copy(user = action.user)
                     is UserStoreAction.SetTagBlacklist -> prevState.copy(tagBlacklist = action.tagBlacklist)
                     is UserStoreAction.Logout -> {
-                        mmkvPreference.remove("refresh_token")
-                        mmkvPreference.remove("access_token")
+                        SecureSession.logout()
                         prevState.copy(
                             user = null,
                             tagBlacklist = emptyList(),
                             profile = null,
-                            loading = false
+                            loading = false,
+                            refreshing = false
                         )
                     }
 
@@ -82,52 +85,36 @@ sealed class UserStoreAction {
 @Composable
 fun UserStoreProvider(
     userRepo: UserRepo = koinInject(),
+    sessionRepository: SessionRepository = koinInject(),
     content: @Composable () -> Unit
 ) {
     val store = LocalUserStore.current
-    val refreshToken by rememberStringPreference(key = "refresh_token", default = "")
-    val accessToken by rememberStringPreference(key = "access_token", default = "")
-    // 尝试刷新AccessToken
-    LaunchedEffect(refreshToken) {
-        if (refreshToken.isNotEmpty()) {
-            Log.i(TAG, "UserStoreProvider: renew access token start")
-            store.dispatch(UserStoreAction.SetRefreshing(true))
-            runAPICatching {
-                userRepo.renewToken()
-            }.onSuccess {
-                mmkvPreference.putString("access_token", it.accessToken)
-                Log.i(TAG, "UserStoreProvider: renew access token success")
-            }.onError {
-                Log.w(TAG, "UserStoreProvider: renew access token error: $it")
-            }.onException {
-                Log.w(TAG, "UserStoreProvider: renew access token exception", it.exception)
-            }
+    val session by SecureSession.state.collectAsState()
+    LaunchedEffect(session.epoch, session.refreshToken) {
+        store.dispatch(UserStoreAction.SetRefreshing(session.refreshToken.isNotBlank()))
+        try {
+            if (session.refreshToken.isNotBlank()) sessionRepository.ensureAccessToken()
+        } finally {
+            store.dispatch(UserStoreAction.SetRefreshing(false))
         }
-        store.dispatch(UserStoreAction.SetRefreshing(false))
-        Log.i(TAG, "UserStoreProvider: finish renew access token")
     }
-    // 当Token变化时，重新获取用户信息
-    LaunchedEffect(accessToken) {
-        if (accessToken.isEmpty()) return@LaunchedEffect
-        Log.i(TAG, "UserStoreProvider: get user info")
+    LaunchedEffect(session.epoch, session.accessToken) {
+        if (session.accessToken.isBlank()) return@LaunchedEffect
+        val epoch = session.epoch
         store.dispatch(UserStoreAction.SetLoading(true))
-        awaitAll(
-            async {
-                runAPICatching {
-                    userRepo.getSelfProfile()
-                }.onSuccess {
+        try {
+            runAPICatching { userRepo.getSelfProfile() }.onSuccess {
+                if (SecureSession.snapshot.epoch == epoch &&
+                    SecureSession.snapshot.accessToken == session.accessToken
+                ) {
                     store.dispatch(UserStoreAction.SetUser(it.user))
                     store.dispatch(UserStoreAction.SetTagBlacklist(it.tagBlacklist))
                     store.dispatch(UserStoreAction.SetProfile(it.profile))
-                    Log.i(TAG, "UserStoreProvider: get user info success: $it")
-                }.onError {
-                    Log.e(TAG, "UserStoreProvider: get user info error: $it")
-                }.onException {
-                    Log.e(TAG, "UserStoreProvider: get user info exception", it.exception)
                 }
             }
-        )
-        store.dispatch(UserStoreAction.SetLoading(false))
+        } finally {
+            if (SecureSession.snapshot.epoch == epoch) store.dispatch(UserStoreAction.SetLoading(false))
+        }
     }
     content()
 }

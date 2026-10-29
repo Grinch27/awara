@@ -12,6 +12,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import me.rerere.awara.R
 import retrofit2.HttpException
+import kotlinx.coroutines.CancellationException
 
 private const val TAG = "APIResult"
 
@@ -34,6 +35,7 @@ suspend fun <T> runAPICatching(block: suspend () -> T): APIResult<out T> {
         APIResult.Success(block())
     }.getOrElse {
         when (it) {
+            is CancellationException -> throw it
             is HttpException -> it.toAPIError()
             else -> APIResult.Exception(it)
         }
@@ -62,7 +64,7 @@ inline fun <T> APIResult<T>.onException(block: (APIResult.Exception) -> Unit): A
 }
 
 private fun HttpException.toAPIError(): APIResult.Error {
-    val body = this.response()?.errorBody()?.string()
+    val body = this.response()?.errorBody()?.use { it.string() }
     val bodyJson = kotlin.runCatching {
         Json.decodeFromString<JsonObject>(
             body ?: "{}"

@@ -4,8 +4,7 @@ name: Build APK
 # TODO(agent): If the latest stable Gradle moves ahead of AGP support, disable wrapper auto-sync before changing app code.
 # TODO(agent): If compilation fails after the toolchain phase, the next research surface is the Compose and Accompanist dependency set.
 
-permissions:
-  contents: read
+permissions: write-all
 
 concurrency:
   group: build-apk-${{ github.ref }}
@@ -20,8 +19,19 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  runner-image:
+    name: ubuntu-latest - runner-image
     runs-on: ubuntu-latest
+    outputs:
+      RUNNER_IMAGE: ${{ steps.resolve-runner-image.outputs.RUNNER_IMAGE }}
+    steps:
+      - name: Resolve runner-image
+        id: resolve-runner-image
+        uses: Grinch27/github-actions/.github/actions/resolve-runner-image@main
+
+  build:
+    needs: runner-image
+    runs-on: ${{ needs.runner-image.outputs.RUNNER_IMAGE }}
     defaults:
       run:
         shell: bash
@@ -71,6 +81,10 @@ jobs:
               "platforms;android-37.0" "build-tools;36.0.0"
           fi
 
+      - name: Run focused JVM regression tests
+        if: matrix.build_type == 'debug'
+        run: ./gradlew testDebugUnitTest --stacktrace
+
       - name: Build APK
         run: |
           set -euo pipefail
@@ -84,22 +98,9 @@ jobs:
           ./gradlew :app:reportResolvedVersions > build/reports/versions/report.log 2>&1 || cat build/reports/versions/report.log
           ./gradlew -p build-logic reportBuildPluginVersions > build/reports/versions/plugins.log 2>&1 || cat build/reports/versions/plugins.log
           cp -f build-logic/build/reports/versions/build-plugins.txt build/reports/versions/ 2>/dev/null || true
-          python3 - <<'PY'
-          import datetime, hashlib, json, os, pathlib, subprocess
-          root = pathlib.Path("build/reports/versions")
-          root.mkdir(parents=True, exist_ok=True)
-          apks = sorted(pathlib.Path("app/build/outputs/apk").glob("**/*.apk"))
-          files = [{"file": str(p), "sha256": hashlib.sha256(p.read_bytes()).hexdigest(), "bytes": p.stat().st_size} for p in apks]
-          data = {"utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                  "commit": os.environ.get("GITHUB_SHA", ""), "ref": os.environ.get("GITHUB_REF", ""),
-                  "build_type": "${{ matrix.build_type }}", "java_home": os.environ.get("JAVA_HOME", ""),
-                  "apks": files}
-          (root/"build-info.json").write_text(json.dumps(data, indent=2, ensure_ascii=False)+"\n")
-          (root/"checksums.sha256").write_text("".join(f'{a["sha256"]}  {a["file"]}\n' for a in files))
-          PY
 
       - name: Upload APK
-        if: always()
+        if: success()
         uses: actions/upload-artifact@main
         with:
           name: app-${{ matrix.build_type }}
@@ -109,3 +110,14 @@ jobs:
             build/reports/versions/
           compression-level: 9 # maximum compression
           retention-days: 30
+
+      - name: Upload test results
+        if: always() && matrix.build_type == 'debug'
+        uses: actions/upload-artifact@main
+        with:
+          name: unit-test-results
+          path: |
+            **/build/test-results/testDebugUnitTest/*.xml
+            **/build/reports/tests/testDebugUnitTest/
+          if-no-files-found: ignore
+          retention-days: 7

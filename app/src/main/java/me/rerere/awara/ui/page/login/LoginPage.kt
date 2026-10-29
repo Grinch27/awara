@@ -52,7 +52,7 @@ fun LoginPage(
     val messageProvider = LocalMessageProvider.current
     val router = LocalRouterProvider.current
     var username by rememberStringPreference(key = "login.username", default = "")
-    var password by rememberStringPreference(key = "login.password", default = "")
+    var password by remember { mutableStateOf("") }
     LaunchedEffect(Unit) {
         vm.events.collectLatest {
             when (it) {
@@ -60,7 +60,13 @@ fun LoginPage(
                     messageProvider.success {
                         Text("登录成功")
                     }
-                    mmkvPreference.putString("refresh_token", it.token)
+                    password = ""
+                    try {
+                        me.rerere.awara.data.session.SecureSession.signIn(it.token)
+                    } catch (_: Exception) {
+                        messageProvider.error { Text(context.getString(R.string.errors_unknown, "Credential storage")) }
+                        return@collectLatest
+                    }
                     router.navigate("index") {
                         popUpTo("login") {
                             inclusive = true
@@ -69,12 +75,14 @@ fun LoginPage(
                 }
 
                 is LoginEvent.LoginFailed -> {
+                    password = ""
                     messageProvider.error {
                         Text(context.stringResourceOfError(it.error))
                     }
                 }
 
                 is LoginEvent.Exception -> {
+                    password = ""
                     messageProvider.error {
                         Text(it.message)
                     }
@@ -125,7 +133,7 @@ fun LoginPage(
                 OutlinedTextField(
                     value = password,
                     onValueChange = {
-                        password = it.replace("\n", "").trim()
+                        password = it.replace("\n", "")
                     },
                     label = {
                         Text(text = stringResource(R.string.login_password))

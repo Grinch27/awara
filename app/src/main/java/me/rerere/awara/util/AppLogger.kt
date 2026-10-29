@@ -69,13 +69,15 @@ object AppLogger {
         throwable: Throwable?,
     ) {
         val safeMessage = sanitize(message)
-        val safeThrowable = throwable?.stackTraceToString()?.let(::sanitizeThrowable)
+        val safeThrowable = throwable?.let { error ->
+            (error.javaClass.simpleName + "\n" + error.stackTrace.take(12).joinToString("\n")).take(MAX_THROWABLE_LENGTH)
+        }
 
         when (level) {
-            AppLogLevel.DEBUG -> Log.d(tag, safeMessage, throwable)
-            AppLogLevel.INFO -> Log.i(tag, safeMessage, throwable)
-            AppLogLevel.WARNING -> Log.w(tag, safeMessage, throwable)
-            AppLogLevel.ERROR -> Log.e(tag, safeMessage, throwable)
+            AppLogLevel.DEBUG -> Log.d(tag, listOfNotNull(safeMessage, safeThrowable).joinToString("\n"))
+            AppLogLevel.INFO -> Log.i(tag, listOfNotNull(safeMessage, safeThrowable).joinToString("\n"))
+            AppLogLevel.WARNING -> Log.w(tag, listOfNotNull(safeMessage, safeThrowable).joinToString("\n"))
+            AppLogLevel.ERROR -> Log.e(tag, listOfNotNull(safeMessage, safeThrowable).joinToString("\n"))
         }
 
         val repo = appLogRepo ?: return
@@ -94,6 +96,11 @@ object AppLogger {
         sanitized = sanitized.replace(Regex("(?i)(authorization: bearer)\\s+[^\\s]+"), "$1 [redacted]")
         sanitized = sanitized.replace(Regex("(?i)(access_token=)[^&\\s]+"), "$1[redacted]")
         sanitized = sanitized.replace(Regex("(?i)(refresh_token=)[^&\\s]+"), "$1[redacted]")
+        sanitized = sanitized.replace(Regex("https?://[^\\s\"'<>]+")) { match ->
+            runCatching { java.net.URI(match.value).let { it.scheme + "://" + it.host + "/[path]" } }.getOrDefault("[url]")
+        }
+        sanitized = sanitized.replace(Regex("(?i)\\bBearer\\s+[^\\s,;]+"), "Bearer [redacted]")
+        sanitized = sanitized.replace(Regex("(?i)(password|access_token|refresh_token|cookie)([\"'\\s]*[:=][\"'\\s]*)[^\\s,;}]+"), "$1$2[redacted]")
         return sanitized.take(MAX_MESSAGE_LENGTH)
     }
 

@@ -31,6 +31,7 @@ class App : Application(), SingletonImageLoader.Factory, KoinComponent {
         super.onCreate()
         registerErrorHandler()
         initComposeSetting()
+        me.rerere.awara.data.session.SecureSession.initialize(this)
         registerNotificationChannel()
         startKoin {
             androidLogger()

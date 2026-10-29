@@ -10,7 +10,8 @@ import me.rerere.awara.util.AppNetworkTransportPolicy
 import me.rerere.awara.util.ConfigurableDohDns
 import me.rerere.awara.util.NetworkTransportPolicy
 import me.rerere.awara.util.SerializationConverterFactory
-import me.rerere.compose_setting.preference.mmkvPreference
+import me.rerere.awara.data.session.SecureSession
+import me.rerere.awara.data.session.SessionRepository
 import okhttp3.OkHttpClient
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
@@ -47,62 +48,35 @@ val networkModule = module {
         get(named(PUBLIC_HTTP_CLIENT))
     }
 
-    single(named(IWARA_HTTP_CLIENT)) {
-        get<NetworkTransportPolicy>().apply(
-            OkHttpClient.Builder()
-        )
-            .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
-            .addInterceptor {
-                val request = it.request()
-                val url = request.url
-                val newRequest = request.newBuilder()
-                    .apply {
-                        if (url.isHttps && isTrustedIwaraHost(url.host)) {
-                            addHeader("User-Agent", UA)
-                            addHeader("Origin", "https://www.iwara.tv")
-                            addHeader("Referer", "https://www.iwara.tv/")
-                            addHeader("Accept-Language", "en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7")
+    single { SessionRepository(get<OkHttpClient>()) }
 
-                            if (url.host == "api.iwara.tv" && url.encodedPath == "/user/token") {
-                                if ("refresh_token" in mmkvPreference) {
-                                    addHeader(
-                                        "Authorization",
-                                        "Bearer ${mmkvPreference.getString("refresh_token", "")}"
-                                    )
-                                }
-                            } else if (url.host == "api.iwara.tv") {
-                                if ("access_token" in mmkvPreference) {
-                                    addHeader(
-                                        "Authorization",
-                                        "Bearer ${mmkvPreference.getString("access_token", "")}"
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    .build()
-                it.proceed(newRequest)
+    single(named(IWARA_HTTP_CLIENT)) {
+        val session = get<SessionRepository>()
+        get<OkHttpClient>().newBuilder()
+            .addInterceptor { chain ->
+                val request = chain.request()
+                val builder = request.newBuilder()
+                if (request.url.isHttps && request.url.host == "api.iwara.tv") {
+                    builder.header("User-Agent", UA).header("Origin", "https://www.iwara.tv")
+                        .header("Referer", "https://www.iwara.tv/")
+                    val snapshot = SecureSession.snapshot
+                    val token = if (request.url.encodedPath == "/user/token") snapshot.refreshToken else snapshot.accessToken
+                    if (token.isNotBlank()) builder.header("Authorization", "Bearer " + token)
+                }
+                chain.proceed(builder.build())
             }
-            .addInterceptor(AppLogger.createSafeNetworkLogInterceptor())
-//            .addInterceptor {
-//                val request = it.request()
-//                val url = request.url
-//                if(url.pathSegments.contains("video")){
-//                    // 403模拟
-//                    val response = okhttp3.Response.Builder()
-//                        .request(request)
-//                        .protocol(okhttp3.Protocol.HTTP_1_1)
-//                        .code(403)
-//                        .message("Forbidden")
-//                        .body(
-//                            "".toResponseBody()
-//                        )
-//                        .build()
-//                    response
-//                } else {
-//                    it.proceed(request)
-//                }
-//            }
+            .authenticator { _, response ->
+                val request = response.request
+                val rejected = request.header("Authorization")?.removePrefix("Bearer ")
+                if (response.code != 401 || response.priorResponse != null ||
+                    !request.url.isHttps || request.url.host != "api.iwara.tv" ||
+                    request.url.encodedPath == "/user/token" ||
+                    request.method !in setOf("GET", "HEAD") || rejected.isNullOrBlank()
+                ) null
+                else if (session.refresh(rejected)) {
+                    request.newBuilder().header("Authorization", "Bearer " + SecureSession.snapshot.accessToken).build()
+                } else null
+            }
             .build()
     }
 

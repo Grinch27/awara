@@ -153,6 +153,7 @@ dependencies {
 
     // Test
     testImplementation("junit:junit:+")
+    testImplementation("com.squareup.okhttp3:mockwebserver:+")
     androidTestImplementation("androidx.test.ext:junit:+")
     androidTestImplementation("androidx.test.espresso:espresso-core:+")
     // Instrumented Media3/DoH transport smoke tests need a direct test compile dependency.

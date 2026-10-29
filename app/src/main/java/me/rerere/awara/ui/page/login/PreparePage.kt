@@ -33,5 +33,5 @@ fun PreparePage() {
 }
 
 fun shouldShowPreparePage(): Boolean {
-    return !mmkvPreference.getString("refresh_token", "").isNullOrBlank()
+    return me.rerere.awara.data.session.SecureSession.snapshot.refreshToken.isNotBlank()
 }

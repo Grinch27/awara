@@ -45,10 +45,11 @@ class MediaRepo(
             .header("x-version", hash)
             .get()
             .build()
-        val response = okHttpClient.newCall(request).await()
-        val body = response.body ?: error("No body")
-        val bodyString = body.string()
-        return JsonInstance.decodeFromString(bodyString)
+        return okHttpClient.newCall(request).await().use { response ->
+            check(response.isSuccessful) { "Media manifest HTTP " + response.code }
+            val body = response.body ?: error("No body")
+            JsonInstance.decodeFromString(body.string())
+        }
     }
 
     suspend fun parseVideoUrl(
