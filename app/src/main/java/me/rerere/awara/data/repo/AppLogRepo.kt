@@ -37,7 +37,10 @@ class AppLogRepo(
     suspend fun count(): Int = appDatabase.appLogDao().count()
 
     suspend fun exportJson(limit: Int = DEFAULT_LOG_LIMIT): String {
-        val logs = appDatabase.appLogDao().getLatest(limit)
+        val logs = appDatabase.appLogDao().getLatest(limit).map { entry ->
+            entry.copy(message = me.rerere.awara.util.AppLogger.sanitizeForExport(entry.message),
+                throwable = entry.throwable?.let(me.rerere.awara.util.AppLogger::sanitizeForExport))
+        }
         return JsonInstance.encodeToString(AppLogExportBundle(logs = logs))
     }
 }

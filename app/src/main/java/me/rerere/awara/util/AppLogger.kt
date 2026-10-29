@@ -82,14 +82,19 @@ object AppLogger {
 
         val repo = appLogRepo ?: return
         scope.launch {
-            repo.append(
+            runCatching { repo.append(
                 level = level,
                 tag = tag,
                 message = safeMessage,
                 throwable = safeThrowable,
-            )
+            ) }
         }
     }
+
+    fun formatThrowable(error: Throwable): String =
+        (error.javaClass.simpleName + "\n" + error.stackTrace.take(24).joinToString("\n")).take(MAX_THROWABLE_LENGTH)
+
+    fun sanitizeForExport(message: String): String = sanitize(message)
 
     private fun sanitize(message: String): String {
         var sanitized = message.replace(Regex("\\s+"), " ").trim()
@@ -100,7 +105,7 @@ object AppLogger {
             runCatching { java.net.URI(match.value).let { it.scheme + "://" + it.host + "/[path]" } }.getOrDefault("[url]")
         }
         sanitized = sanitized.replace(Regex("(?i)\\bBearer\\s+[^\\s,;]+"), "Bearer [redacted]")
-        sanitized = sanitized.replace(Regex("(?i)(password|access_token|refresh_token|cookie)([\"'\\s]*[:=][\"'\\s]*)[^\\s,;}]+"), "$1$2[redacted]")
+        sanitized = sanitized.replace(Regex("(?i)(password|access_token|refresh_token|token|cookie|authorization)([\"'\\s]*[:=][\"'\\s]*)[^\\s,;}]+"), "$1$2[redacted]")
         return sanitized.take(MAX_MESSAGE_LENGTH)
     }
 

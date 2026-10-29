@@ -19,6 +19,9 @@ class SessionRepositoryTest {
             value = value.copy(accessToken = token)
             return true
         }
+        @Synchronized override fun invalidate(expectedEpoch: Long) {
+            if (value.epoch == expectedEpoch) logout()
+        }
         @Synchronized fun logout() { value = SessionSnapshot(epoch = value.epoch + 1) }
     }
 
@@ -52,6 +55,17 @@ class SessionRepositoryTest {
                 assertFalse(result.get(5, TimeUnit.SECONDS))
                 assertTrue(store.snapshot.accessToken.isEmpty())
             } finally { pool.shutdownNow() }
+        }
+    }
+
+    @Test fun invalidRefreshClearsOnlyCurrentSession() {
+        MockWebServer().use { server ->
+            server.enqueue(MockResponse().setResponseCode(401))
+            server.start()
+            val store = Store()
+            val repo = SessionRepository(OkHttpClient(), store, server.url("/user/token"))
+            assertFalse(repo.refresh("expired"))
+            assertTrue(store.snapshot.refreshToken.isBlank())
         }
     }
 

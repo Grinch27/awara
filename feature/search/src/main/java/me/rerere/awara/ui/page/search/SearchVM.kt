@@ -40,6 +40,8 @@ class SearchVM(
     private var defaultRatingApplied = savedState.contains("videoRating")
     private var requestJob: Job? = null
     private var generation = 0L
+    private data class Request(val type: String, val query: String, val media: FeedQuery)
+    private var activeRequest: Request? = null
 
     init {
         restoreFilters("videoFilters", videoFilters)
@@ -139,14 +141,16 @@ class SearchVM(
         if (!replaceResults && state.loadingMore) return
         requestJob?.cancel()
         val requestId = ++generation
-        persistCriteria()
+        if (replaceResults) persistCriteria()
         savedState["submitted"] = true
         val requestedPage = if (replaceResults) 1 else state.page + 1
         val before = state.copy(page = requestedPage)
-        val requestType = before.searchType
-        val requestQuery = query
-        val mediaQuery = buildMediaSearchQuery(if (requestType == SearchTypes.IMAGE) FeedScope.SEARCH_IMAGE else FeedScope.SEARCH_VIDEO)
-            .copy(page = requestedPage - 1)
+        val request = if (replaceResults || activeRequest == null) Request(before.searchType, query,
+            buildMediaSearchQuery(if (before.searchType == SearchTypes.IMAGE) FeedScope.SEARCH_IMAGE else FeedScope.SEARCH_VIDEO))
+            .also { activeRequest = it } else checkNotNull(activeRequest)
+        val requestType = request.type
+        val requestQuery = request.query
+        val mediaQuery = request.media.copy(page = requestedPage - 1)
         state = before.copy(uiState = if (replaceResults) UiState.Loading else before.uiState,
             loadingMore = !replaceResults, appendFailed = false,
             resultKey = if (replaceResults) requestType + requestQuery + mediaQuery.copy(page = 0).toString() else before.resultKey)

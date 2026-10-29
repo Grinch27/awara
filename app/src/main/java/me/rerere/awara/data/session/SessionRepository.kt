@@ -42,7 +42,10 @@ class SessionRepository(
                 .header("Authorization", "Bearer " + before.refreshToken)
                 .post(ByteArray(0).toRequestBody()).build()
             client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) false
+                if (!response.isSuccessful) {
+                    if (response.code == 401) store.invalidate(before.epoch)
+                    false
+                }
                 else {
                     val body = response.body ?: return@use false
                     val token = JsonInstance.decodeFromString<AccessTokenRes>(body.string()).accessToken

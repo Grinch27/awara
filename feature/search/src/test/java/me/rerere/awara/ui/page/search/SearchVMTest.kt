@@ -42,6 +42,20 @@ class SearchVMTest {
         assertFalse(vm.state.hasMore)
     }
 
+    @Test fun editingDraftDoesNotChangePaginationCriteria() = runTest(dispatcher) {
+        val repository = FakeSearch()
+        val vm = SearchVM(repository, SavedStateHandle())
+        vm.query = "submitted"; vm.submitSearch(); runCurrent()
+        repository.responses[0].complete(SearchPageResult(20, listOf(item("one"))))
+        runCurrent()
+        vm.query = "draft"
+        vm.loadNextPage(); runCurrent()
+        assertEquals("submitted", repository.queries[1].keyword)
+        assertEquals(1, repository.queries[1].page)
+        repository.responses[1].complete(SearchPageResult(20, emptyList()))
+        advanceUntilIdle()
+    }
+
     @Test fun queryAndTypeAreRestored() = runTest(dispatcher) {
         val handle = SavedStateHandle(mapOf("query" to "restored", "type" to SearchTypes.USER))
         val vm = SearchVM(FakeSearch(), handle)

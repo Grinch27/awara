@@ -31,6 +31,7 @@ data class SessionSnapshot(
 
 interface CredentialStore {
     val snapshot: SessionSnapshot
+    fun invalidate(expectedEpoch: Long)
     fun commitAccessToken(token: String, expectedEpoch: Long): Boolean
 }
 
@@ -52,8 +53,11 @@ object SecureSession : CredentialStore {
             cipher.init(Cipher.DECRYPT_MODE, key(), GCMParameterSpec(128, bytes.copyOfRange(1, 13)))
             val json = JSONObject(String(cipher.doFinal(bytes.copyOfRange(13, bytes.size)), Charsets.UTF_8))
             SessionSnapshot(json.getString("refresh"), json.optString("access"), json.getString("session"))
-        }.getOrElse {
+        }.getOrElse { error ->
             file.delete()
+            if (error is java.security.GeneralSecurityException) runCatching {
+                KeyStore.getInstance("AndroidKeyStore").apply { load(null); deleteEntry(ALIAS) }
+            }
             SessionSnapshot()
         }
         if (snapshot.refreshToken.isBlank()) {
@@ -79,6 +83,11 @@ object SecureSession : CredentialStore {
         persist(next)
         mutableState.value = next
         return true
+    }
+
+    @Synchronized
+    override fun invalidate(expectedEpoch: Long) {
+        if (snapshot.epoch == expectedEpoch) logout()
     }
 
     @Synchronized

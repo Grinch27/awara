@@ -37,9 +37,10 @@ object DownloadScheduler {
             db.transferDao().control(id, "WAITING_LOGIN")
             return@withLock
         }
-        db.transferDao().control(id, state)
+        if (db.transferDao().control(id, state) == 0) return@withLock
         WorkManager.getInstance(context).cancelUniqueWork("download:" + id).result.get()
         if (state == "QUEUED") schedule(context, id)
+        if (state == "CANCELLED") me.rerere.awara.util.ManagedDownloadFiles.taskFile(context, id, true).delete()
     }
 
     private fun schedule(context: Context, id: String) {

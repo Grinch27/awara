@@ -55,6 +55,7 @@ fun CompactMediaCard(
             .combinedClickable(role = Role.Button, onClickLabel = media.title, onClick = onClick, onLongClick = onLongClick),
     ) {
         BoxWithConstraints {
+            val coverWidth = (maxWidth * .36f).coerceIn(96.dp, 160.dp)
             @Composable
             fun Cover(coverModifier: Modifier) {
                 Box(coverModifier.background(MaterialTheme.colorScheme.surfaceVariant)) {
@@ -100,7 +101,7 @@ fun CompactMediaCard(
                 }
             } else {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Cover(Modifier.width((maxWidth * .36f).coerceIn(96.dp, 160.dp)).aspectRatio(4f / 3f))
+                    Cover(Modifier.width(coverWidth).aspectRatio(4f / 3f))
                     Box(Modifier.weight(1f).padding(horizontal = 10.dp, vertical = 6.dp)) { Metadata(true) }
                 }
             }

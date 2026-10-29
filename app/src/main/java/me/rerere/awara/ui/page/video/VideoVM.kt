@@ -1,6 +1,6 @@
 package me.rerere.awara.ui.page.video
 
-import android.util.Log
+import me.rerere.awara.util.AppLogger as Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -129,7 +129,7 @@ class VideoVM(
 
                 writeHistory()
             }.onError {
-                Log.w(TAG, "getVideo: $it")
+                Log.w(TAG, "getVideo: [response]")
 
                 if(it.message == "errors.privateVideo") {
                     state = state.copy(
@@ -138,7 +138,7 @@ class VideoVM(
                     )
                 }
             }.onException {
-                Log.w(TAG, "getVideo: ${it.exception}")
+                Log.w(TAG, "getVideo: ${it.exception.javaClass.simpleName}")
             }
             state = state.copy(loading = false)
         }
@@ -149,9 +149,9 @@ class VideoVM(
             }.onSuccess {
                 state = state.copy(relatedVideos = it.results)
             }.onError {
-                Log.w(TAG, "getRelatedVideos: $it")
+                Log.w(TAG, "getRelatedVideos: [response]")
             }.onException {
-                Log.w(TAG, "getRelatedVideos: ${it.exception}")
+                Log.w(TAG, "getRelatedVideos: ${it.exception.javaClass.simpleName}")
             }
         }
     }
@@ -163,9 +163,9 @@ class VideoVM(
             }.onSuccess {
                 loadPlaylistForVideo()
             }.onError {
-                Log.w(TAG, "createPlaylist: $it")
+                Log.w(TAG, "createPlaylist: [response]")
             }.onException {
-                Log.w(TAG, "createPlaylist: ${it.exception}")
+                Log.w(TAG, "createPlaylist: ${it.exception.javaClass.simpleName}")
             }
         }
     }
@@ -175,12 +175,12 @@ class VideoVM(
             runAPICatching {
                 mediaRepo.getLightPlaylist(id)
             }.onSuccess {
-                Log.i(TAG, "loadPlaylistForVideo: $it")
+                Log.i(TAG, "loadPlaylistForVideo: [response]")
                 state = state.copy(playlist = it)
             }.onError {
-                Log.w(TAG, "loadPlaylistForVideo: $it")
+                Log.w(TAG, "loadPlaylistForVideo: [response]")
             }.onException {
-                Log.w(TAG, "loadPlaylistForVideo: ${it.exception}")
+                Log.w(TAG, "loadPlaylistForVideo: ${it.exception.javaClass.simpleName}")
             }
         }
     }
@@ -198,7 +198,7 @@ class VideoVM(
                     state.copy(video = video.copy(liked = true))
                 }
             }.onError {
-                Log.w(TAG, "likeOrUnlike(error): $it")
+                Log.w(TAG, "likeOrUnlike(error): [response]")
             }.onException {
                 Log.w(TAG, "likeOrUnlike(exception)", it.exception)
             }
@@ -268,7 +268,7 @@ class VideoVM(
                         )
                     )
                 }
-                Log.i(TAG, "loadComments: $it")
+                Log.i(TAG, "loadComments: [response]")
             }.onError {
                 val activeCommentState = state.commentState.stack.last()
                 if (activeCommentState.parent == currentCommentState.parent) {
@@ -278,7 +278,7 @@ class VideoVM(
                         ),
                     )
                 }
-                Log.w(TAG, "loadComments(error): $it")
+                Log.w(TAG, "loadComments(error): [response]")
             }.onException {
                 val activeCommentState = state.commentState.stack.last()
                 if (activeCommentState.parent == currentCommentState.parent) {
@@ -313,12 +313,12 @@ class VideoVM(
                 commentRepo.postVideoComment(id, it.body, it.parentId)
             }.onSuccess {
                 events.emit(VideoEvent.CommentPosted)
-                Log.i(TAG, "postComment: $it")
+                Log.i(TAG, "postComment: [response]")
                 // 重新加载评论
                 loadComments()
             }.onError {
                 events.emit(VideoEvent.CommentPostFailed(it))
-                Log.w(TAG, "postComment(error): $it")
+                Log.w(TAG, "postComment(error): [response]")
             }.onException {
                 events.emit(VideoEvent.CommentPostException(it.exception))
                 Log.w(TAG, "postComment(exception)", it.exception)
@@ -335,9 +335,9 @@ class VideoVM(
                     state = state.copy(playlist = it)
                 }
             }.onSuccess {
-                Log.i(TAG, "addVideoToPlaylist: $it")
+                Log.i(TAG, "addVideoToPlaylist: [response]")
             }.onError {
-                Log.w(TAG, "addVideoToPlaylist(error): $it")
+                Log.w(TAG, "addVideoToPlaylist(error): [response]")
             }.onException {
                 Log.w(TAG, "addVideoToPlaylist(exception)", it.exception)
             }
@@ -354,9 +354,9 @@ class VideoVM(
                     state = state.copy(playlist = it)
                 }
             }.onSuccess {
-                Log.i(TAG, "removeVideoFromPlaylist: $it")
+                Log.i(TAG, "removeVideoFromPlaylist: [response]")
             }.onError {
-                Log.w(TAG, "removeVideoFromPlaylist(error): $it")
+                Log.w(TAG, "removeVideoFromPlaylist(error): [response]")
             }.onException {
                 Log.w(TAG, "removeVideoFromPlaylist(exception)", it.exception)
             }

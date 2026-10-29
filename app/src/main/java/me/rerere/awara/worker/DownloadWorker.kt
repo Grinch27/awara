@@ -118,6 +118,7 @@ class DownloadWorker(private val appContext: Context, params: WorkerParameters) 
                                     return@use
                                 }
                                 if (!plan.append) offset = 0
+                                if (plan.total > 0) require(partial.parentFile!!.usableSpace > plan.total - offset + 16L * 1024 * 1024) { "Insufficient storage" }
                                 bytes = offset; total = plan.total; validator = nextValidator.ifBlank { if (plan.append) validator else "" }
                                 check(update("RUNNING") > 0) { "Task changed" }
                                 var lastUpdate = System.currentTimeMillis()

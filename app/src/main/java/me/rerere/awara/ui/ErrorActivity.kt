@@ -60,11 +60,10 @@ class ErrorActivity : ComponentActivity() {
 fun Application.registerErrorHandler() {
     Thread.setDefaultUncaughtExceptionHandler { t, e ->
         AppLogger.e("CrashHandler", "Uncaught exception on ${t.name}", e)
-        e.printStackTrace()
         val intent = Intent(this, ErrorActivity::class.java)
             .apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                putExtra("error", e.stackTraceToString())
+                putExtra("error", AppLogger.formatThrowable(e))
             }
         startActivity(intent)
     }

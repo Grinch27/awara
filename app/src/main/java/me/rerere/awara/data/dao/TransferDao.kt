@@ -23,8 +23,8 @@ interface TransferDao {
     @Query("UPDATE download_tasks SET state=:state, bytes=:bytes, totalBytes=:total, validator=:validator, targetPath=:path, error=:error, updatedAt=:now WHERE id=:id AND generation=:generation")
     suspend fun progress(id: String, generation: Long, state: String, bytes: Long, total: Long, validator: String, path: String, error: String = "", now: Long = System.currentTimeMillis()): Int
 
-    @Query("UPDATE download_tasks SET state=:state, generation=generation+1, error='', updatedAt=:now WHERE id=:id")
-    suspend fun control(id: String, state: String, now: Long = System.currentTimeMillis())
+    @Query("UPDATE download_tasks SET state=:state, generation=generation+1, error='', updatedAt=:now WHERE id=:id AND state != 'COMPLETED'")
+    suspend fun control(id: String, state: String, now: Long = System.currentTimeMillis()): Int
 
     @Query("SELECT * FROM media_progress WHERE type=:type AND resourceId=:id")
     suspend fun mediaProgress(type: String, id: String): MediaProgress?

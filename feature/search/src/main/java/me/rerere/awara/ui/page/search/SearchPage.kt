@@ -124,7 +124,7 @@ fun SearchPage(
     var saveHistory by rememberBooleanPreference("search.save_history", true)
     var recentQueriesRaw by rememberStringPreference(key = "search.recent_queries", default = "")
     var searchBarActive by rememberSaveable { mutableStateOf(false) }
-    var initialRouteApplied by remember(initialSearchType, initialTag) { mutableStateOf(false) }
+    var initialRouteApplied by rememberSaveable(initialSearchType, initialTag) { mutableStateOf(false) }
     var lastLoadMoreItemCount by remember { mutableStateOf(-1) }
     val gridState = key(vm.state.resultKey) { rememberLazyStaggeredGridState() }
     val defaultSearchRating = globalSearchRating.takeIf { it in MediaRatingKeys } ?: DEFAULT_MEDIA_RATING
@@ -174,6 +174,7 @@ fun SearchPage(
 
     LaunchedEffect(
         gridState,
+        vm.state.uiState,
         vm.state.searchType,
         currentItemCount,
         vm.state.hasMore,
@@ -182,7 +183,7 @@ fun SearchPage(
             gridState.layoutInfo.visibleItemsInfo.maxOfOrNull { it.index } ?: 0
         }.collectLatest { lastVisibleIndex ->
             if (
-                vm.state.hasMore &&
+                vm.state.uiState == UiState.Success && vm.state.hasMore &&
                 !vm.state.loadingMore && !vm.state.appendFailed &&
                 currentItemCount > 0 &&
                 lastVisibleIndex >= currentItemCount - 6 &&
