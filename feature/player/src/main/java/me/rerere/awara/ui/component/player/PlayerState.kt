@@ -25,18 +25,20 @@ private const val TAG = "PlayerState"
 @Composable
 fun rememberPlayerState(
     publicHttpClient: OkHttpClient,
+    cacheScope: String = "public",
     builder: (Context, OkHttpClient) -> ExoPlayer = { context, httpClient ->
-        ExoPlayer.Builder(context, DefaultMediaSourceFactory(PlayerCache.get(context, httpClient)))
+        ExoPlayer.Builder(context, DefaultMediaSourceFactory(PlayerCache.get(context, httpClient, cacheScope)))
             .setHandleAudioBecomingNoisy(true)
             .build()
             .apply {
-                playWhenReady = true
+                setAudioAttributes(androidx.media3.common.AudioAttributes.Builder().setUsage(androidx.media3.common.C.USAGE_MEDIA).setContentType(androidx.media3.common.C.AUDIO_CONTENT_TYPE_MOVIE).build(), true)
+                playWhenReady = mmkvPreference.getBoolean("setting.auto_play", true)
                 repeatMode = if(mmkvPreference.getBoolean("setting.loop_play", false)) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
             }
     }
 ): PlayerState {
     val context = LocalContext.current
-    val state by remember(context, publicHttpClient) {
+    val state by remember(context, publicHttpClient, cacheScope) {
         mutableStateOf(PlayerState(builder(context, publicHttpClient)))
     }
     DisposableEffect(context, state) {
@@ -132,7 +134,13 @@ class PlayerState(val player: Player) {
         if (persistPreference) {
             mmkvPreference.putString("setting.player_quality", item.quality)
         }
-        player.setMediaItem(item.mediaItem)
+        val sameContent = player.currentMediaItem?.mediaId == item.mediaItem.mediaId && item.mediaItem.mediaId.isNotBlank()
+        val position = if (sameContent) player.currentPosition.coerceAtLeast(0L) else 0L
+        val playIntent = player.playWhenReady
+        val speed = player.playbackParameters
+        player.setMediaItem(item.mediaItem, position)
+        player.playbackParameters = speed
+        player.playWhenReady = playIntent
         currentMediaItem = item.mediaItem
     }
 

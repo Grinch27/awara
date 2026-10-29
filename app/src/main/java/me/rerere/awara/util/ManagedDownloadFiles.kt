@@ -11,6 +11,14 @@ import me.rerere.awara.data.entity.DownloadType
  * Persisted paths (including imported backups) are not trusted for deletion.
  */
 internal object ManagedDownloadFiles {
+    fun taskFile(context: Context, id: String, partial: Boolean): File {
+        require(id.matches(Regex("[a-zA-Z0-9-]{1,80}")))
+        val directory = managedDirectory(context, DownloadType.VIDEO, create = true) ?: error("Download storage unavailable")
+        val file = File(directory, "task-" + id + if (partial) ".part" else ".mp4")
+        require(file.canonicalFile.parentFile == directory)
+        return file
+    }
+
     fun create(context: Context, type: DownloadType): File? {
         val directory = managedDirectory(context, type, create = true) ?: return null
         val file = File.createTempFile("awara-", "", directory)
@@ -19,16 +27,15 @@ internal object ManagedDownloadFiles {
         return null
     }
 
-    fun deleteIfManaged(context: Context, item: DownloadItem): Boolean {
-        val directory = managedDirectory(context, item.type, create = false) ?: return false
+    fun resolveIfManaged(context: Context, item: DownloadItem): File? {
+        val directory = managedDirectory(context, item.type, create = false) ?: return null
         val file = File(item.path)
-        if (!file.isAbsolute ||
-            file.parentFile?.canonicalFile != directory ||
-            file.canonicalFile.parentFile != directory ||
-            !file.isFile
-        ) return false
-        return file.delete()
+        return file.takeIf { it.isAbsolute && it.parentFile?.canonicalFile == directory &&
+            it.canonicalFile.parentFile == directory && it.isFile }
     }
+
+    fun deleteIfManaged(context: Context, item: DownloadItem): Boolean =
+        resolveIfManaged(context, item)?.delete() == true
 
     private fun managedDirectory(context: Context, type: DownloadType, create: Boolean): File? {
         val root = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)

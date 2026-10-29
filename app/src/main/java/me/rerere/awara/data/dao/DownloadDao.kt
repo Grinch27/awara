@@ -19,7 +19,7 @@ interface DownloadDao {
     @Query("select count(*) from downloaded_items")
     suspend fun countDownloadedItems(): Int
 
-    @Insert
+    @Insert(onConflict = androidx.room.OnConflictStrategy.REPLACE)
     suspend fun insertDownloadItem(downloadItem: DownloadItem)
 
     @Insert

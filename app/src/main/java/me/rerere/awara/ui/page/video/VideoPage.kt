@@ -17,6 +17,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player as MediaPlayer
+import androidx.media3.datasource.HttpDataSource
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import me.rerere.awara.data.session.SecureSession
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -64,7 +72,37 @@ fun VideoPage(
 
     var requestOrientation by rememberRequestedScreenOrientation()
     val windowSize = rememberWindowSizeClass()
-    val state = rememberPlayerState(publicHttpClient)
+    val session by SecureSession.state.collectAsState()
+    val cacheScope = session.sessionId.ifBlank { "public" }
+    val state = rememberPlayerState(publicHttpClient, cacheScope)
+    var restored by remember(vm.id) { mutableStateOf(false) }
+    DisposableEffect(state, vm) {
+        val listener = object : MediaPlayer.Listener {
+            override fun onPlayerError(error: PlaybackException) {
+                var cause: Throwable? = error
+                while (cause != null) {
+                    if (cause is HttpDataSource.InvalidResponseCodeException && cause.responseCode in setOf(401, 403)) {
+                        vm.refreshSources(); break
+                    }
+                    cause = cause.cause
+                }
+            }
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                if (!isPlaying) vm.saveProgress(state.player.currentPosition, state.player.duration)
+            }
+        }
+        state.player.addListener(listener)
+        onDispose {
+            vm.saveProgress(state.player.currentPosition, state.player.duration)
+            state.player.removeListener(listener)
+        }
+    }
+    LaunchedEffect(state, vm.id) {
+        while (isActive) {
+            delay(5000)
+            vm.saveProgress(state.player.currentPosition, state.player.duration)
+        }
+    }
     val message = LocalMessageProvider.current
     val scope = rememberCoroutineScope()
 
@@ -124,13 +162,19 @@ fun VideoPage(
     BackHandler(fullscreen) {
         exitFullScreen()
     }
-    fun applyUrls(urls: List<VideoFile>) {
+    suspend fun applyUrls(urls: List<VideoFile>) {
+        val assetVersion = vm.state.video?.file?.id.orEmpty() + ":" + vm.state.video?.updatedAt.toString()
+        val mediaId = "video:" + vm.id + ":" + assetVersion
         state.updatePlayerItems(
             urls.map {
                 PlayerState.PlayerItem(
                     quality = it.name,
                     mediaItem = MediaItem.Builder()
                         .setUri(it.playbackUrl().fixUrl())
+                        .setMediaId(mediaId)
+                        .setCustomCacheKey(if (it.type.contains("mpegurl", true) || it.type.contains("dash", true) ||
+                            it.playbackUrl().substringBefore('?').endsWith(".m3u8", true) ||
+                            it.playbackUrl().substringBefore('?').endsWith(".mpd", true)) null else cacheScope + ":" + mediaId + ":" + it.name)
                         .setMediaMetadata(
                             MediaMetadata.Builder()
                                 .setTitle(vm.state.video?.title)
@@ -140,14 +184,20 @@ fun VideoPage(
                 )
             }
         )
-        //state.updateCurrentQuality(urls.lastOrNull()?.name ?: "Source")
+        if (urls.isNotEmpty() && !restored) {
+            val saved = vm.savedProgress()
+            if (saved?.fileId == vm.state.video?.file?.id && saved != null && saved.duration > 0 && saved.position < saved.duration - 5000) {
+                state.player.seekTo(saved.position.coerceAtLeast(0))
+            }
+            restored = true
+        }
         if(mmkvPreference.getBoolean("setting.auto_play", true)) {
             state.prepare()
         }
     }
 
     // Handle VM Events
-    LaunchedEffect(Unit) {
+    LaunchedEffect(state) {
         applyUrls(vm.state.urls)
         vm.events.collectLatest {
             when (it) {

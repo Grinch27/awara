@@ -44,6 +44,10 @@ class App : Application(), SingletonImageLoader.Factory, KoinComponent {
                 userCaseModule
             )
         }
+        val localData = get<me.rerere.awara.data.repo.LocalDataRepo>()
+        if (localData.needsRecovery()) kotlinx.coroutines.runBlocking(kotlinx.coroutines.Dispatchers.IO) {
+            localData.recoverInterruptedImport()
+        }
         AppLogger.install(get())
     }
 

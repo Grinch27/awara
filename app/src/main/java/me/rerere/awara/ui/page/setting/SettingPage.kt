@@ -26,6 +26,12 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Source
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.ViewAgenda
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.Column
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CancellationException
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
@@ -144,6 +150,10 @@ private fun appearanceSectionMatches(context: Context, query: String): Boolean =
     query,
     SettingSection.APPEARANCE.titleRes,
     SettingSection.APPEARANCE.summaryRes,
+    R.string.setting_privacy_screen_title,
+    R.string.setting_privacy_screen_text,
+    R.string.setting_history_record_title,
+    R.string.setting_history_record_text,
     R.string.setting_look_darkmode_title,
     R.string.setting_look_darkmode_text,
     R.string.setting_look_dynamic_color_title,
@@ -201,6 +211,8 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
     var pendingExport by remember {
         mutableStateOf<PendingExport?>(null)
     }
+    var pendingImport by remember { mutableStateOf<Pair<String, LocalDataSummary>?>(null) }
+    var importBusy by remember { mutableStateOf(false) }
     var localDataSummary by remember {
         mutableStateOf(LocalDataSummary())
     }
@@ -225,7 +237,7 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
         }
         coroutineScope.launch {
             runCatching {
-                context.writeTextDocument(uri, export.content)
+                withContext(Dispatchers.IO) { context.writeTextDocument(uri, export.content) }
             }.onSuccess {
                 message.success {
                     Text(export.successMessage)
@@ -242,31 +254,49 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
     val importLocalDataLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
     ) { uri ->
-        if (uri == null) {
-            return@rememberLauncherForActivityResult
-        }
+        if (uri == null) return@rememberLauncherForActivityResult
         coroutineScope.launch {
-            runCatching {
-                val content = context.readTextDocument(uri)
-                vm.importLocalDataBackup(content)
-            }.onSuccess { summary ->
-                localDataSummary = summary
-                message.success {
-                    Text(
-                        context.getString(
-                            R.string.setting_data_local_backup_import_success,
-                            summary.historyCount,
-                            summary.downloadCount,
-                        )
-                    )
-                }
-            }.onFailure {
-                AppLogger.e("SettingPage", "Failed to import local data backup", it)
-                message.error {
-                    Text(context.getString(R.string.setting_data_action_failed))
-                }
+            try {
+                val content = withContext(Dispatchers.IO) { context.readTextDocument(uri) }
+                pendingImport = content to vm.previewLocalDataBackup(content)
+            } catch (cancelled: CancellationException) { throw cancelled
+            } catch (error: Exception) {
+                AppLogger.e("SettingPage", "Invalid local data backup", error)
+                message.error { Text(context.getString(R.string.setting_data_action_failed)) }
             }
         }
+    }
+
+    fun commitImport(replace: Boolean) {
+        val content = pendingImport?.first ?: return
+        if (importBusy) return
+        importBusy = true
+        coroutineScope.launch {
+            try {
+                localDataSummary = vm.importLocalDataBackup(content, replace)
+                pendingImport = null
+                message.success { Text(context.getString(R.string.setting_data_local_backup_import_success,
+                    localDataSummary.historyCount, localDataSummary.downloadCount)) }
+            } catch (cancelled: CancellationException) { throw cancelled
+            } catch (error: Exception) {
+                AppLogger.e("SettingPage", "Import failed; recovery applied", error)
+                message.error { Text(context.getString(R.string.setting_data_action_failed)) }
+            } finally { importBusy = false }
+        }
+    }
+    pendingImport?.let { (_, preview) ->
+        AlertDialog(
+            onDismissRequest = { if (!importBusy) pendingImport = null },
+            title = { Text(stringResource(R.string.backup_preview_title)) },
+            text = { Text(stringResource(R.string.backup_preview_text, preview.historyCount, preview.downloadCount)) },
+            confirmButton = { TextButton(enabled = !importBusy, onClick = { commitImport(false) }) { Text(stringResource(R.string.backup_merge)) } },
+            dismissButton = {
+                Column {
+                    TextButton(enabled = !importBusy, onClick = { commitImport(true) }) { Text(stringResource(R.string.backup_replace)) }
+                    TextButton(enabled = !importBusy, onClick = { pendingImport = null }) { Text(stringResource(R.string.cancel)) }
+                }
+            },
+        )
     }
 
     Scaffold(
@@ -517,6 +547,8 @@ private fun AppearanceSettingsSection(
         default = MEDIA_LIST_MODE_DETAIL,
     )
     val blockMediaThumbnails = rememberBlockMediaThumbnailsPreference()
+    val secureScreen = rememberBooleanPreference("setting.secure_screen", false)
+    val recordHistory = rememberBooleanPreference("setting.record_history", true)
     val mediaSearchRating = rememberStringPreference(
         key = SETTING_MEDIA_SEARCH_RATING,
         default = DEFAULT_MEDIA_RATING,
@@ -573,6 +605,18 @@ private fun AppearanceSettingsSection(
     )
 
     SettingItemCategory(title = { Text(stringResource(R.string.setting_look)) }) {
+        if (showWholeSection || matchesSettingQuery(context, query, R.string.setting_privacy_screen_title, R.string.setting_privacy_screen_text)) {
+            SettingBooleanItem(state = secureScreen,
+                title = { Text(stringResource(R.string.setting_privacy_screen_title)) },
+                icon = { Icon(Icons.Outlined.Settings, null) },
+                text = { Text(stringResource(R.string.setting_privacy_screen_text)) })
+        }
+        if (showWholeSection || matchesSettingQuery(context, query, R.string.setting_history_record_title, R.string.setting_history_record_text)) {
+            SettingBooleanItem(state = recordHistory,
+                title = { Text(stringResource(R.string.setting_history_record_title)) },
+                icon = { Icon(Icons.Outlined.Settings, null) },
+                text = { Text(stringResource(R.string.setting_history_record_text)) })
+        }
         if (showDarkMode) {
             SettingPickerItem(
                 state = darkMode,

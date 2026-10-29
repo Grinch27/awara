@@ -7,6 +7,10 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
+import me.rerere.awara.data.dao.TransferDao
+import me.rerere.awara.data.entity.DownloadTask
+import me.rerere.awara.data.entity.MediaProgress
+import me.rerere.awara.data.entity.ImportCommit
 import me.rerere.awara.data.dao.AppLogDao
 import me.rerere.awara.data.dao.DownloadDao
 import me.rerere.awara.data.dao.HistoryDao
@@ -23,7 +27,7 @@ val databaseModule = module {
             androidContext(),
             AppDatabase::class.java,
             "awara.db"
-        ).addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+        ).addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
             .build()
     }
 }
@@ -76,19 +80,33 @@ private val MIGRATION_5_6 = object : Migration(5, 6) {
     }
 }
 
+// No destructive fallback: all existing history and completed downloads survive.
+private val MIGRATION_6_7 = object : Migration(6, 7) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL("CREATE TABLE IF NOT EXISTS download_tasks (id TEXT NOT NULL PRIMARY KEY, resourceId TEXT NOT NULL, title TEXT NOT NULL, thumbnail TEXT NOT NULL, quality TEXT NOT NULL, owner TEXT NOT NULL, state TEXT NOT NULL, bytes INTEGER NOT NULL, totalBytes INTEGER NOT NULL, validator TEXT NOT NULL, targetPath TEXT NOT NULL, error TEXT NOT NULL, generation INTEGER NOT NULL, updatedAt INTEGER NOT NULL)")
+        database.execSQL("CREATE TABLE IF NOT EXISTS media_progress (type TEXT NOT NULL, resourceId TEXT NOT NULL, fileId TEXT NOT NULL, position INTEGER NOT NULL, duration INTEGER NOT NULL, updatedAt INTEGER NOT NULL, PRIMARY KEY(type, resourceId))")
+        database.execSQL("CREATE TABLE IF NOT EXISTS import_commits (id TEXT NOT NULL PRIMARY KEY)")
+    }
+}
+
 @Database(
     entities = [
         HistoryItem::class,
         DownloadItem::class,
         AppLogEntry::class,
+        DownloadTask::class,
+        MediaProgress::class,
+        ImportCommit::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
     ]
 )
 abstract class AppDatabase : RoomDatabase() {
+    abstract fun transferDao(): TransferDao
+
     abstract fun historyDao(): HistoryDao
 
     abstract fun downloadDao(): DownloadDao

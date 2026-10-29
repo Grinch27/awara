@@ -9,6 +9,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
+import me.rerere.awara.data.entity.MediaProgress
 import me.rerere.awara.data.entity.CommentCreationDto
 import me.rerere.awara.data.entity.HistoryItem
 import me.rerere.awara.data.entity.HistoryType
@@ -53,9 +56,49 @@ class VideoVM(
         loadPlaylistForVideo()
     }
 
-    suspend fun isVideoAlreadyDownloaded() = appDatabase.downloadDao().getDownloadItem(resourceId = id) != null
+    suspend fun isVideoAlreadyDownloaded(context: android.content.Context): Boolean {
+        val item = appDatabase.downloadDao().getDownloadItem(resourceId = id) ?: return false
+        return me.rerere.awara.util.ManagedDownloadFiles.resolveIfManaged(context, item) != null
+    }
+
+    suspend fun enqueueDownload(context: android.content.Context) {
+        val video = state.video ?: return
+        me.rerere.awara.worker.DownloadScheduler.enqueue(context, appDatabase, id, video.title,
+            video.thumbnailUrl(), state.urls.lastOrNull()?.name.orEmpty())
+    }
+
+    private var refreshAttempts = 0
+    private var refreshingSources = false
+
+    fun refreshSources() {
+        if (refreshingSources || refreshAttempts >= 2) return
+        refreshingSources = true
+        ++refreshAttempts
+        viewModelScope.launch {
+            try {
+                val video = mediaRepo.getVideo(id)
+                val urls = mediaRepo.getVideoStreamManifest(video).filter { it.name != "preview" }
+                state = state.copy(video = video, urls = urls)
+                events.emit(VideoEvent.UrlLoaded(urls))
+            } catch (cancelled: CancellationException) { throw cancelled
+            } catch (_: Exception) { /* Player keeps its recoverable error state. */
+            } finally { refreshingSources = false }
+        }
+    }
+
+    suspend fun savedProgress(): MediaProgress? = appDatabase.transferDao().mediaProgress("video", id)
+
+    fun saveProgress(position: Long, duration: Long) {
+        val fileId = state.video?.file?.id ?: return
+        if (position < 0 || duration <= 0) return
+        viewModelScope.launch(Dispatchers.IO) {
+            appDatabase.transferDao().saveProgress(MediaProgress("video", id, fileId,
+                position.coerceIn(0, duration), duration))
+        }
+    }
 
     private fun writeHistory() {
+        if (!me.rerere.compose_setting.preference.mmkvPreference.getBoolean("setting.record_history", true)) return
         viewModelScope.launch {
             kotlin.runCatching {
                 appDatabase.historyDao().insertHistory(HistoryItem(

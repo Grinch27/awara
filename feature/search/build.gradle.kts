@@ -14,9 +14,13 @@ dependencies {
     // Stable BOM: Compose 1.6.8 / Material3 1.2.1, within the current compileSdk 34 lane.
     implementation(platform("androidx.compose:compose-bom:+"))
     implementation(project(":core:model"))
+    implementation(project(":core:ui"))
     implementation(project(":data"))
 
     implementation("androidx.core:core-ktx:+")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-savedstate:+")
+    testImplementation("junit:junit:+")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:+")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-util")

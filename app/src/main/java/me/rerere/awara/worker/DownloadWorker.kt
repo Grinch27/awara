@@ -1,192 +1,183 @@
+// Requirements: persistent file downloads with bounded concurrency and safe resumable writes.
+// Risks: signed URLs are re-resolved; HLS/DASH packages are deliberately unsupported here.
+// Verify: unknown length, 200/206/416, cancellation, expired URLs and atomic completion.
 package me.rerere.awara.worker
 
-import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
-import android.util.Log
-import androidx.core.app.ActivityCompat
+import android.content.pm.ServiceInfo
+import android.os.Build
 import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import androidx.room.withTransaction
+import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import me.rerere.awara.R
-import me.rerere.awara.data.entity.DownloadItem
-import me.rerere.awara.data.entity.DownloadType
+import me.rerere.awara.data.entity.*
+import me.rerere.awara.data.repo.MediaRepo
+import me.rerere.awara.data.session.SecureSession
 import me.rerere.awara.di.AppDatabase
+import me.rerere.awara.util.ManagedDownloadFiles
 import me.rerere.awara.util.await
 import me.rerere.awara.util.prettyFileSize
-import me.rerere.awara.util.ManagedDownloadFiles
 import okhttp3.Request
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
-import java.io.EOFException
+import java.io.FileOutputStream
+import java.io.IOException
 import java.time.Instant
 
-private const val TAG = "DownloadWorker"
+class DownloadWorker(private val appContext: Context, params: WorkerParameters) :
+    CoroutineWorker(appContext, params), KoinComponent {
+    private val client by inject<okhttp3.OkHttpClient>()
+    private val db by inject<AppDatabase>()
+    private val mediaRepo by inject<MediaRepo>()
+    private val dao get() = db.transferDao()
+    private val notificationId = id.hashCode() and Int.MAX_VALUE
+    private fun foreground(title: String, bytes: Long = 0, total: Long = -1): ForegroundInfo {
+        val percent = if (total > 0) ((bytes.toDouble() / total) * 100).toInt().coerceIn(0, 100) else 0
+        val notification = NotificationCompat.Builder(appContext, "download")
+            .setSmallIcon(R.drawable.baseline_cloud_download_24).setOngoing(true).setSilent(true)
+            .setContentTitle(title)
+            .setContentText(prettyFileSize(bytes) + if (total > 0) " / " + prettyFileSize(total) else "")
+            .setProgress(100, percent, total <= 0).build()
+        return if (Build.VERSION.SDK_INT >= 29) ForegroundInfo(notificationId, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+        else ForegroundInfo(notificationId, notification)
+    }
 
-/**
- * 下载任务Worker
- *
- * 启动参数:
- * - KEY_DOWNLOAD_URL 下载链接
- * - KEY_DOWNLOAD_TITLE 标题
- * - KEY_DOWNLOAD_THUMBNAIL 缩略图
- * - KEY_DOWNLOAD_TYPE 下载类型
- * - KEY_DOWNLOAD_RESOURCE_ID 资源ID
- */
-class DownloadWorker(
-    private val appContext: Context,
-    params: WorkerParameters
-) : CoroutineWorker(appContext, params), KoinComponent {
-    private val okHttpClient by inject<okhttp3.OkHttpClient>()
-    private val appDatabase by inject<AppDatabase>()
-    private val notificationId = notificationIdCounter++
-    private val notification = NotificationCompat.Builder(appContext, "download")
-        .setContentTitle(appContext.getString(R.string.download))
-        .setSmallIcon(R.drawable.baseline_cloud_download_24)
-        .setOngoing(true)
-        .setSilent(true)
-        .setOnlyAlertOnce(true)
-
-    override suspend fun doWork(): Result {
-        if (ActivityCompat.checkSelfPermission(
-                appContext,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return Result.failure()
+    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        // Legacy queued work is reconstructed from resource metadata; its URL is never reused.
+        val taskId = inputData.getString(KEY_TASK_ID) ?: run {
+            val resource = inputData.getString(KEY_DOWNLOAD_RESOURCE_ID) ?: return@withContext Result.failure()
+            DownloadScheduler.enqueue(appContext, db, resource, inputData.getString(KEY_DOWNLOAD_TITLE).orEmpty(),
+                inputData.getString(KEY_DOWNLOAD_THUMBNAIL).orEmpty(), "")
+            return@withContext Result.success()
         }
-
-        val notificationCompat = NotificationManagerCompat.from(appContext)
-        setForeground(ForegroundInfo(notificationId, notification.build()))
-
-        val url = inputData.getString(KEY_DOWNLOAD_URL) ?: return Result.failure()
-        val title = inputData.getString(KEY_DOWNLOAD_TITLE) ?: return Result.failure()
-        val thumbnail = inputData.getString(KEY_DOWNLOAD_THUMBNAIL) ?: return Result.failure()
-        val type = inputData.getString(KEY_DOWNLOAD_TYPE) ?: return Result.failure()
-        val resourceId = inputData.getString(KEY_DOWNLOAD_RESOURCE_ID) ?: return Result.failure()
-
-        val downloadType = runCatching { DownloadType.valueOf(type) }.getOrNull()
-            ?: return Result.failure()
-        val destinationFile = runCatching {
-            ManagedDownloadFiles.create(appContext, downloadType)
-        }.getOrNull() ?: return Result.failure()
-
-        Log.i(TAG, "doWork: 开始下载: $url => ${destinationFile.absolutePath}")
-        setForeground(
-            ForegroundInfo(
-                notificationId,
-                notification
-                    .setContentText(title)
-                    .setProgress(100, 0, true)
-                    .build()
-            )
-        )
-
-        return withContext(Dispatchers.IO) {
-            kotlin.runCatching {
-                val request = Request.Builder()
-                    .url(url)
-                    .get()
-
-                val response = okHttpClient.newCall(request.build()).await()
-                if (response.isSuccessful) {
-                    val total = response.body?.contentLength() ?: 0
-                    val fileSizePretty = prettyFileSize(total)
-                    Log.i(TAG, "doWork: 文件大小: $total")
-
-                    destinationFile.outputStream().use { out ->
-                        response.body?.byteStream()?.use { input ->
-                            val buffer = ByteArray(2048)
-                            var len: Int
-                            var step = 0
-                            while (input.read(buffer).also { len = it } != -1) {
-                                out.write(buffer, 0, len)
-
-                                if (step++ % 25 == 0 || len != buffer.size) {
-                                    val percent = (destinationFile.length() * 100 / total).toInt()
-                                    val currentSizePretty = prettyFileSize(destinationFile.length())
-                                    notificationCompat.notify(
-                                        notificationId,
-                                        notification
-                                            .setContentTitle(title)
-                                            .setContentText("$percent% ($currentSizePretty / $fileSizePretty)")
-                                            .setProgress(100, percent, false)
-                                            .build()
-                                    )
-
-                                    Log.i(TAG, "doWork: $percent% #$title")
-                                }
-                            }
-
-                            out.flush()
+        val task = dao.task(taskId) ?: return@withContext Result.failure()
+        if (task.state in setOf("PAUSED", "CANCELLED", "COMPLETED")) return@withContext Result.success()
+        var bytes = task.bytes
+        var total = task.totalBytes
+        var validator = task.validator
+        val partial = ManagedDownloadFiles.taskFile(appContext, taskId, true)
+        val target = ManagedDownloadFiles.taskFile(appContext, taskId, false)
+        suspend fun update(state: String, error: String = "") =
+            dao.progress(taskId, task.generation, state, bytes, total, validator, target.absolutePath, error)
+        fun checkOwner() {
+            check(task.owner.isBlank() || task.owner == SecureSession.snapshot.sessionId) { "Account changed" }
+        }
+        try {
+            checkOwner()
+            setForeground(foreground(task.title))
+            slots.withPermit {
+                coroutineContext.ensureActive()
+                if (update("RUNNING") == 0) return@withPermit
+                // Recover a rename that happened immediately before an interrupted DB commit.
+                if (target.isFile && !partial.exists()) check(target.renameTo(partial))
+                var completed = false
+                repeat(3) { attempt ->
+                    if (completed) return@repeat
+                    checkOwner()
+                    coroutineContext.ensureActive()
+                    val video = mediaRepo.getVideo(task.resourceId)
+                    val choices = mediaRepo.getVideoStreamManifest(video).filter { it.name != "preview" }
+                    val selected = if (task.quality.isBlank()) choices.lastOrNull() else choices.find { it.name == task.quality }
+                    requireNotNull(selected) { "Selected quality unavailable" }
+                    val url = selected.src.download.ifBlank { selected.playbackUrl() }.fixUrl().toHttpUrl()
+                    require(url.isHttps && !url.encodedPath.endsWith(".m3u8", true) && !url.encodedPath.endsWith(".mpd", true)) { "Unsupported file source" }
+                    var offset = if (validator.isNotBlank()) partial.length() else 0L
+                    if (offset == 0L && partial.exists()) FileOutputStream(partial).use { }
+                    val request = Request.Builder().url(url).header("Accept-Encoding", "identity").apply {
+                        if (offset > 0) { header("Range", "bytes=" + offset + "-"); header("If-Range", validator) }
+                    }.build()
+                    val call = client.newCall(request)
+                    coroutineScope {
+                        val cancellation = launch(start = CoroutineStart.UNDISPATCHED) {
+                            try { awaitCancellation() } finally { call.cancel() }
                         }
+                        try {
+                            call.await().use { response ->
+                                if ((response.code == 401 || response.code == 403) && attempt < 2) return@use
+                                if (response.code == 416 && attempt < 2) {
+                                    FileOutputStream(partial).use { }
+                                    bytes = 0; total = -1; validator = ""; update("RUNNING")
+                                    return@use
+                                }
+                                if (!response.isSuccessful) throw IOException("Download HTTP " + response.code)
+                                val body = response.body ?: throw IOException("Missing download body")
+                                val mime = body.contentType()?.toString().orEmpty().lowercase()
+                                require(!mime.contains("mpegurl") && !mime.contains("dash+xml") && !mime.contains("text/html")) { "Unsupported content type" }
+                                val plan = DownloadRange.plan(response.code, offset, response.header("Content-Range"), body.contentLength())
+                                val nextValidator = response.header("ETag")?.takeUnless { it.startsWith("W/") }
+                                    ?: response.header("Last-Modified").orEmpty()
+                                if (plan.append && nextValidator.isNotBlank() && nextValidator != validator) {
+                                    FileOutputStream(partial).use { }; bytes = 0; validator = ""; total = -1
+                                    update("RUNNING")
+                                    return@use
+                                }
+                                if (!plan.append) offset = 0
+                                bytes = offset; total = plan.total; validator = nextValidator.ifBlank { if (plan.append) validator else "" }
+                                check(update("RUNNING") > 0) { "Task changed" }
+                                var lastUpdate = System.currentTimeMillis()
+                                FileOutputStream(partial, plan.append).use { output ->
+                                    body.byteStream().use { input ->
+                                        val buffer = ByteArray(64 * 1024)
+                                        while (true) {
+                                            coroutineContext.ensureActive()
+                                            checkOwner()
+                                            val count = input.read(buffer)
+                                            if (count < 0) break
+                                            output.write(buffer, 0, count); bytes += count
+                                            if (System.currentTimeMillis() - lastUpdate >= 750) {
+                                                check(update("RUNNING") > 0) { "Task changed" }
+                                                setForeground(foreground(task.title, bytes, total))
+                                                lastUpdate = System.currentTimeMillis()
+                                            }
+                                        }
+                                    }
+                                    output.fd.sync()
+                                }
+                                require(bytes > 0 && (total < 0 || bytes == total)) { "Incomplete file" }
+                                coroutineContext.ensureActive(); checkOwner()
+                                db.withTransaction {
+                                    val latest = dao.task(taskId)
+                                    check(latest != null && latest.generation == task.generation && latest.state == "RUNNING") { "Task changed" }
+                                    check(partial.renameTo(target)) { "Unable to commit download" }
+                                    val old = db.downloadDao().getDownloadItem(task.resourceId)
+                                    db.downloadDao().insertDownloadItem(DownloadItem(id = old?.id ?: 0, title = task.title,
+                                        thumbnail = task.thumbnail, path = target.absolutePath, type = DownloadType.VIDEO,
+                                        resourceId = task.resourceId, time = Instant.now()))
+                                    check(update("COMPLETED") > 0)
+                                }
+                                completed = true
+                            }
+                        } finally { cancellation.cancel() }
                     }
-
-                    Log.i(
-                        TAG,
-                        "doWork: 下载成功！当前文件大小: ${destinationFile.length()} 路径: ${destinationFile.absolutePath}"
-                    )
-
-                    appDatabase.downloadDao().insertDownloadItem(
-                        DownloadItem(
-                            title = title,
-                            thumbnail = thumbnail,
-                            type = downloadType,
-                            resourceId = resourceId,
-                            path = destinationFile.absolutePath,
-                            time = Instant.now()
-                        )
-                    )
-
-                    Log.i(TAG, "doWork: 已插入数据库")
-                } else {
-                    error("下载失败: ${response.code}")
                 }
+                check(completed) { "Source could not be refreshed" }
             }
-        }.fold(
-            onSuccess = {
-                notificationCompat.notify(
-                    0,
-                    NotificationCompat.Builder(appContext, "download")
-                        .setContentTitle(appContext.getString(R.string.download))
-                        .setContentText(appContext.getString(R.string.download_success, title))
-                        .setSmallIcon(R.drawable.baseline_cloud_download_24)
-                        .build()
-                )
-
-                Result.success()
-            },
-            onFailure = {
-                Log.e(TAG, "doWork: 下载失败", it)
-                kotlin.runCatching { destinationFile.delete() }
-
-                notificationCompat.notify(
-                    0,
-                    NotificationCompat.Builder(appContext, "download")
-                        .setContentTitle(appContext.getString(R.string.download))
-                        .setStyle(
-                            NotificationCompat.BigTextStyle().bigText(it.stackTraceToString())
-                        )
-                        .setSmallIcon(R.drawable.baseline_cloud_download_24)
-                        .build()
-                )
-
-                if (it is EOFException) {
-                    Result.retry()
-                } else {
-                    Result.failure()
-                }
+            Result.success()
+        } catch (cancelled: CancellationException) {
+            withContext(NonCancellable) { update("QUEUED") }
+            throw cancelled
+        } catch (error: Exception) {
+            val ownerChanged = task.owner.isNotBlank() && task.owner != SecureSession.snapshot.sessionId
+            val retry = error is IOException && runAttemptCount < 3 && !ownerChanged
+            update(if (ownerChanged) "WAITING_LOGIN" else if (retry) "QUEUED" else "FAILED",
+                if (ownerChanged) "Account changed" else error.javaClass.simpleName)
+            if (retry) Result.retry() else Result.failure()
+        } finally {
+            withContext(NonCancellable) {
+                if (dao.task(taskId)?.state == "CANCELLED") partial.delete()
             }
-        )
+        }
     }
 
     companion object {
-        private var notificationIdCounter = 1
-
+        private val slots = Semaphore(2)
+        const val KEY_TASK_ID = "task_id"
         const val KEY_DOWNLOAD_URL = "download_url"
         const val KEY_DOWNLOAD_TITLE = "download_title"
         const val KEY_DOWNLOAD_THUMBNAIL = "download_thumbnail"

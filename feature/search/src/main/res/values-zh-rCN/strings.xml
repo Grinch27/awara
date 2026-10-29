@@ -14,4 +14,7 @@
     <string name="forum_sticky">置顶</string>
     <string name="search_forum_reply">回复 #%1$d</string>
     <string name="sort_date">最新</string>
+    <string name="search_pause_history">暂停记录搜索历史</string>
+    <string name="search_enable_history">启用搜索历史</string>
+    <string name="search_remove_history">移除这条历史</string>
 </resources>

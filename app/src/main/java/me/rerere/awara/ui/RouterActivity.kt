@@ -2,6 +2,9 @@ package me.rerere.awara.ui
 
 import android.net.Uri
 import android.os.Bundle
+import android.view.WindowManager
+import androidx.compose.runtime.getValue
+import me.rerere.compose_setting.preference.rememberBooleanPreference
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -56,6 +59,11 @@ class RouterActivity : ComponentActivity() {
         val splashScreen = installSplashScreen().apply { setKeepOnScreenCondition { true } }
         super.onCreate(savedInstanceState)
         setContent {
+            val secureScreen by rememberBooleanPreference("setting.secure_screen", false)
+            LaunchedEffect(secureScreen) {
+                if (secureScreen) window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                else window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+            }
             AwaraTheme {
                 ContextProvider {
                     UserStoreProvider {

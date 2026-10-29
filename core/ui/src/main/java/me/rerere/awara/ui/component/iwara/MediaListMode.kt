@@ -25,6 +25,6 @@ fun rememberBlockMediaThumbnailsPreference() = rememberBooleanPreference(
 )
 
 fun mediaListGridCells(listMode: String): StaggeredGridCells = when (listMode) {
-    MEDIA_LIST_MODE_THUMBNAIL -> DynamicStaggeredGridCells(150.dp, 2, 4)
+    MEDIA_LIST_MODE_THUMBNAIL -> DynamicStaggeredGridCells(150.dp, 1, 6)
     else -> StaggeredGridCells.Fixed(1)
 }

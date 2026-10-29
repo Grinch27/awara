@@ -85,6 +85,10 @@ jobs:
         if: matrix.build_type == 'debug'
         run: ./gradlew testDebugUnitTest --stacktrace
 
+      - name: Record Room migration schema
+        if: matrix.build_type == 'debug'
+        run: cat app/schemas/me.rerere.awara.di.AppDatabase/7.json
+
       - name: Build APK
         run: |
           set -euo pipefail
@@ -117,6 +121,7 @@ jobs:
         with:
           name: unit-test-results
           path: |
+            app/schemas/
             **/build/test-results/testDebugUnitTest/*.xml
             **/build/reports/tests/testDebugUnitTest/
           if-no-files-found: ignore

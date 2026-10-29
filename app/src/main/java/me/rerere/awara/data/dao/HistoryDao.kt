@@ -20,13 +20,25 @@ interface HistoryDao {
     suspend fun countHistory(): Int
 
     @Insert
-    suspend fun insertHistory(historyItem: HistoryItem)
+    suspend fun insertHistoryRow(historyItem: HistoryItem)
+
+    @Query("DELETE FROM history_items WHERE type=:type AND resourceId=:resourceId")
+    suspend fun removeResource(type: String, resourceId: String)
+
+    @Transaction
+    suspend fun insertHistory(historyItem: HistoryItem) {
+        removeResource(historyItem.type.name, historyItem.resourceId)
+        insertHistoryRow(historyItem.copy(id = 0L))
+    }
 
     @Insert
     suspend fun insertHistoryItems(historyItems: List<HistoryItem>)
 
     @Delete
     suspend fun deleteHistory(historyItem: HistoryItem)
+
+    @Query("DELETE FROM history_items WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<Long>)
 
     @Query("delete from history_items")
     suspend fun clearAllHistory()

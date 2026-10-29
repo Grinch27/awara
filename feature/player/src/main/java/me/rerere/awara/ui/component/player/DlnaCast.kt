@@ -10,6 +10,8 @@ import net.mm2d.upnp.ControlPoint
 import net.mm2d.upnp.ControlPointFactory
 import net.mm2d.upnp.Device
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.*
 
 private const val TAG = "DlnaCast"
 
@@ -21,12 +23,19 @@ class DlnaCastState {
 
     val deviceList = mutableStateListOf<Device>()
 
+    fun release() {
+        if (this::controlPoint.isInitialized) {
+            controlPoint.stop()
+            controlPoint.terminate()
+        }
+    }
+
     fun search() {
-        controlPoint.search()
+        if (initialized.value) controlPoint.search()
     }
 
     suspend fun playUrl(device: Device, url: String) {
-        device.findAction("SetAVTransportURI")?.invokeAsync(
+        requireNotNull(device.findAction("SetAVTransportURI")) { "Device cannot receive media" }.invokeAsync(
             mapOf(
                 "InstanceID" to "0",
                 "CurrentURI" to url,
@@ -34,14 +43,14 @@ class DlnaCastState {
             ),
             true
         )
-        device.findAction("Play")?.invokeAsync(
+        requireNotNull(device.findAction("Play")) { "Device cannot play media" }.invokeAsync(
             mapOf(
                 "InstanceID" to "0",
                 "Speed" to "1"
             ),
             true
         )
-        Log.d(TAG, "play: $url on ${device.friendlyName}")
+        Log.d(TAG, "Cast request completed")
     }
 }
 
@@ -50,34 +59,39 @@ fun rememberDlnaCastState(): DlnaCastState {
     val state = remember {
         DlnaCastState()
     }
-    DisposableEffect(Unit) {
+    DisposableEffect(state) {
+        val active = AtomicBoolean(true)
+        val callbacks = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
         disposeScope.execute {
             kotlin.runCatching {
                 state.controlPoint = ControlPointFactory.create()
                 state.controlPoint.addDiscoveryListener(object : ControlPoint.DiscoveryListener {
                     override fun onDiscover(device: Device) {
-                        state.deviceList.add(device)
+                        callbacks.launch { if (active.get() && device !in state.deviceList) state.deviceList.add(device) }
                     }
 
                     override fun onLost(device: Device) {
-                        state.deviceList.remove(device)
+                        callbacks.launch { if (active.get()) state.deviceList.remove(device) }
                     }
                 })
                 state.controlPoint.initialize()
                 state.controlPoint.start()
                 state.controlPoint.search()
-                state.initialized.value = true
+                callbacks.launch { if (active.get()) state.initialized.value = true }
                 Log.i(TAG, "rememberDlnaCastState: initialized")
             }.onFailure {
                 it.printStackTrace()
             }
         }
         onDispose {
+            active.set(false)
+            callbacks.cancel()
+            state.deviceList.clear()
+            state.initialized.value = false
             disposeScope.execute {
                 kotlin.runCatching {
-                    if (state.initialized.value) {
-                        state.controlPoint.stop()
-                        state.controlPoint.terminate()
+                    state.release()
+                    run {
                         Log.i(TAG, "rememberDlnaCastState: disposed")
                     }
                 }.onFailure {

@@ -118,7 +118,7 @@ private fun HttpUrl.toSafeLogString(): String {
             append(':')
             append(port)
         }
-        append(encodedPath)
+        append("/[path]")
     }
 }
 

@@ -273,35 +273,18 @@ private fun VideoInfoCard(video: Video, vm: VideoVM) {
                                 return@launch
                             }
 
-                            if(vm.isVideoAlreadyDownloaded()) {
+                            if(vm.isVideoAlreadyDownloaded(context)) {
                                 message.error { Text(stringResource(R.string.already_downloaded)) }
                                 return@launch
                             }
 
-                            val req = OneTimeWorkRequestBuilder<DownloadWorker>()
-                                .setInputData(
-                                    Data.Builder()
-                                        .putString(DownloadWorker.KEY_DOWNLOAD_TITLE, video.title)
-                                        .putString(
-                                            DownloadWorker.KEY_DOWNLOAD_URL,
-                                            vm.state.urls.last().src.download.fixUrl()
-                                        )
-                                        .putString(DownloadWorker.KEY_DOWNLOAD_RESOURCE_ID, vm.id)
-                                        .putString(DownloadWorker.KEY_DOWNLOAD_TYPE, "VIDEO")
-                                        .putString(
-                                            DownloadWorker.KEY_DOWNLOAD_THUMBNAIL,
-                                            video.thumbnailUrl()
-                                        )
-                                        .build()
-                                )
-                                .addTag(vm.id)
-                                .build()
+                            vm.enqueueDownload(context)
 
                             message.info {
                                 Text(stringResource(R.string.start_downloading))
                             }
 
-                            workManager.enqueue(req)
+
                         }
                     }
                 ) {

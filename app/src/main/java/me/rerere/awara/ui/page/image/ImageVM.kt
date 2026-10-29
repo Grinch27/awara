@@ -7,6 +7,10 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import me.rerere.awara.data.entity.MediaProgress
+import me.rerere.awara.data.source.onError
+import me.rerere.awara.data.source.onException
 import me.rerere.awara.data.entity.HistoryItem
 import me.rerere.awara.data.entity.HistoryType
 import me.rerere.awara.data.entity.Image
@@ -65,20 +69,33 @@ class ImageVM(
         }
     }
 
-    private fun load() {
+    fun load() {
         viewModelScope.launch {
-            state = state.copy(loading = true)
+            state = state.copy(loading = true, failed = false)
             runAPICatching {
                 mediaRepo.getImage(id)
             }.onSuccess {
-                state = state.copy(state = it)
+                val progress = appDatabase.transferDao().mediaProgress("image", id)
+                val restoredPage = it.files.indexOfFirst { file -> file.id == progress?.fileId }
+                    .takeIf { page -> page >= 0 } ?: (progress?.position?.toInt() ?: 0).coerceIn(0, (it.files.size - 1).coerceAtLeast(0))
+                state = state.copy(state = it, savedPage = restoredPage)
                 writeHistory()
-            }
+            }.onError { state = state.copy(failed = true) }
+                .onException { state = state.copy(failed = true) }
             state = state.copy(loading = false)
         }
     }
 
+    fun savePage(page: Int) {
+        val file = state.state?.files?.getOrNull(page) ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            appDatabase.transferDao().saveProgress(MediaProgress("image", id, file.id, page.toLong(),
+                state.state?.files?.size?.toLong() ?: 0))
+        }
+    }
+
     private fun writeHistory() {
+        if (!me.rerere.compose_setting.preference.mmkvPreference.getBoolean("setting.record_history", true)) return
         viewModelScope.launch {
             kotlin.runCatching {
                 appDatabase.historyDao().insertHistory(
@@ -99,6 +116,8 @@ class ImageVM(
 
     data class ImageState(
         val loading: Boolean = false,
+        val failed: Boolean = false,
+        val savedPage: Int = 0,
         val likeLoading: Boolean = false,
         val state: Image? = null,
     )

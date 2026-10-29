@@ -1,12 +1,17 @@
 package me.rerere.awara.ui.page.search
 
-// TODO(user): Decide whether saved feed views should be usable as search presets in the first rollout or wait for a dedicated saved-view selector.
+// Requirements: seven search types; request snapshots, cancellation and deduplication.
+// Open decisions: presets remain optional. Verify rapid switching and process recreation.
 // TODO(agent): If user profile search gains typed filters later, move the remaining raw string branch onto the same FeedQuery pipeline instead of keeping two query styles.
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.SavedStateHandle
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
@@ -21,17 +26,43 @@ import me.rerere.awara.ui.component.iwara.param.sort.DEFAULT_MEDIA_SORT
 
 class SearchVM(
     private val searchRepository: SearchRepository,
+    private val savedState: SavedStateHandle,
 ) : ViewModel() {
-    var state by mutableStateOf(SearchState())
+    var state by mutableStateOf(SearchState(searchType = SearchTypes.normalize(savedState["type"] ?: "video")))
         private set
-    var query by mutableStateOf("")
-    var videoSort by mutableStateOf(DEFAULT_MEDIA_SORT)
-    var videoRating by mutableStateOf(DEFAULT_MEDIA_RATING)
+    var query by mutableStateOf(savedState.get<String>("query").orEmpty())
+    var videoSort by mutableStateOf(savedState.get<String>("videoSort") ?: DEFAULT_MEDIA_SORT)
+    var videoRating by mutableStateOf(savedState.get<String>("videoRating") ?: DEFAULT_MEDIA_RATING)
     val videoFilters: MutableList<FilterValue> = mutableStateListOf()
-    var imageSort by mutableStateOf(DEFAULT_MEDIA_SORT)
-    var imageRating by mutableStateOf(DEFAULT_MEDIA_RATING)
+    var imageSort by mutableStateOf(savedState.get<String>("imageSort") ?: DEFAULT_MEDIA_SORT)
+    var imageRating by mutableStateOf(savedState.get<String>("imageRating") ?: DEFAULT_MEDIA_RATING)
     val imageFilters: MutableList<FilterValue> = mutableStateListOf()
-    private var defaultRatingApplied = false
+    private var defaultRatingApplied = savedState.contains("videoRating")
+    private var requestJob: Job? = null
+    private var generation = 0L
+
+    init {
+        restoreFilters("videoFilters", videoFilters)
+        restoreFilters("imageFilters", imageFilters)
+        if (savedState.get<Boolean>("submitted") == true) search()
+    }
+
+    private fun restoreFilters(key: String, target: MutableList<FilterValue>) {
+        savedState.get<ArrayList<String>>(key)?.chunked(2)?.filter { it.size == 2 }
+            ?.take(64)?.forEach { target.add(FilterValue(it[0], it[1])) }
+    }
+
+    private fun persistCriteria() {
+        query = query.trim().take(2048)
+        savedState["query"] = query
+        savedState["type"] = state.searchType
+        savedState["videoSort"] = videoSort
+        savedState["videoRating"] = videoRating
+        savedState["imageSort"] = imageSort
+        savedState["imageRating"] = imageRating
+        savedState["videoFilters"] = ArrayList(videoFilters.flatMap { listOf(it.key, it.value) })
+        savedState["imageFilters"] = ArrayList(imageFilters.flatMap { listOf(it.key, it.value) })
+    }
 
     private fun hasActiveSearchCriteria(type: String = state.searchType): Boolean {
         return when (type) {
@@ -103,159 +134,116 @@ class SearchVM(
         search()
     }
 
+    // Capture each request before launching; stale or cancelled results never publish.
     fun search(replaceResults: Boolean = true) {
-        val requestedPage = state.page
-        val previousUiState = state.uiState
-        viewModelScope.launch {
-            state = state.copy(
-                uiState = if (replaceResults) UiState.Loading else state.uiState,
-                loadingMore = !replaceResults,
-            )
-            runCatching {
-                when (state.searchType) {
+        if (!replaceResults && state.loadingMore) return
+        requestJob?.cancel()
+        val requestId = ++generation
+        persistCriteria()
+        savedState["submitted"] = true
+        val requestedPage = if (replaceResults) 1 else state.page + 1
+        val before = state.copy(page = requestedPage)
+        val requestType = before.searchType
+        val requestQuery = query
+        val mediaQuery = buildMediaSearchQuery(if (requestType == SearchTypes.IMAGE) FeedScope.SEARCH_IMAGE else FeedScope.SEARCH_VIDEO)
+            .copy(page = requestedPage - 1)
+        state = before.copy(uiState = if (replaceResults) UiState.Loading else before.uiState,
+            loadingMore = !replaceResults, appendFailed = false,
+            resultKey = if (replaceResults) requestType + requestQuery + mediaQuery.copy(page = 0).toString() else before.resultKey)
+        val resultKey = state.resultKey
+        requestJob = viewModelScope.launch {
+            try {
+                val result = when (requestType) {
                     SearchTypes.VIDEO -> {
-                        val pager = searchRepository.searchVideos(
-                            buildMediaSearchQuery(FeedScope.SEARCH_VIDEO),
-                        )
-                        val mergedList = if (replaceResults) {
-                            pager.results
-                        } else {
-                            state.videoList + pager.results
-                        }
-                        state = state.copy(
-                            uiState = if (mergedList.isNotEmpty()) UiState.Success else UiState.Empty,
-                            count = pager.count,
-                            videoList = mergedList,
-                            loadingMore = false,
-                            hasMore = mergedList.size < pager.count,
-                        )
+                        val pager = searchRepository.searchVideos(mediaQuery)
+                        val previous = if (replaceResults) emptyList() else before.videoList
+                        val merged = (previous + pager.results).distinctBy { it.id }
+                        before.copy(videoList = merged, count = pager.count.coerceAtLeast(merged.size),
+                            uiState = if (merged.isEmpty()) UiState.Empty else UiState.Success,
+                            loadingMore = false, appendFailed = false,
+                            hasMore = pager.results.isNotEmpty() && merged.size > previous.size && merged.size < pager.count)
                     }
-
                     SearchTypes.IMAGE -> {
-                        val pager = searchRepository.searchImages(
-                            buildMediaSearchQuery(FeedScope.SEARCH_IMAGE),
-                        )
-                        val mergedList = if (replaceResults) {
-                            pager.results
-                        } else {
-                            state.imageList + pager.results
-                        }
-                        state = state.copy(
-                            uiState = if (mergedList.isNotEmpty()) UiState.Success else UiState.Empty,
-                            count = pager.count,
-                            imageList = mergedList,
-                            loadingMore = false,
-                            hasMore = mergedList.size < pager.count,
-                        )
+                        val pager = searchRepository.searchImages(mediaQuery)
+                        val previous = if (replaceResults) emptyList() else before.imageList
+                        val merged = (previous + pager.results).distinctBy { it.id }
+                        before.copy(imageList = merged, count = pager.count.coerceAtLeast(merged.size),
+                            uiState = if (merged.isEmpty()) UiState.Empty else UiState.Success,
+                            loadingMore = false, appendFailed = false,
+                            hasMore = pager.results.isNotEmpty() && merged.size > previous.size && merged.size < pager.count)
                     }
-
                     SearchTypes.USER -> {
-                        val pager = searchRepository.searchUsers(query, state.page - 1)
-                        val mergedList = if (replaceResults) {
-                            pager.results
-                        } else {
-                            state.userList + pager.results
-                        }
-                        state = state.copy(
-                            uiState = if (mergedList.isNotEmpty()) UiState.Success else UiState.Empty,
-                            count = pager.count,
-                            userList = mergedList,
-                            loadingMore = false,
-                            hasMore = mergedList.size < pager.count,
-                        )
+                        val pager = searchRepository.searchUsers(requestQuery, requestedPage - 1)
+                        val previous = if (replaceResults) emptyList() else before.userList
+                        val merged = (previous + pager.results).distinctBy { it.id }
+                        before.copy(userList = merged, count = pager.count.coerceAtLeast(merged.size),
+                            uiState = if (merged.isEmpty()) UiState.Empty else UiState.Success,
+                            loadingMore = false, appendFailed = false,
+                            hasMore = pager.results.isNotEmpty() && merged.size > previous.size && merged.size < pager.count)
                     }
-
                     SearchTypes.POST -> {
-                        val pager = searchRepository.searchPosts(query, state.page - 1)
-                        val mergedList = if (replaceResults) {
-                            pager.results
-                        } else {
-                            state.postList + pager.results
-                        }
-                        state = state.copy(
-                            uiState = if (mergedList.isNotEmpty()) UiState.Success else UiState.Empty,
-                            count = pager.count,
-                            postList = mergedList,
-                            loadingMore = false,
-                            hasMore = mergedList.size < pager.count,
-                        )
+                        val pager = searchRepository.searchPosts(requestQuery, requestedPage - 1)
+                        val previous = if (replaceResults) emptyList() else before.postList
+                        val merged = (previous + pager.results).distinctBy { it.id }
+                        before.copy(postList = merged, count = pager.count.coerceAtLeast(merged.size),
+                            uiState = if (merged.isEmpty()) UiState.Empty else UiState.Success,
+                            loadingMore = false, appendFailed = false,
+                            hasMore = pager.results.isNotEmpty() && merged.size > previous.size && merged.size < pager.count)
                     }
-
                     SearchTypes.PLAYLIST -> {
-                        val pager = searchRepository.searchPlaylists(query, state.page - 1)
-                        val mergedList = if (replaceResults) {
-                            pager.results
-                        } else {
-                            state.playlistList + pager.results
-                        }
-                        state = state.copy(
-                            uiState = if (mergedList.isNotEmpty()) UiState.Success else UiState.Empty,
-                            count = pager.count,
-                            playlistList = mergedList,
-                            loadingMore = false,
-                            hasMore = mergedList.size < pager.count,
-                        )
+                        val pager = searchRepository.searchPlaylists(requestQuery, requestedPage - 1)
+                        val previous = if (replaceResults) emptyList() else before.playlistList
+                        val merged = (previous + pager.results).distinctBy { it.id }
+                        before.copy(playlistList = merged, count = pager.count.coerceAtLeast(merged.size),
+                            uiState = if (merged.isEmpty()) UiState.Empty else UiState.Success,
+                            loadingMore = false, appendFailed = false,
+                            hasMore = pager.results.isNotEmpty() && merged.size > previous.size && merged.size < pager.count)
                     }
-
                     SearchTypes.FORUM_POST -> {
-                        val pager = searchRepository.searchForumPosts(query, state.page - 1)
-                        val mergedList = if (replaceResults) {
-                            pager.results
-                        } else {
-                            state.forumPostList + pager.results
-                        }
-                        state = state.copy(
-                            uiState = if (mergedList.isNotEmpty()) UiState.Success else UiState.Empty,
-                            count = pager.count,
-                            forumPostList = mergedList,
-                            loadingMore = false,
-                            hasMore = mergedList.size < pager.count,
-                        )
+                        val pager = searchRepository.searchForumPosts(requestQuery, requestedPage - 1)
+                        val previous = if (replaceResults) emptyList() else before.forumPostList
+                        val merged = (previous + pager.results).distinctBy { it.id }
+                        before.copy(forumPostList = merged, count = pager.count.coerceAtLeast(merged.size),
+                            uiState = if (merged.isEmpty()) UiState.Empty else UiState.Success,
+                            loadingMore = false, appendFailed = false,
+                            hasMore = pager.results.isNotEmpty() && merged.size > previous.size && merged.size < pager.count)
                     }
-
                     SearchTypes.FORUM_THREAD -> {
-                        val pager = searchRepository.searchForumThreads(query, state.page - 1)
-                        val mergedList = if (replaceResults) {
-                            pager.results
-                        } else {
-                            state.forumThreadList + pager.results
-                        }
-                        state = state.copy(
-                            uiState = if (mergedList.isNotEmpty()) UiState.Success else UiState.Empty,
-                            count = pager.count,
-                            forumThreadList = mergedList,
-                            loadingMore = false,
-                            hasMore = mergedList.size < pager.count,
-                        )
+                        val pager = searchRepository.searchForumThreads(requestQuery, requestedPage - 1)
+                        val previous = if (replaceResults) emptyList() else before.forumThreadList
+                        val merged = (previous + pager.results).distinctBy { it.id }
+                        before.copy(forumThreadList = merged, count = pager.count.coerceAtLeast(merged.size),
+                            uiState = if (merged.isEmpty()) UiState.Empty else UiState.Success,
+                            loadingMore = false, appendFailed = false,
+                            hasMore = pager.results.isNotEmpty() && merged.size > previous.size && merged.size < pager.count)
                     }
+                    else -> before
                 }
-            }.onFailure { throwable ->
-                state = state.copy(
+                coroutineContext.ensureActive()
+                if (generation == requestId) state = result.copy(resultKey = resultKey)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                if (generation == requestId) state = state.copy(
                     page = if (replaceResults) 1 else (requestedPage - 1).coerceAtLeast(1),
-                    uiState = if (replaceResults) {
-                        UiState.Error(
-                            throwable = throwable,
-                            messageText = throwable.localizedMessage ?: "Unknown Error",
-                        )
-                    } else {
-                        previousUiState
-                    },
-                    loadingMore = false,
-                )
+                    uiState = if (replaceResults) UiState.Error(throwable = error, messageText = null) else before.uiState,
+                    loadingMore = false, appendFailed = !replaceResults)
             }
         }
     }
 
     fun loadNextPage() {
-        if (state.loadingMore || !state.hasMore) {
+        if (state.uiState != UiState.Success || state.loadingMore || !state.hasMore) {
             return
         }
-        state = state.copy(page = state.page + 1, loadingMore = true)
         search(replaceResults = false)
     }
 
     fun updateSearchType(type: String) {
+        requestJob?.cancel()
+        ++generation
         val normalizedType = SearchTypes.normalize(type)
+        savedState["type"] = normalizedType
         state = state.copy(
             searchType = normalizedType,
             page = 1,
@@ -331,6 +319,8 @@ class SearchVM(
 
     data class SearchState(
         val uiState: UiState = UiState.Initial,
+        val resultKey: String = "initial",
+        val appendFailed: Boolean = false,
         val searchType: String = "video",
         val page: Int = 1,
         val count: Int = 0,

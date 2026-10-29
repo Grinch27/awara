@@ -23,6 +23,10 @@ class HistoryVM(
         }
     ).flow.cachedIn(viewModelScope)
 
+    fun delete(ids: List<Long>) {
+        viewModelScope.launch { database.historyDao().deleteByIds(ids) }
+    }
+
     fun clearAll() {
         viewModelScope.launch {
             database.historyDao().clearAllHistory()

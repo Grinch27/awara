@@ -21,6 +21,11 @@ allprojects {
         // Verify: inspect resolved Kotlin/JetBrains Lifecycle versions and all three APK builds.
         // Koin 4.2.2 requests JetBrains Lifecycle beta while its stable release exists.
         // Kotlin stdlib preview can otherwise dominate version conflict selection.
+        // The settings wrapper still requests legacy mmkv-static; use maintained 64-bit MMKV.
+        // minSdk 26 and existing arm64-v8a/x86_64 ABIs are unchanged. Device migration remains to verify.
+        resolutionStrategy.dependencySubstitution {
+            substitute(module("com.tencent:mmkv-static")).using(module("com.tencent:mmkv:+"))
+        }
         resolutionStrategy.eachDependency {
             val requestedVersion = requested.version
             val stableReplacement =

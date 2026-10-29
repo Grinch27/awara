@@ -27,6 +27,17 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.key
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.CircularProgressIndicator
+import coil3.request.ImageRequest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import me.rerere.awara.data.session.SecureSession
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -200,25 +211,53 @@ fun ImagePage(vm: ImageVM = koinViewModel()) {
                     .fillMaxSize(),
                 show = state.loading
             ) {
-                val pagerState = rememberPagerState(pageCount = { state.state?.files?.size ?: 0 })
-                HorizontalPager(
-                    state = pagerState
-                ) {
-                    AsyncImage(
-                        model = state.state!!.files[it].toImageLarge(),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .zoomable(rememberZoomState())
-                    )
+                val files = state.state?.files.orEmpty()
+                val session by SecureSession.state.collectAsState()
+                val pagerState = rememberPagerState(pageCount = { files.size })
+                val zoomed = remember { mutableStateMapOf<Int, Boolean>() }
+                var restored by remember(vm.id) { mutableStateOf(false) }
+                LaunchedEffect(files, vm.id) {
+                    if (files.isEmpty()) return@LaunchedEffect
+                    if (!restored) { pagerState.scrollToPage(state.savedPage.coerceIn(files.indices)); restored = true }
+                    snapshotFlow { pagerState.settledPage }.distinctUntilChanged().collect { vm.savePage(it) }
                 }
-
-                Text(
-                    text = "${pagerState.currentPage + 1}/${state.state?.files?.size}",
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter),
-                    color = Color.White
-                )
+                if (!state.loading && files.isEmpty()) {
+                    Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(stringResource(if (state.failed) R.string.gallery_failed else R.string.gallery_empty), color = Color.White)
+                        TextButton(onClick = vm::load) { Text(stringResource(R.string.gallery_retry)) }
+                    }
+                } else if (files.isNotEmpty()) {
+                    HorizontalPager(
+                        state = pagerState,
+                        key = { files.getOrNull(it)?.id ?: it.toString() },
+                        beyondViewportPageCount = 1,
+                        userScrollEnabled = zoomed[pagerState.currentPage] != true,
+                    ) { index ->
+                        val file = files.getOrNull(index) ?: return@HorizontalPager
+                        val zoomState = rememberZoomState()
+                        LaunchedEffect(zoomState.scale) { zoomed[index] = zoomState.scale > 1.01f }
+                        var failed by remember(file.id) { mutableStateOf(false) }
+                        var loading by remember(file.id) { mutableStateOf(true) }
+                        var retry by remember(file.id) { mutableStateOf(0) }
+                        val request = remember(file, session.sessionId, retry) {
+                            val cacheKey = session.sessionId.ifBlank { "public" } + ":image:" + vm.id + ":" + file.id + ":" + file.name
+                            ImageRequest.Builder(context).data(file.toImageLarge()).memoryCacheKey(cacheKey).diskCacheKey(cacheKey).build()
+                        }
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            key(retry) {
+                                AsyncImage(model = request, contentDescription = stringResource(R.string.gallery_page, index + 1, files.size),
+                                    onLoading = { loading = true; failed = false },
+                                    onSuccess = { loading = false; failed = false },
+                                    onError = { loading = false; failed = true },
+                                    modifier = Modifier.fillMaxSize().zoomable(zoomState))
+                            }
+                            if (loading) CircularProgressIndicator()
+                            if (failed) TextButton(onClick = { retry++ }) { Text(stringResource(R.string.gallery_retry)) }
+                        }
+                    }
+                    Text(text = "${pagerState.currentPage + 1}/${files.size}",
+                        modifier = Modifier.align(Alignment.BottomCenter), color = Color.White)
+                }
             }
         }
     }

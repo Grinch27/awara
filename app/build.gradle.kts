@@ -70,6 +70,7 @@ dependencies {
     val roomVersion = "+"
 
     implementation(project(":core:model"))
+    implementation(project(":core:ui"))
     implementation(project(":data"))
     implementation(project(":feature:player"))
     implementation(project(":feature:search"))

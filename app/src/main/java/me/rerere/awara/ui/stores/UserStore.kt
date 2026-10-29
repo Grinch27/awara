@@ -116,5 +116,7 @@ fun UserStoreProvider(
             if (SecureSession.snapshot.epoch == epoch) store.dispatch(UserStoreAction.SetLoading(false))
         }
     }
-    content()
+    androidx.compose.runtime.CompositionLocalProvider(
+        me.rerere.awara.ui.component.iwara.LocalMediaCacheScope provides session.sessionId.ifBlank { "public" }
+    ) { content() }
 }

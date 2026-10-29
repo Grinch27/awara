@@ -50,4 +50,7 @@
     <string name="media_list_mode_detail">Detail</string>
     <string name="media_list_mode_thumbnail">Thumbnail</string>
     <string name="search_error_default">Something went wrong. Tap to retry.</string>
+    <string name="search_pause_history">Pause search history</string>
+    <string name="search_enable_history">Enable search history</string>
+    <string name="search_remove_history">Remove from history</string>
 </resources>

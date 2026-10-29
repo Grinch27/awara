@@ -24,3 +24,6 @@ include(":feature:player")
 project(":feature:player").projectDir = file("feature/player")
 include(":feature:search")
 project(":feature:search").projectDir = file("feature/search")
+
+include(":core:ui")
+project(":core:ui").projectDir = file("core/ui")

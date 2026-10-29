@@ -2,6 +2,9 @@ package me.rerere.awara.ui.theme
 
 import android.annotation.SuppressLint
 import android.graphics.BitmapFactory
+import android.graphics.Bitmap
+import java.io.ByteArrayOutputStream
+import kotlinx.coroutines.CancellationException
 import android.util.Log
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
@@ -59,32 +62,46 @@ class DynamicThemeState : KoinComponent {
     suspend fun updateColorScheme(
         url: String
     ) {
-        if (url.isEmpty()) return
-        if(mmkvPreference.getBoolean("setting.dynamic_color", true).not()) return
-        Log.i(TAG, "updateColorScheme: 开始设置 $url")
-        withContext(Dispatchers.IO) {
-            kotlin.runCatching {
-                val request = Request.Builder()
-                    .url(url)
-                    .get()
-                    .build()
-                val response = get<OkHttpClient>().newCall(request).await()
-                if (response.isSuccessful) {
-                    val bitmap = BitmapFactory.decodeStream(response.body?.byteStream())
-
-                    val width = bitmap.width
-                    val height = bitmap.height
-                    val pixels = IntArray(width * height)
-                    bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
-
-                    val seedColor = Score.score(QuantizerCelebi.quantize(pixels, 128))[0]
-                    lightScheme = Scheme.light(seedColor).toColorScheme()
-                    darkScheme = Scheme.dark(seedColor).toColorScheme()
-
-                    Log.i(TAG, "updateColorScheme: 设置完成 $seedColor ${bitmap.config}")
+        if (url.isEmpty() || !mmkvPreference.getBoolean("setting.dynamic_color", true) ||
+            mmkvPreference.getBoolean("setting.block_media_thumbnails", false)) return
+        try {
+            val seed = withContext(Dispatchers.IO) {
+                val request = Request.Builder().url(url).get().build()
+                get<OkHttpClient>().newCall(request).await().use { response ->
+                    if (!response.isSuccessful) return@withContext null
+                    val body = response.body ?: return@withContext null
+                    val bytes = ByteArrayOutputStream().use { out ->
+                        body.byteStream().use { input ->
+                            val buffer = ByteArray(8192)
+                            while (true) {
+                                val count = input.read(buffer)
+                                if (count < 0) break
+                                require(out.size() + count <= 4 * 1024 * 1024) { "Thumbnail too large" }
+                                out.write(buffer, 0, count)
+                            }
+                        }
+                        out.toByteArray()
+                    }
+                    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+                    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return@withContext null
+                    var sample = 1
+                    while (bounds.outWidth / sample > 192 || bounds.outHeight / sample > 192) sample *= 2
+                    val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size,
+                        BitmapFactory.Options().apply { inSampleSize = sample }) ?: return@withContext null
+                    try {
+                        val pixels = IntArray(bitmap.width * bitmap.height)
+                        bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+                        Score.score(QuantizerCelebi.quantize(pixels, 64)).firstOrNull()
+                    } finally { bitmap.recycle() }
                 }
+            } ?: return
+            withContext(Dispatchers.Main.immediate) {
+                lightScheme = Scheme.light(seed).toColorScheme()
+                darkScheme = Scheme.dark(seed).toColorScheme()
             }
-        }
+        } catch (cancelled: CancellationException) { throw cancelled
+        } catch (_: Exception) { /* Keep the Material 3 fallback palette. */ }
     }
 
     private fun Scheme.toColorScheme(): ColorScheme {

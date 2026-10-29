@@ -6,6 +6,7 @@ import android.content.ContextWrapper
 import android.content.Intent
 import android.net.Uri
 import java.io.IOException
+import android.content.ActivityNotFoundException
 
 private const val TAG = "ContextUtil"
 
@@ -24,12 +25,12 @@ val Context.versionCode: Int
  * @param url String
  */
 fun Context.openUrl(url: String) {
-    if(url.matches(Regex("https?://.*"))) {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-        startActivity(intent)
-    } else {
-        AppLogger.w(TAG, "openUrl rejected invalid url")
-    }
+    val uri = runCatching { Uri.parse(url) }.getOrNull()
+    if (uri?.scheme?.lowercase() in setOf("http", "https") && !uri?.host.isNullOrBlank() && uri?.userInfo.isNullOrBlank()) {
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, uri).addFlags(if (this is Activity) 0 else Intent.FLAG_ACTIVITY_NEW_TASK))
+        } catch (_: ActivityNotFoundException) { AppLogger.w(TAG, "No browser available") }
+    } else AppLogger.w(TAG, "Rejected invalid external URL")
 }
 
 /**
@@ -81,6 +82,15 @@ fun Context.writeTextDocument(uri: Uri, text: String) {
 @Throws(IOException::class)
 fun Context.readTextDocument(uri: Uri): String {
     return contentResolver.openInputStream(uri)?.bufferedReader()?.use { reader ->
-        reader.readText()
+        val limit = me.rerere.awara.data.repo.LocalDataBackupCodec.MAX_BYTES
+        val result = StringBuilder()
+        val buffer = CharArray(8192)
+        while (true) {
+            val count = reader.read(buffer)
+            if (count < 0) break
+            if (result.length + count > limit) throw IOException("Document exceeds 16 MiB")
+            result.append(buffer, 0, count)
+        }
+        result.toString()
     } ?: throw IOException("Unable to open input stream")
 }

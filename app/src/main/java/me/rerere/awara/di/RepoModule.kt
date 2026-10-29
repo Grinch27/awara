@@ -10,6 +10,7 @@ import me.rerere.awara.ui.page.search.AppSearchRepository
 import me.rerere.awara.ui.page.search.SearchRepository
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
+import org.koin.android.ext.koin.androidContext
 
 private const val IWARA_HTTP_CLIENT = "iwaraHttpClient"
 
@@ -39,6 +40,6 @@ val repoModule = module {
     }
 
     single {
-        LocalDataRepo(get())
+        LocalDataRepo(get(), androidContext())
     }
 }

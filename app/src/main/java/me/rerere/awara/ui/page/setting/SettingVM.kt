@@ -16,7 +16,9 @@ class SettingVM(
 
     suspend fun exportLocalDataBackup(): String = localDataRepo.exportBackupJson()
 
-    suspend fun importLocalDataBackup(content: String): LocalDataSummary = localDataRepo.importBackupJson(content)
+    suspend fun previewLocalDataBackup(content: String): LocalDataSummary = localDataRepo.previewBackup(content)
+
+    suspend fun importLocalDataBackup(content: String, replace: Boolean = false): LocalDataSummary = localDataRepo.importBackupJson(content, replace)
 
     suspend fun getLocalDataSummary(): LocalDataSummary = localDataRepo.getSummary()
 }

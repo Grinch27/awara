@@ -21,7 +21,7 @@ object PlayerCache {
     @Volatile
     private var sharedCache: SimpleCache? = null
 
-    fun get(context: Context, publicHttpClient: OkHttpClient): CacheDataSource.Factory {
+    fun get(context: Context, publicHttpClient: OkHttpClient, scope: String = "public"): CacheDataSource.Factory {
         val cache = sharedCache ?: synchronized(this) {
             sharedCache ?: createCache(context.applicationContext).also { sharedCache = it }
         }
@@ -40,16 +40,18 @@ object PlayerCache {
             .setUpstreamDataSourceFactory(DefaultDataSource.Factory(context, httpDataSource))
             .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
             .setCacheKeyFactory { dataSpec ->
-                val filename = dataSpec.uri.getQueryParameter("filename")
-                Log.d(TAG, "Playback cache lookup")
-                dataSpec.key ?: filename ?: dataSpec.uri.toString()
+                dataSpec.key ?: scope + ":" + dataSpec.uri.toString()
             }
     }
 
     private fun createCache(context: Context): SimpleCache {
         val cacheFolder = File(context.cacheDir, "player_cache")
-        val storageManager = context.getSystemService(Context.STORAGE_SERVICE) as StorageManager
-        val maxBytes = storageManager.getCacheQuotaBytes(storageManager.getUuidForPath(cacheFolder))
+        cacheFolder.mkdirs()
+        val maxBytes = runCatching {
+            val storageManager = context.getSystemService(Context.STORAGE_SERVICE) as StorageManager
+            (storageManager.getCacheQuotaBytes(storageManager.getUuidForPath(cacheFolder)) / 4)
+                .coerceIn(64L * 1024 * 1024, 512L * 1024 * 1024)
+        }.getOrDefault(128L * 1024 * 1024)
         return SimpleCache(
             cacheFolder,
             LeastRecentlyUsedCacheEvictor(maxBytes),
