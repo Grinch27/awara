@@ -100,6 +100,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import kotlinx.coroutines.CancellationException
 import me.rerere.awara.ui.component.iwara.*
+import me.rerere.awara.ui.component.ext.DynamicStaggeredGridCells
 import me.rerere.awara.domain.media.MediaCardModel
 
 @Composable

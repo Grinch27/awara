@@ -8,6 +8,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.DisposableEffect
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import androidx.media3.common.Player as MediaPlayer
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.Dispatchers
@@ -132,6 +136,24 @@ fun DownloadPage(
     // Local downloaded files keep their existing ExoPlayer path: no network request.
     val state = rememberPlayerState(publicHttpClient) { context, _ ->
         ExoPlayer.Builder(context).build()
+    }
+    var offlineRequest by remember { mutableStateOf(0) }
+    var currentOfflineItem by remember { mutableStateOf<DownloadItem?>(null) }
+    fun saveOfflineProgress() {
+        val item = currentOfflineItem ?: return
+        if (state.player.currentMediaItem?.mediaId == "offline:" + item.id) {
+            vm.saveProgress(item, state.player.currentPosition, state.player.duration)
+        }
+    }
+    DisposableEffect(state) {
+        val listener = object : MediaPlayer.Listener {
+            override fun onIsPlayingChanged(isPlaying: Boolean) { if (!isPlaying) saveOfflineProgress() }
+        }
+        state.player.addListener(listener)
+        onDispose { saveOfflineProgress(); state.player.removeListener(listener) }
+    }
+    LaunchedEffect(state) {
+        while (isActive) { delay(5000); if (state.player.isPlaying) saveOfflineProgress() }
     }
     var requestOrientation by rememberRequestedScreenOrientation()
     var fullscreen by remember { mutableStateOf(false) }
@@ -268,13 +290,18 @@ fun DownloadPage(
                         ) {
                             val file = ManagedDownloadFiles.resolveIfManaged(context, item)
                             if (file == null) { operationFailed = true; return@DownloadItem }
-                            state.player.setMediaItem(
-                                MediaItem.Builder()
-                                    .setUri(Uri.fromFile(file))
-                                    .build()
-                            )
-                            state.player.prepare()
-                            fullscreen = true
+                            val request = ++offlineRequest
+                            scope.launch {
+                                saveOfflineProgress()
+                                val saved = vm.progress(item)
+                                if (request != offlineRequest) return@launch
+                                currentOfflineItem = item
+                                val position = if (saved?.fileId == item.path && saved.duration > 0 && saved.position < saved.duration - 5000) saved.position else 0
+                                state.player.setMediaItem(MediaItem.Builder().setMediaId("offline:" + item.id)
+                                    .setUri(Uri.fromFile(file)).build(), position)
+                                state.player.prepare()
+                                fullscreen = true
+                            }
                         }
                     }
                 }

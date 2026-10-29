@@ -222,4 +222,5 @@
     <string name="history_remove_selected">Remove %1$d</string>
     <string name="history_clear_all">Clear all</string>
     <string name="history_empty">No browsing history</string>
+    <string name="playback_retry">Playback failed. Retry</string>
 </resources>

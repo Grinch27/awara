@@ -32,6 +32,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource as composeStringResource
+import me.rerere.awara.R
 import androidx.compose.ui.graphics.Color
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
@@ -75,10 +78,12 @@ fun VideoPage(
     val session by SecureSession.state.collectAsState()
     val cacheScope = session.sessionId.ifBlank { "public" }
     val state = rememberPlayerState(publicHttpClient, cacheScope)
+    var playbackFailed by remember(state) { mutableStateOf(false) }
     var restored by remember(vm.id) { mutableStateOf(false) }
     DisposableEffect(state, vm) {
         val listener = object : MediaPlayer.Listener {
             override fun onPlayerError(error: PlaybackException) {
+                playbackFailed = true
                 var cause: Throwable? = error
                 while (cause != null) {
                     if (cause is HttpDataSource.InvalidResponseCodeException && cause.responseCode in setOf(401, 403)) {
@@ -100,7 +105,7 @@ fun VideoPage(
     LaunchedEffect(state, vm.id) {
         while (isActive) {
             delay(5000)
-            vm.saveProgress(state.player.currentPosition, state.player.duration)
+            if (state.player.isPlaying) vm.saveProgress(state.player.currentPosition, state.player.duration)
         }
     }
     val message = LocalMessageProvider.current
@@ -163,6 +168,7 @@ fun VideoPage(
         exitFullScreen()
     }
     suspend fun applyUrls(urls: List<VideoFile>) {
+        if (urls.isNotEmpty()) playbackFailed = false
         val assetVersion = vm.state.video?.file?.id.orEmpty() + ":" + vm.state.video?.updatedAt.toString()
         val mediaId = "video:" + vm.id + ":" + assetVersion
         state.updatePlayerItems(
@@ -196,15 +202,14 @@ fun VideoPage(
         }
     }
 
+    LaunchedEffect(state, vm.state.sourceRevision) { applyUrls(vm.state.urls) }
+
     // Handle VM Events
     LaunchedEffect(state) {
-        applyUrls(vm.state.urls)
         vm.events.collectLatest {
             when (it) {
                 // URL加载完成，更新播放器
-                is VideoVM.VideoEvent.UrlLoaded -> {
-                    applyUrls(it.urls)
-                }
+                is VideoVM.VideoEvent.UrlLoaded -> Unit
 
                 is VideoVM.VideoEvent.CommentPostException -> {
                     message.error {
@@ -230,6 +235,7 @@ fun VideoPage(
         PlayerScaffold(
             fullscreen = fullscreen,
             player = {
+                Box(Modifier.fillMaxSize()) {
                 Player(
                     state = state,
                     modifier = Modifier.fillMaxSize(),
@@ -300,6 +306,10 @@ fun VideoPage(
                         }
                     }
                 )
+                if (playbackFailed) TextButton(modifier = Modifier.align(Alignment.Center), onClick = { vm.refreshSources(manual = true) }) {
+                    Text(composeStringResource(R.string.playback_retry), color = Color.White)
+                }
+                }
             }
         ) { player ->
             when (windowSize.widthSizeClass) {

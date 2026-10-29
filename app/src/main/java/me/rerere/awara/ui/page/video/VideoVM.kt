@@ -70,15 +70,17 @@ class VideoVM(
     private var refreshAttempts = 0
     private var refreshingSources = false
 
-    fun refreshSources() {
-        if (refreshingSources || refreshAttempts >= 2) return
+    fun refreshSources(manual: Boolean = false) {
+        if (refreshingSources) return
+        if (manual) refreshAttempts = 0
+        if (refreshAttempts >= 2) return
         refreshingSources = true
         ++refreshAttempts
         viewModelScope.launch {
             try {
                 val video = mediaRepo.getVideo(id)
                 val urls = mediaRepo.getVideoStreamManifest(video).filter { it.name != "preview" }
-                state = state.copy(video = video, urls = urls)
+                state = state.copy(video = video, urls = urls, sourceRevision = state.sourceRevision + 1)
                 events.emit(VideoEvent.UrlLoaded(urls))
             } catch (cancelled: CancellationException) { throw cancelled
             } catch (_: Exception) { /* Player keeps its recoverable error state. */
@@ -124,7 +126,7 @@ class VideoVM(
                 }
                 video to urls
             }.onSuccess {
-                state = state.copy(video = it.first, urls = it.second)
+                state = state.copy(video = it.first, urls = it.second, sourceRevision = state.sourceRevision + 1)
                 events.emit(VideoEvent.UrlLoaded(it.second))
 
                 writeHistory()
@@ -370,6 +372,7 @@ class VideoVM(
         val private: Boolean = false,
         val privateUser: User? = null,
         val urls: List<VideoFile> = emptyList(),
+        val sourceRevision: Int = 0,
         val relatedVideos: List<Video> = emptyList(),
         val likeLoading: Boolean = false,
         val commentState: CommentState = CommentState(),

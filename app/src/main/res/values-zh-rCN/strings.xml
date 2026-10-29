@@ -221,4 +221,5 @@
     <string name="history_remove_selected">移除 %1$d 项</string>
     <string name="history_clear_all">全部清空</string>
     <string name="history_empty">暂无浏览历史</string>
+    <string name="playback_retry">播放失败，点击重试</string>
 </resources>

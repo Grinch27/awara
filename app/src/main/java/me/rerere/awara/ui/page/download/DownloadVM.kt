@@ -33,6 +33,16 @@ class DownloadVM(
         }
     ).flow.cachedIn(viewModelScope)
 
+    suspend fun progress(item: DownloadItem) = appDatabase.transferDao().mediaProgress("offline_video", item.resourceId)
+
+    fun saveProgress(item: DownloadItem, position: Long, duration: Long) {
+        if (position < 0 || duration <= 0) return
+        viewModelScope.launch(Dispatchers.IO) {
+            appDatabase.transferDao().saveProgress(me.rerere.awara.data.entity.MediaProgress(
+                "offline_video", item.resourceId, item.path, position.coerceIn(0, duration), duration))
+        }
+    }
+
     val tasks = appDatabase.transferDao().observeTasks()
 
     suspend fun controlTask(id: String, state: String) = withContext(Dispatchers.IO) {
